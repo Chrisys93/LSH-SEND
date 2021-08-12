@@ -1,0 +1,1920 @@
+
+# Directory where this script is located
+CURR_DIR=`pwd`
+pwd
+
+# Icarus main folder
+ICARUS_DIR=${CURR_DIR}/../..
+
+# Dir where plots will be saved 
+PLOTS_DIR=${CURR_DIR}/plots
+
+# Config file
+CONFIG_FILE=${CURR_DIR}/config.py
+
+# FIle where results will be saved
+RESULTS_FILE=${CURR_DIR}/results.pickle
+
+# Add Icarus code to PYTHONPATH
+export PYTHONPATH=${ICARUS_DIR}:$PYTHONPATH
+
+# Run experiments
+echo "Run experiments"
+Run experiments
+python ${ICARUS_DIR}/icarus.py --results ${RESULTS_FILE} ${CONFIG_FILE}
+[23:05:45 2019-02-25|INFO|main] Launching orchestrator
+[23:05:45 2019-02-25|INFO|orchestration] Starting simulations: 20 experiments, 10 process(es)
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-1] Experiment 1/20 | Preparing scenario: strategy: COORDINATED
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-1] Experiment 1/20 | Start simulation
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-2] Experiment 2/20 | Preparing scenario: strategy: COORDINATED
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-2] Experiment 2/20 | Start simulation
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-3] Experiment 3/20 | Preparing scenario: strategy: COORDINATED
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-3] Experiment 3/20 | Start simulation
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-4] Experiment 4/20 | Preparing scenario: strategy: COORDINATED
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-4] Experiment 4/20 | Start simulation
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-5] Experiment 5/20 | Preparing scenario: strategy: COORDINATED
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-5] Experiment 5/20 | Start simulation
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-6] Experiment 6/20 | Preparing scenario: strategy: SDF
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-6] Experiment 6/20 | Start simulation
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-7] Experiment 7/20 | Preparing scenario: strategy: SDF
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-7] Experiment 7/20 | Start simulation
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-8] Experiment 8/20 | Preparing scenario: strategy: SDF
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-8] Experiment 8/20 | Start simulation
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-9] Experiment 9/20 | Preparing scenario: strategy: SDF
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-9] Experiment 9/20 | Start simulation
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-10] Experiment 10/20 | Preparing scenario: strategy: SDF
+[23:05:45 2019-02-25|INFO|runner-PoolWorker-10] Experiment 10/20 | Start simulation
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 750
+Number of VMs @node: 0 50
+Number of cores @node: 0 50
+Number of VMs @node: 1 50
+Number of cores @node: 1 50
+Number of VMs @node: 2 50
+Number of cores @node: 2 50
+Number of VMs @node: 3 50
+Number of cores @node: 3 50
+Number of VMs @node: 4 50
+Number of cores @node: 4 50
+Number of VMs @node: 5 50
+Number of cores @node: 5 50
+Number of VMs @node: 6 50
+Number of cores @node: 6 50
+Number of VMs @node: 7 50
+Number of cores @node: 7 50
+Number of VMs @node: 8 50
+Number of cores @node: 8 50
+Number of VMs @node: 9 50
+Number of cores @node: 9 50
+Number of VMs @node: 10 50
+Number of cores @node: 10 50
+Number of VMs @node: 11 50
+Number of cores @node: 11 50
+Number of VMs @node: 12 50
+Number of cores @node: 12 50
+Number of VMs @node: 13 50
+Number of cores @node: 13 50
+Number of VMs @node: 14 50
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 1125.0
+Number of VMs @node: 0 75
+Number of cores @node: 0 50
+Number of VMs @node: 1 75
+Number of cores @node: 1 50
+Number of VMs @node: 2 75
+Number of cores @node: 2 50
+Number of VMs @node: 3 75
+Number of cores @node: 3 50
+Number of VMs @node: 4 75
+Number of cores @node: 4 50
+Number of VMs @node: 5 75
+Number of cores @node: 5 50
+Number of VMs @node: 6 75
+Number of cores @node: 6 50
+Number of VMs @node: 7 75
+Number of cores @node: 7 50
+Number of VMs @node: 8 75
+Number of cores @node: 8 50
+Number of VMs @node: 9 75
+Number of cores @node: 9 50
+Number of VMs @node: 10 75
+Number of cores @node: 10 50
+Number of VMs @node: 11 75
+Number of cores @node: 11 50
+Number of VMs @node: 12 75
+Number of cores @node: 12 50
+Number of VMs @node: 13 75
+Number of cores @node: 13 50
+Number of VMs @node: 14 75
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 1125.0
+Number of VMs @node: 0 75
+Number of cores @node: 0 50
+Number of VMs @node: 1 75
+Number of cores @node: 1 50
+Number of VMs @node: 2 75
+Number of cores @node: 2 50
+Number of VMs @node: 3 75
+Number of cores @node: 3 50
+Number of VMs @node: 4 75
+Number of cores @node: 4 50
+Number of VMs @node: 5 75
+Number of cores @node: 5 50
+Number of VMs @node: 6 75
+Number of cores @node: 6 50
+Number of VMs @node: 7 75
+Number of cores @node: 7 50
+Number of VMs @node: 8 75
+Number of cores @node: 8 50
+Number of VMs @node: 9 75
+Number of cores @node: 9 50
+Number of VMs @node: 10 75
+Number of cores @node: 10 50
+Number of VMs @node: 11 75
+Number of cores @node: 11 50
+Number of VMs @node: 12 75
+Number of cores @node: 12 50
+Number of VMs @node: 13 75
+Number of cores @node: 13 50
+Number of VMs @node: 14 75
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 750
+Number of VMs @node: 0 50
+Number of cores @node: 0 50
+Number of VMs @node: 1 50
+Number of cores @node: 1 50
+Number of VMs @node: 2 50
+Number of cores @node: 2 50
+Number of VMs @node: 3 50
+Number of cores @node: 3 50
+Number of VMs @node: 4 50
+Number of cores @node: 4 50
+Number of VMs @node: 5 50
+Number of cores @node: 5 50
+Number of VMs @node: 6 50
+Number of cores @node: 6 50
+Number of VMs @node: 7 50
+Number of cores @node: 7 50
+Number of VMs @node: 8 50
+Number of cores @node: 8 50
+Number of VMs @node: 9 50
+Number of cores @node: 9 50
+Number of VMs @node: 10 50
+Number of cores @node: 10 50
+Number of VMs @node: 11 50
+Number of cores @node: 11 50
+Number of VMs @node: 12 50
+Number of cores @node: 12 50
+Number of VMs @node: 13 50
+Number of cores @node: 13 50
+Number of VMs @node: 14 50
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 1500
+Number of VMs @node: 0 100
+Number of cores @node: 0 50
+Number of VMs @node: 1 100
+Number of cores @node: 1 50
+Number of VMs @node: 2 100
+Number of cores @node: 2 50
+Number of VMs @node: 3 100
+Number of cores @node: 3 50
+Number of VMs @node: 4 100
+Number of cores @node: 4 50
+Number of VMs @node: 5 100
+Number of cores @node: 5 50
+Number of VMs @node: 6 100
+Number of cores @node: 6 50
+Number of VMs @node: 7 100
+Number of cores @node: 7 50
+Number of VMs @node: 8 100
+Number of cores @node: 8 50
+Number of VMs @node: 9 100
+Number of cores @node: 9 50
+Number of VMs @node: 10 100
+Number of cores @node: 10 50
+Number of VMs @node: 11 100
+Number of cores @node: 11 50
+Number of VMs @node: 12 100
+Number of cores @node: 12 50
+Number of VMs @node: 13 100
+Number of cores @node: 13 50
+Number of VMs @node: 14 100
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 1875.0
+Number of VMs @node: 0 125
+Number of cores @node: 0 50
+Number of VMs @node: 1 125
+Number of cores @node: 1 50
+Number of VMs @node: 2 125
+Number of cores @node: 2 50
+Number of VMs @node: 3 125
+Number of cores @node: 3 50
+Number of VMs @node: 4 125
+Number of cores @node: 4 50
+Number of VMs @node: 5 125
+Number of cores @node: 5 50
+Number of VMs @node: 6 125
+Number of cores @node: 6 50
+Number of VMs @node: 7 125
+Number of cores @node: 7 50
+Number of VMs @node: 8 125
+Number of cores @node: 8 50
+Number of VMs @node: 9 125
+Number of cores @node: 9 50
+Number of VMs @node: 10 125
+Number of cores @node: 10 50
+Number of VMs @node: 11 125
+Number of cores @node: 11 50
+Number of VMs @node: 12 125
+Number of cores @node: 12 50
+Number of VMs @node: 13 125
+Number of cores @node: 13 50
+Number of VMs @node: 14 125
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 1500
+Number of VMs @node: 0 100
+Number of cores @node: 0 50
+Number of VMs @node: 1 100
+Number of cores @node: 1 50
+Number of VMs @node: 2 100
+Number of cores @node: 2 50
+Number of VMs @node: 3 100
+Number of cores @node: 3 50
+Number of VMs @node: 4 100
+Number of cores @node: 4 50
+Number of VMs @node: 5 100
+Number of cores @node: 5 50
+Number of VMs @node: 6 100
+Number of cores @node: 6 50
+Number of VMs @node: 7 100
+Number of cores @node: 7 50
+Number of VMs @node: 8 100
+Number of cores @node: 8 50
+Number of VMs @node: 9 100
+Number of cores @node: 9 50
+Number of VMs @node: 10 100
+Number of cores @node: 10 50
+Number of VMs @node: 11 100
+Number of cores @node: 11 50
+Number of VMs @node: 12 100
+Number of cores @node: 12 50
+Number of VMs @node: 13 100
+Number of cores @node: 13 50
+Number of VMs @node: 14 100
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 2250
+Number of VMs @node: 0 150
+Number of cores @node: 0 50
+Number of VMs @node: 1 150
+Number of cores @node: 1 50
+Number of VMs @node: 2 150
+Number of cores @node: 2 50
+Number of VMs @node: 3 150
+Number of cores @node: 3 50
+Number of VMs @node: 4 150
+Number of cores @node: 4 50
+Number of VMs @node: 5 150
+Number of cores @node: 5 50
+Number of VMs @node: 6 150
+Number of cores @node: 6 50
+Number of VMs @node: 7 150
+Number of cores @node: 7 50
+Number of VMs @node: 8 150
+Number of cores @node: 8 50
+Number of VMs @node: 9 150
+Number of cores @node: 9 50
+Number of VMs @node: 10 150
+Number of cores @node: 10 50
+Number of VMs @node: 11 150
+Number of cores @node: 11 50
+Number of VMs @node: 12 150
+Number of cores @node: 12 50
+Number of VMs @node: 13 150
+Number of cores @node: 13 50
+Number of VMs @node: 14 150
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 1875.0
+Number of VMs @node: 0 125
+Number of cores @node: 0 50
+Number of VMs @node: 1 125
+Number of cores @node: 1 50
+Number of VMs @node: 2 125
+Number of cores @node: 2 50
+Number of VMs @node: 3 125
+Number of cores @node: 3 50
+Number of VMs @node: 4 125
+Number of cores @node: 4 50
+Number of VMs @node: 5 125
+Number of cores @node: 5 50
+Number of VMs @node: 6 125
+Number of cores @node: 6 50
+Number of VMs @node: 7 125
+Number of cores @node: 7 50
+Number of VMs @node: 8 125
+Number of cores @node: 8 50
+Number of VMs @node: 9 125
+Number of cores @node: 9 50
+Number of VMs @node: 10 125
+Number of cores @node: 10 50
+Number of VMs @node: 11 125
+Number of cores @node: 11 50
+Number of VMs @node: 12 125
+Number of cores @node: 12 50
+Number of VMs @node: 13 125
+Number of cores @node: 13 50
+Number of VMs @node: 14 125
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 2250
+Number of VMs @node: 0 150
+Number of cores @node: 0 50
+Number of VMs @node: 1 150
+Number of cores @node: 1 50
+Number of VMs @node: 2 150
+Number of cores @node: 2 50
+Number of VMs @node: 3 150
+Number of cores @node: 3 50
+Number of VMs @node: 4 150
+Number of cores @node: 4 50
+Number of VMs @node: 5 150
+Number of cores @node: 5 50
+Number of VMs @node: 6 150
+Number of cores @node: 6 50
+Number of VMs @node: 7 150
+Number of cores @node: 7 50
+Number of VMs @node: 8 150
+Number of cores @node: 8 50
+Number of VMs @node: 9 150
+Number of cores @node: 9 50
+Number of VMs @node: 10 150
+Number of cores @node: 10 50
+Number of VMs @node: 11 150
+Number of cores @node: 11 50
+Number of VMs @node: 12 150
+Number of cores @node: 12 50
+Number of VMs @node: 13 150
+Number of cores @node: 13 50
+Number of VMs @node: 14 150
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+[23:29:56 2019-02-25|INFO|runner-PoolWorker-6] Experiment 6/20 | End simulation | Duration 24m 12s.
+[23:29:56 2019-02-25|INFO|runner-PoolWorker-6] Experiment 11/20 | Preparing scenario: strategy: HYBRID
+[23:29:56 2019-02-25|INFO|runner-PoolWorker-6] Experiment 11/20 | Start simulation
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300083
+Number of requests in interval: 299772
+Number of requests in interval: 300138
+Number of requests in interval: 300505
+Number of requests in interval: 299966
+Number of requests in interval: 300263
+Number of requests in interval: 300333
+Number of requests in interval: 300167
+Number of requests in interval: 299791
+Number of requests in interval: 300357
+Number of requests in interval: 299527
+Number of requests in interval: 300482
+Number of requests in interval: 299232
+Number of requests in interval: 299737
+Number of requests in interval: 300551
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 750
+Number of VMs @node: 0 50
+Number of cores @node: 0 50
+Number of VMs @node: 1 50
+Number of cores @node: 1 50
+Number of VMs @node: 2 50
+Number of cores @node: 2 50
+Number of VMs @node: 3 50
+Number of cores @node: 3 50
+Number of VMs @node: 4 50
+Number of cores @node: 4 50
+Number of VMs @node: 5 50
+Number of cores @node: 5 50
+Number of VMs @node: 6 50
+Number of cores @node: 6 50
+Number of VMs @node: 7 50
+Number of cores @node: 7 50
+Number of VMs @node: 8 50
+Number of cores @node: 8 50
+Number of VMs @node: 9 50
+Number of cores @node: 9 50
+Number of VMs @node: 10 50
+Number of cores @node: 10 50
+Number of VMs @node: 11 50
+Number of cores @node: 11 50
+Number of VMs @node: 12 50
+Number of cores @node: 12 50
+Number of VMs @node: 13 50
+Number of cores @node: 13 50
+Number of VMs @node: 14 50
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+[23:30:06 2019-02-25|INFO|runner-PoolWorker-7] Experiment 7/20 | End simulation | Duration 24m 22s.
+[23:30:06 2019-02-25|INFO|runner-PoolWorker-7] Experiment 12/20 | Preparing scenario: strategy: HYBRID
+[23:30:06 2019-02-25|INFO|runner-PoolWorker-7] Experiment 12/20 | Start simulation
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300083
+Number of requests in interval: 299772
+Number of requests in interval: 300138
+Number of requests in interval: 300505
+Number of requests in interval: 299966
+Number of requests in interval: 300263
+Number of requests in interval: 300333
+Number of requests in interval: 300167
+Number of requests in interval: 299791
+Number of requests in interval: 300357
+Number of requests in interval: 299527
+Number of requests in interval: 300482
+Number of requests in interval: 299232
+Number of requests in interval: 299737
+Number of requests in interval: 300551
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 1125.0
+Number of VMs @node: 0 75
+Number of cores @node: 0 50
+Number of VMs @node: 1 75
+Number of cores @node: 1 50
+Number of VMs @node: 2 75
+Number of cores @node: 2 50
+Number of VMs @node: 3 75
+Number of cores @node: 3 50
+Number of VMs @node: 4 75
+Number of cores @node: 4 50
+Number of VMs @node: 5 75
+Number of cores @node: 5 50
+Number of VMs @node: 6 75
+Number of cores @node: 6 50
+Number of VMs @node: 7 75
+Number of cores @node: 7 50
+Number of VMs @node: 8 75
+Number of cores @node: 8 50
+Number of VMs @node: 9 75
+Number of cores @node: 9 50
+Number of VMs @node: 10 75
+Number of cores @node: 10 50
+Number of VMs @node: 11 75
+Number of cores @node: 11 50
+Number of VMs @node: 12 75
+Number of cores @node: 12 50
+Number of VMs @node: 13 75
+Number of cores @node: 13 50
+Number of VMs @node: 14 75
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+[23:30:16 2019-02-25|INFO|runner-PoolWorker-8] Experiment 8/20 | End simulation | Duration 24m 31s.
+[23:30:16 2019-02-25|INFO|runner-PoolWorker-8] Experiment 13/20 | Preparing scenario: strategy: HYBRID
+[23:30:16 2019-02-25|INFO|runner-PoolWorker-8] Experiment 13/20 | Start simulation
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300083
+Number of requests in interval: 299772
+Number of requests in interval: 300138
+Number of requests in interval: 300505
+Number of requests in interval: 299966
+Number of requests in interval: 300263
+Number of requests in interval: 300333
+Number of requests in interval: 300167
+Number of requests in interval: 299791
+Number of requests in interval: 300357
+Number of requests in interval: 299527
+Number of requests in interval: 300482
+Number of requests in interval: 299232
+Number of requests in interval: 299737
+Number of requests in interval: 300551
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 1500
+Number of VMs @node: 0 100
+Number of cores @node: 0 50
+Number of VMs @node: 1 100
+Number of cores @node: 1 50
+Number of VMs @node: 2 100
+Number of cores @node: 2 50
+Number of VMs @node: 3 100
+Number of cores @node: 3 50
+Number of VMs @node: 4 100
+Number of cores @node: 4 50
+Number of VMs @node: 5 100
+Number of cores @node: 5 50
+Number of VMs @node: 6 100
+Number of cores @node: 6 50
+Number of VMs @node: 7 100
+Number of cores @node: 7 50
+Number of VMs @node: 8 100
+Number of cores @node: 8 50
+Number of VMs @node: 9 100
+Number of cores @node: 9 50
+Number of VMs @node: 10 100
+Number of cores @node: 10 50
+Number of VMs @node: 11 100
+Number of cores @node: 11 50
+Number of VMs @node: 12 100
+Number of cores @node: 12 50
+Number of VMs @node: 13 100
+Number of cores @node: 13 50
+Number of VMs @node: 14 100
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+[23:30:20 2019-02-25|INFO|runner-PoolWorker-9] Experiment 9/20 | End simulation | Duration 24m 35s.
+[23:30:20 2019-02-25|INFO|runner-PoolWorker-9] Experiment 14/20 | Preparing scenario: strategy: HYBRID
+[23:30:20 2019-02-25|INFO|runner-PoolWorker-9] Experiment 14/20 | Start simulation
+[23:30:20 2019-02-25|INFO|orchestration] SUMMARY | Completed: 4, Failed: 0, Scheduled: 16, ETA: 39m
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300083
+Number of requests in interval: 299772
+Number of requests in interval: 300138
+Number of requests in interval: 300505
+Number of requests in interval: 299966
+Number of requests in interval: 300263
+Number of requests in interval: 300333
+Number of requests in interval: 300167
+Number of requests in interval: 299792
+Number of requests in interval: 300357
+Number of requests in interval: 299529
+Number of requests in interval: 300481
+Number of requests in interval: 299230
+Number of requests in interval: 299738
+Number of requests in interval: 300550
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 1875.0
+Number of VMs @node: 0 125
+Number of cores @node: 0 50
+Number of VMs @node: 1 125
+Number of cores @node: 1 50
+Number of VMs @node: 2 125
+Number of cores @node: 2 50
+Number of VMs @node: 3 125
+Number of cores @node: 3 50
+Number of VMs @node: 4 125
+Number of cores @node: 4 50
+Number of VMs @node: 5 125
+Number of cores @node: 5 50
+Number of VMs @node: 6 125
+Number of cores @node: 6 50
+Number of VMs @node: 7 125
+Number of cores @node: 7 50
+Number of VMs @node: 8 125
+Number of cores @node: 8 50
+Number of VMs @node: 9 125
+Number of cores @node: 9 50
+Number of VMs @node: 10 125
+Number of cores @node: 10 50
+Number of VMs @node: 11 125
+Number of cores @node: 11 50
+Number of VMs @node: 12 125
+Number of cores @node: 12 50
+Number of VMs @node: 13 125
+Number of cores @node: 13 50
+Number of VMs @node: 14 125
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+[23:30:26 2019-02-25|INFO|runner-PoolWorker-10] Experiment 10/20 | End simulation | Duration 24m 41s.
+[23:30:26 2019-02-25|INFO|runner-PoolWorker-10] Experiment 15/20 | Preparing scenario: strategy: HYBRID
+[23:30:26 2019-02-25|INFO|runner-PoolWorker-10] Experiment 15/20 | Start simulation
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300084
+Number of requests in interval: 299773
+Number of requests in interval: 300137
+Number of requests in interval: 300504
+Number of requests in interval: 299966
+Number of requests in interval: 300265
+Number of requests in interval: 300331
+Number of requests in interval: 300167
+Number of requests in interval: 299793
+Number of requests in interval: 300356
+Number of requests in interval: 299529
+Number of requests in interval: 300481
+Number of requests in interval: 299230
+Number of requests in interval: 299738
+Number of requests in interval: 300550
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 2250
+Number of VMs @node: 0 150
+Number of cores @node: 0 50
+Number of VMs @node: 1 150
+Number of cores @node: 1 50
+Number of VMs @node: 2 150
+Number of cores @node: 2 50
+Number of VMs @node: 3 150
+Number of cores @node: 3 50
+Number of VMs @node: 4 150
+Number of cores @node: 4 50
+Number of VMs @node: 5 150
+Number of cores @node: 5 50
+Number of VMs @node: 6 150
+Number of cores @node: 6 50
+Number of VMs @node: 7 150
+Number of cores @node: 7 50
+Number of VMs @node: 8 150
+Number of cores @node: 8 50
+Number of VMs @node: 9 150
+Number of cores @node: 9 50
+Number of VMs @node: 10 150
+Number of cores @node: 10 50
+Number of VMs @node: 11 150
+Number of cores @node: 11 50
+Number of VMs @node: 12 150
+Number of cores @node: 12 50
+Number of VMs @node: 13 150
+Number of cores @node: 13 50
+Number of VMs @node: 14 150
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+[00:10:15 2019-02-26|INFO|runner-PoolWorker-1] Experiment 1/20 | End simulation | Duration 1h 4m 30s.
+[00:10:15 2019-02-26|INFO|runner-PoolWorker-1] Experiment 16/20 | Preparing scenario: strategy: MFU
+[00:10:15 2019-02-26|INFO|runner-PoolWorker-1] Experiment 16/20 | Start simulation
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300084
+Number of requests in interval: 299774
+Number of requests in interval: 300137
+Number of requests in interval: 300507
+Number of requests in interval: 299963
+Number of requests in interval: 300266
+Number of requests in interval: 300334
+Number of requests in interval: 300163
+Number of requests in interval: 299795
+Number of requests in interval: 300356
+Number of requests in interval: 299527
+Number of requests in interval: 300484
+Number of requests in interval: 299226
+Number of requests in interval: 299740
+Number of requests in interval: 300549
+Number of requests in interval: 299304
+End of iteration: len(eventObj): 0
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 750
+Number of VMs @node: 0 50
+Number of cores @node: 0 50
+Number of VMs @node: 1 50
+Number of cores @node: 1 50
+Number of VMs @node: 2 50
+Number of cores @node: 2 50
+Number of VMs @node: 3 50
+Number of cores @node: 3 50
+Number of VMs @node: 4 50
+Number of cores @node: 4 50
+Number of VMs @node: 5 50
+Number of cores @node: 5 50
+Number of VMs @node: 6 50
+Number of cores @node: 6 50
+Number of VMs @node: 7 50
+Number of cores @node: 7 50
+Number of VMs @node: 8 50
+Number of cores @node: 8 50
+Number of VMs @node: 9 50
+Number of cores @node: 9 50
+Number of VMs @node: 10 50
+Number of cores @node: 10 50
+Number of VMs @node: 11 50
+Number of cores @node: 11 50
+Number of VMs @node: 12 50
+Number of cores @node: 12 50
+Number of VMs @node: 13 50
+Number of cores @node: 13 50
+Number of VMs @node: 14 50
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+[00:18:44 2019-02-26|INFO|runner-PoolWorker-3] Experiment 3/20 | End simulation | Duration 1h 12m 59s.
+[00:18:44 2019-02-26|INFO|runner-PoolWorker-3] Experiment 17/20 | Preparing scenario: strategy: MFU
+[00:18:44 2019-02-26|INFO|runner-PoolWorker-3] Experiment 17/20 | Start simulation
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300084
+Number of requests in interval: 299774
+Number of requests in interval: 300136
+Number of requests in interval: 300506
+Number of requests in interval: 299965
+Number of requests in interval: 300266
+Number of requests in interval: 300334
+Number of requests in interval: 300163
+Number of requests in interval: 299795
+Number of requests in interval: 300356
+Number of requests in interval: 299527
+Number of requests in interval: 300484
+Number of requests in interval: 299226
+Number of requests in interval: 299740
+Number of requests in interval: 300549
+Number of requests in interval: 299304
+End of iteration: len(eventObj): 0
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 1125.0
+Number of VMs @node: 0 75
+Number of cores @node: 0 50
+Number of VMs @node: 1 75
+Number of cores @node: 1 50
+Number of VMs @node: 2 75
+Number of cores @node: 2 50
+Number of VMs @node: 3 75
+Number of cores @node: 3 50
+Number of VMs @node: 4 75
+Number of cores @node: 4 50
+Number of VMs @node: 5 75
+Number of cores @node: 5 50
+Number of VMs @node: 6 75
+Number of cores @node: 6 50
+Number of VMs @node: 7 75
+Number of cores @node: 7 50
+Number of VMs @node: 8 75
+Number of cores @node: 8 50
+Number of VMs @node: 9 75
+Number of cores @node: 9 50
+Number of VMs @node: 10 75
+Number of cores @node: 10 50
+Number of VMs @node: 11 75
+Number of cores @node: 11 50
+Number of VMs @node: 12 75
+Number of cores @node: 12 50
+Number of VMs @node: 13 75
+Number of cores @node: 13 50
+Number of VMs @node: 14 75
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+[00:19:38 2019-02-26|INFO|runner-PoolWorker-2] Experiment 2/20 | End simulation | Duration 1h 13m 53s.
+[00:19:38 2019-02-26|INFO|runner-PoolWorker-2] Experiment 18/20 | Preparing scenario: strategy: MFU
+[00:19:38 2019-02-26|INFO|runner-PoolWorker-2] Experiment 18/20 | Start simulation
+[00:19:38 2019-02-26|INFO|orchestration] SUMMARY | Completed: 8, Failed: 0, Scheduled: 12, ETA: 50m
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300084
+Number of requests in interval: 299774
+Number of requests in interval: 300136
+Number of requests in interval: 300506
+Number of requests in interval: 299965
+Number of requests in interval: 300266
+Number of requests in interval: 300334
+Number of requests in interval: 300163
+Number of requests in interval: 299795
+Number of requests in interval: 300356
+Number of requests in interval: 299527
+Number of requests in interval: 300484
+Number of requests in interval: 299226
+Number of requests in interval: 299740
+Number of requests in interval: 300549
+Number of requests in interval: 299304
+End of iteration: len(eventObj): 0
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 1500
+Number of VMs @node: 0 100
+Number of cores @node: 0 50
+Number of VMs @node: 1 100
+Number of cores @node: 1 50
+Number of VMs @node: 2 100
+Number of cores @node: 2 50
+Number of VMs @node: 3 100
+Number of cores @node: 3 50
+Number of VMs @node: 4 100
+Number of cores @node: 4 50
+Number of VMs @node: 5 100
+Number of cores @node: 5 50
+Number of VMs @node: 6 100
+Number of cores @node: 6 50
+Number of VMs @node: 7 100
+Number of cores @node: 7 50
+Number of VMs @node: 8 100
+Number of cores @node: 8 50
+Number of VMs @node: 9 100
+Number of cores @node: 9 50
+Number of VMs @node: 10 100
+Number of cores @node: 10 50
+Number of VMs @node: 11 100
+Number of cores @node: 11 50
+Number of VMs @node: 12 100
+Number of cores @node: 12 50
+Number of VMs @node: 13 100
+Number of cores @node: 13 50
+Number of VMs @node: 14 100
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+[00:20:07 2019-02-26|INFO|runner-PoolWorker-6] Experiment 11/20 | End simulation | Duration 50m 11s.
+[00:20:07 2019-02-26|INFO|runner-PoolWorker-6] Experiment 19/20 | Preparing scenario: strategy: MFU
+[00:20:07 2019-02-26|INFO|runner-PoolWorker-6] Experiment 19/20 | Start simulation
+Replacement time: 30.00000180781229
+Number of requests in interval: 300221
+Replacement time: 60.00000358805043
+Number of requests in interval: 300243
+Replacement time: 90.00000734158218
+Number of requests in interval: 300649
+Replacement time: 120.0000169861357
+Number of requests in interval: 298678
+Replacement time: 150.0000280265502
+Number of requests in interval: 300083
+Replacement time: 180.00003802575486
+Number of requests in interval: 299772
+Replacement time: 210.0000475078271
+Number of requests in interval: 300138
+Replacement time: 240.00005053086838
+Number of requests in interval: 300505
+Replacement time: 270.00005265834
+Number of requests in interval: 299966
+Replacement time: 300.0000539640289
+Number of requests in interval: 300263
+Replacement time: 330.0000548900606
+Number of requests in interval: 300333
+Replacement time: 360.00005668580843
+Number of requests in interval: 300167
+Replacement time: 390.0000582707152
+Number of requests in interval: 299791
+Replacement time: 420.0000680727242
+Number of requests in interval: 300357
+Replacement time: 450.0000916244931
+Number of requests in interval: 299527
+Replacement time: 480.00009287015024
+Number of requests in interval: 300482
+Replacement time: 510.0001219673855
+Number of requests in interval: 299232
+Replacement time: 540.0001280152093
+Number of requests in interval: 299737
+Replacement time: 570.000130463761
+Number of requests in interval: 300551
+Replacement time: 600.0001596388861
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 1875.0
+Number of VMs @node: 0 125
+Number of cores @node: 0 50
+Number of VMs @node: 1 125
+Number of cores @node: 1 50
+Number of VMs @node: 2 125
+Number of cores @node: 2 50
+Number of VMs @node: 3 125
+Number of cores @node: 3 50
+Number of VMs @node: 4 125
+Number of cores @node: 4 50
+Number of VMs @node: 5 125
+Number of cores @node: 5 50
+Number of VMs @node: 6 125
+Number of cores @node: 6 50
+Number of VMs @node: 7 125
+Number of cores @node: 7 50
+Number of VMs @node: 8 125
+Number of cores @node: 8 50
+Number of VMs @node: 9 125
+Number of cores @node: 9 50
+Number of VMs @node: 10 125
+Number of cores @node: 10 50
+Number of VMs @node: 11 125
+Number of cores @node: 11 50
+Number of VMs @node: 12 125
+Number of cores @node: 12 50
+Number of VMs @node: 13 125
+Number of cores @node: 13 50
+Number of VMs @node: 14 125
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+[00:20:44 2019-02-26|INFO|runner-PoolWorker-4] Experiment 4/20 | End simulation | Duration 1h 14m 59s.
+[00:20:44 2019-02-26|INFO|runner-PoolWorker-4] Experiment 20/20 | Preparing scenario: strategy: MFU
+[00:20:44 2019-02-26|INFO|runner-PoolWorker-4] Experiment 20/20 | Start simulation
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300084
+Number of requests in interval: 299773
+Number of requests in interval: 300137
+Number of requests in interval: 300506
+Number of requests in interval: 299965
+Number of requests in interval: 300266
+Number of requests in interval: 300335
+Number of requests in interval: 300162
+Number of requests in interval: 299795
+Number of requests in interval: 300356
+Number of requests in interval: 299527
+Number of requests in interval: 300484
+Number of requests in interval: 299226
+Number of requests in interval: 299740
+Number of requests in interval: 300549
+Number of requests in interval: 299304
+End of iteration: len(eventObj): 0
+Edge between 0 and 1 delay: 0.02
+Edge between 0 and 2 delay: 0.02
+Edge between 1 and 3 delay: 0.02
+Edge between 1 and 4 delay: 0.02
+Edge between 2 and 5 delay: 0.02
+Edge between 2 and 6 delay: 0.02
+Edge between 3 and 8 delay: 0.02
+Edge between 3 and 7 delay: 0.02
+Edge between 4 and 10 delay: 0.02
+Edge between 4 and 9 delay: 0.02
+Edge between 5 and 11 delay: 0.02
+Edge between 5 and 12 delay: 0.02
+Edge between 6 and 13 delay: 0.02
+Edge between 6 and 14 delay: 0.02
+Depth of 0 is 0
+Depth of 1 is 1
+Depth of 2 is 1
+Depth of 3 is 2
+Depth of 4 is 2
+Depth of 5 is 2
+Depth of 6 is 2
+Depth of 7 is 3
+Depth of 8 is 3
+Depth of 9 is 3
+Depth of 10 is 3
+Depth of 11 is 3
+Depth of 12 is 3
+Depth of 13 is 3
+Depth of 14 is 3
+The number of sources: 1
+The number of receivers: 8
+Computation budget: 750
+Service budget: 2250
+Number of VMs @node: 0 150
+Number of cores @node: 0 50
+Number of VMs @node: 1 150
+Number of cores @node: 1 50
+Number of VMs @node: 2 150
+Number of cores @node: 2 50
+Number of VMs @node: 3 150
+Number of cores @node: 3 50
+Number of VMs @node: 4 150
+Number of cores @node: 4 50
+Number of VMs @node: 5 150
+Number of cores @node: 5 50
+Number of VMs @node: 6 150
+Number of cores @node: 6 50
+Number of VMs @node: 7 150
+Number of cores @node: 7 50
+Number of VMs @node: 8 150
+Number of cores @node: 8 50
+Number of VMs @node: 9 150
+Number of cores @node: 9 50
+Number of VMs @node: 10 150
+Number of cores @node: 10 50
+Number of VMs @node: 11 150
+Number of cores @node: 11 50
+Number of VMs @node: 12 150
+Number of cores @node: 12 50
+Number of VMs @node: 13 150
+Number of cores @node: 13 50
+Number of VMs @node: 14 150
+Number of cores @node: 14 50
+Number of VMs @node: 'src_0' 1000
+Number of cores @node: 'src_0' 1000
+[00:21:37 2019-02-26|INFO|runner-PoolWorker-5] Experiment 5/20 | End simulation | Duration 1h 15m 53s.
+[00:36:52 2019-02-26|INFO|runner-PoolWorker-7] Experiment 12/20 | End simulation | Duration 1h 6m 45s.
+[00:36:52 2019-02-26|INFO|orchestration] SUMMARY | Completed: 12, Failed: 0, Scheduled: 8, ETA: 40m
+[00:40:40 2019-02-26|INFO|runner-PoolWorker-8] Experiment 13/20 | End simulation | Duration 1h 10m 24s.
+[00:45:22 2019-02-26|INFO|runner-PoolWorker-9] Experiment 14/20 | End simulation | Duration 1h 15m 2s.
+[00:48:32 2019-02-26|INFO|runner-PoolWorker-10] Experiment 15/20 | End simulation | Duration 1h 18m 6s.
+[01:07:10 2019-02-26|INFO|runner-PoolWorker-1] Experiment 16/20 | End simulation | Duration 56m 55s.
+[01:07:10 2019-02-26|INFO|orchestration] SUMMARY | Completed: 16, Failed: 0, Scheduled: 4, ETA: 22m
+[01:28:00 2019-02-26|INFO|runner-PoolWorker-3] Experiment 17/20 | End simulation | Duration 1h 9m 16s.
+[01:34:13 2019-02-26|INFO|runner-PoolWorker-4] Experiment 20/20 | End simulation | Duration 1h 13m 29s.
+[01:35:46 2019-02-26|INFO|runner-PoolWorker-2] Experiment 18/20 | End simulation | Duration 1h 16m 8s.
+[01:37:17 2019-02-26|INFO|runner-PoolWorker-6] Experiment 19/20 | End simulation | Duration 1h 17m 9s.
+[01:37:17 2019-02-26|INFO|orchestration] SUMMARY | Completed: 20, Failed: 0, Scheduled: 0, ETA: 0m
+Replacement time: 30.00000180781229
+Number of requests in interval: 300221
+Replacement time: 60.00000358805043
+Number of requests in interval: 300243
+Replacement time: 90.00000734158218
+Number of requests in interval: 300649
+Replacement time: 120.0000169861357
+Number of requests in interval: 298678
+Replacement time: 150.0000280265502
+Number of requests in interval: 300083
+Replacement time: 180.00003802575486
+Number of requests in interval: 299772
+Replacement time: 210.0000475078271
+Number of requests in interval: 300138
+Replacement time: 240.00005053086838
+Number of requests in interval: 300505
+Replacement time: 270.00005267460307
+Number of requests in interval: 299966
+Replacement time: 300.0000539640289
+Number of requests in interval: 300263
+Replacement time: 330.0000548900606
+Number of requests in interval: 300333
+Replacement time: 360.00005668580843
+Number of requests in interval: 300167
+Replacement time: 390.0000582707152
+Number of requests in interval: 299791
+Replacement time: 420.0000836864389
+Number of requests in interval: 300357
+Replacement time: 450.0000916244931
+Number of requests in interval: 299527
+Replacement time: 480.0001025919249
+Number of requests in interval: 300482
+Replacement time: 510.0001219673855
+Number of requests in interval: 299232
+Replacement time: 540.0001304352338
+Number of requests in interval: 299737
+Replacement time: 570.000130463761
+Number of requests in interval: 300551
+Replacement time: 600.0001596388861
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300084
+Number of requests in interval: 299773
+Number of requests in interval: 300137
+Number of requests in interval: 300505
+Number of requests in interval: 299966
+Number of requests in interval: 300265
+Number of requests in interval: 300334
+Number of requests in interval: 300163
+Number of requests in interval: 299795
+Number of requests in interval: 300356
+Number of requests in interval: 299528
+Number of requests in interval: 300482
+Number of requests in interval: 299228
+Number of requests in interval: 299739
+Number of requests in interval: 300550
+Number of requests in interval: 299304
+End of iteration: len(eventObj): 0
+Replacement time: 30.00000180781229
+Number of requests in interval: 300221
+Replacement time: 60.00000358805043
+Number of requests in interval: 300243
+Replacement time: 90.00000734158218
+Number of requests in interval: 300649
+Error in Hybrid: Time: 90.24299716329182 Node: 8 Deadline: 90.20535550807746 task rtt: 0.002 Exec time: 0.1 Flow ID: 900984
+Replacement time: 120.0000169861357
+Number of requests in interval: 298678
+Replacement time: 150.0000280265502
+Number of requests in interval: 300083
+Replacement time: 180.00003802575486
+Number of requests in interval: 299772
+Replacement time: 210.0000475078271
+Number of requests in interval: 300138
+Replacement time: 240.00005053086838
+Number of requests in interval: 300505
+Replacement time: 270.00005267460307
+Number of requests in interval: 299966
+Replacement time: 300.0000539640289
+Number of requests in interval: 300263
+Replacement time: 330.00008483680904
+Number of requests in interval: 300333
+Replacement time: 360.00010757806314
+Number of requests in interval: 300167
+Replacement time: 390.0001158492973
+Number of requests in interval: 299792
+Replacement time: 420.00015478591644
+Number of requests in interval: 300357
+Replacement time: 450.00017539665583
+Number of requests in interval: 299529
+Replacement time: 480.00020721786944
+Number of requests in interval: 300481
+Replacement time: 510.0002111554189
+Number of requests in interval: 299230
+Replacement time: 540.0002340886649
+Number of requests in interval: 299738
+Replacement time: 570.0002353951863
+Number of requests in interval: 300550
+Replacement time: 600.0002563815939
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+Replacement time: 30.00000180781229
+Number of requests in interval: 300221
+Replacement time: 60.00000358805043
+Number of requests in interval: 300243
+Replacement time: 90.00000734158218
+Number of requests in interval: 300649
+Replacement time: 120.0000169861357
+Number of requests in interval: 298678
+Replacement time: 150.0000280265502
+Number of requests in interval: 300083
+Replacement time: 180.00003802575486
+Number of requests in interval: 299772
+Replacement time: 210.0000475078271
+Number of requests in interval: 300138
+Replacement time: 240.00005053086838
+Number of requests in interval: 300505
+Replacement time: 270.00005265834
+Number of requests in interval: 299966
+Replacement time: 300.0000599434609
+Number of requests in interval: 300263
+Replacement time: 330.00006164984114
+Number of requests in interval: 300333
+Replacement time: 360.00006823888833
+Number of requests in interval: 300167
+Replacement time: 390.00007704830523
+Number of requests in interval: 299791
+Replacement time: 420.0000836864389
+Number of requests in interval: 300357
+Replacement time: 450.0000916244931
+Number of requests in interval: 299527
+Replacement time: 480.0000944557343
+Number of requests in interval: 300482
+Replacement time: 510.0001219673855
+Number of requests in interval: 299232
+Replacement time: 540.0001280152093
+Number of requests in interval: 299737
+Replacement time: 570.000130463761
+Number of requests in interval: 300551
+Replacement time: 600.0001596388861
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+Replacement time: 30.00000810308924
+Number of requests in interval: 300221
+Replacement time: 60.000028098094745
+Number of requests in interval: 300243
+Replacement time: 90.00003126096573
+Number of requests in interval: 300649
+Replacement time: 120.00004743640548
+Number of requests in interval: 298678
+Replacement time: 150.00005055331678
+Number of requests in interval: 300083
+Replacement time: 180.00005717392847
+Number of requests in interval: 299773
+Replacement time: 210.00005876311673
+Number of requests in interval: 300138
+Replacement time: 240.00006168824393
+Number of requests in interval: 300504
+Replacement time: 270.0000929967751
+Number of requests in interval: 299966
+Replacement time: 300.00009433793815
+Number of requests in interval: 300264
+Replacement time: 330.00011356569763
+Number of requests in interval: 300332
+Replacement time: 360.00012032851896
+Number of requests in interval: 300167
+Replacement time: 390.00014988364217
+Number of requests in interval: 299793
+Replacement time: 420.00015478591644
+Number of requests in interval: 300356
+Replacement time: 450.00017539665583
+Number of requests in interval: 299529
+Replacement time: 480.0002000322491
+Number of requests in interval: 300481
+Replacement time: 510.0002111554189
+Number of requests in interval: 299230
+Replacement time: 540.0002340886649
+Number of requests in interval: 299738
+Replacement time: 570.0002353951863
+Number of requests in interval: 300550
+Replacement time: 600.0002563815939
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300083
+Number of requests in interval: 299772
+Number of requests in interval: 300138
+Number of requests in interval: 300505
+Number of requests in interval: 299966
+Number of requests in interval: 300263
+Number of requests in interval: 300333
+Number of requests in interval: 300167
+Number of requests in interval: 299791
+Number of requests in interval: 300357
+Number of requests in interval: 299527
+Number of requests in interval: 300482
+Number of requests in interval: 299232
+Number of requests in interval: 299737
+Number of requests in interval: 300551
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300084
+Number of requests in interval: 299773
+Number of requests in interval: 300137
+Number of requests in interval: 300504
+Number of requests in interval: 299966
+Number of requests in interval: 300265
+Number of requests in interval: 300331
+Number of requests in interval: 300167
+Number of requests in interval: 299794
+Number of requests in interval: 300356
+Number of requests in interval: 299528
+Number of requests in interval: 300481
+Number of requests in interval: 299230
+Number of requests in interval: 299738
+Number of requests in interval: 300550
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300083
+Number of requests in interval: 299772
+Number of requests in interval: 300138
+Number of requests in interval: 300505
+Number of requests in interval: 299966
+Number of requests in interval: 300263
+Number of requests in interval: 300333
+Number of requests in interval: 300167
+Number of requests in interval: 299791
+Number of requests in interval: 300357
+Number of requests in interval: 299527
+Number of requests in interval: 300482
+Number of requests in interval: 299232
+Number of requests in interval: 299737
+Number of requests in interval: 300551
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300083
+Number of requests in interval: 299772
+Number of requests in interval: 300138
+Number of requests in interval: 300505
+Number of requests in interval: 299966
+Number of requests in interval: 300263
+Number of requests in interval: 300333
+Number of requests in interval: 300167
+Number of requests in interval: 299791
+Number of requests in interval: 300357
+Number of requests in interval: 299527
+Number of requests in interval: 300482
+Number of requests in interval: 299232
+Number of requests in interval: 299737
+Number of requests in interval: 300551
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+Number of requests in interval: 300221
+Number of requests in interval: 300243
+Number of requests in interval: 300649
+Number of requests in interval: 298678
+Number of requests in interval: 300083
+Number of requests in interval: 299772
+Number of requests in interval: 300138
+Number of requests in interval: 300505
+Number of requests in interval: 299966
+Number of requests in interval: 300263
+Number of requests in interval: 300333
+Number of requests in interval: 300167
+Number of requests in interval: 299791
+Number of requests in interval: 300357
+Number of requests in interval: 299527
+Number of requests in interval: 300482
+Number of requests in interval: 299232
+Number of requests in interval: 299737
+Number of requests in interval: 300551
+Number of requests in interval: 299305
+End of iteration: len(eventObj): 0
+[01:37:20 2019-02-26|INFO|orchestration] END | Planned: 20, Completed: 20, Succeeded: 20, Failed: 0
+[01:37:20 2019-02-26|INFO|main] Orchestrator finished
+[01:37:20 2019-02-26|INFO|main] Saved results to file /space/onur/icarus_edge_comp_new/examples/servicenet/results.pickle
+
+# Plot results
+echo "Plot results"
+Plot results
+#python ${CURR_DIR}/plotresults.py --results ${RESULTS_FILE} --output ${PLOTS_DIR} ${CONFIG_FILE}

@@ -1540,6 +1540,8 @@ class NetworkController(object):
             path = self.model.shortest_path[s][t]
         for u, v in path_links(path):
             self.forward_request_hop(u, v)
+
+        # TODO: This needs to be revised for the hash space application!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         self.add_request_labels_to_node(s, t, self.sess_content.get_request_labels())
 
     def forward_repo_content_path(self, u, v, path=None, main_path=True):

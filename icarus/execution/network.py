@@ -325,6 +325,11 @@ class NetworkView(object):
         node : any hashable type
             The node persistently storing the given content or None if the
             source is unavailable
+
+        FIXME: These need to be changed, and pretty much duplicated/hacked, to account for two main parts:
+            * between-epoch stats (for short-term changes, which the strategies account for) and
+            * epoch-specific stats (for the change over larger periods of time - these could be used for ML or human-led,
+                                    Edge-based or system-wide decisions)
         """
         if type(k) is dict:
             hops = 100

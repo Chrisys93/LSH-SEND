@@ -107,6 +107,7 @@ class GenRepoStorApp(Strategy):
         return ProcApplication(self)
 
     def handle(self, curTime, receiver, msg, node, flow_id, deadline, rtt_delay):
+
         if (self.view.hasStorageCapability(node) and node.hasProcessingCapability):
             self.view.model.repoStorage[node].addToStoredMessages(msg)
 
@@ -1079,8 +1080,24 @@ class HServRepoStorApp(Strategy):
 
     # @profile
     def handle(self, curTime, receiver, msg, node, log, feedback, flow_id, rtt_delay, deadline):
-        # TODO: NEED TO MAKE A COLLECTOR FUNCTION TO UPDATE A HOP COUNTER FOR DATA REPLICATION!!!!!!!!!!!!!!!!!!!!!!!!!!
+        """
+
+        :param curTime:
+        :param receiver:
+        :param msg:
+        :param node:
+        :param flow_id:
+        :param deadline:
+        :param rtt_delay:
+        :return:
+
+        TODO: Need to implement the main Match-(LSH-Simil-)Store mechanism in here, also
+            implementing the parameter updates!
+        """
         msg['receiveTime'] = time.time()
+        # TODO: First do storage hash space matching:
+        # and then (in the same checks)
+        # FIXME: Add data to storage:
         if self.view.hasStorageCapability(node) and 'satisfied' not in msg or ('Shelf' not in msg or msg['Shelf']):
             self.controller.add_replication_hops(msg)
             if node is self.view.all_labels_main_source(msg["labels"]):
@@ -1129,6 +1146,9 @@ class HServRepoStorApp(Strategy):
             self.controller.add_event(curTime + delay, receiver, msg, msg['labels'], next_node, flow_id, deadline, rtt_delay,
                                       STORE)
             # print "Message: " + str(msg['content']) + " sent from node " + str(node) + " to node " + str(next_node)
+
+        # TODO: Last, but CERTAINLY NOT LEAST, update storage/computational requirements - might need to add another
+        #  message characteristic for this: cycles/time used
 
         return msg
 

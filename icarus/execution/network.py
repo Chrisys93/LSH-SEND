@@ -462,6 +462,46 @@ class NetworkView(object):
 
         return nodes
 
+    def labels_reuse(self, r_labels, reuse_min):
+        """Return the node identifier where the content is persistently stored.
+
+        Parameters
+        ----------
+        labels : list of label strings
+            The identifiers for the labels of interest
+
+        Returns
+        -------
+        node : any hashable type
+            The node persistently storing the given content or None if the
+            source is unavailable
+        """
+        nodes = Counter()
+
+        for label in r_labels:
+
+            nodes.update(self.model.request_labels_nodes.get(label, None))
+
+        del_nodes = []
+
+        for n in nodes:
+            for l in r_labels:
+                if n in self.model.request_labels:
+                    Found = False
+                    for label in self.model.request_labels[n]:
+                        if l == label:
+                            Found = True
+                    if not Found:
+                        del_nodes.append(n)
+                        break
+            if self.model.reuse[n] < reuse_min and n not in del_nodes:
+                del_nodes.append(n)
+
+        for n in del_nodes:
+            del nodes[n]
+
+        return nodes
+
     def all_labels_main_source(self, labels):
         """Return the node identifier where the content is persistently stored.
 
@@ -517,6 +557,38 @@ class NetworkView(object):
             if nodes[n] >= current_count and self.hasStorageCapability(n):
                 auth_node = self.model.repoStorage[n]
                 current_count = nodes[n]
+        return auth_node
+
+
+
+    def all_labels_highest_reuse(self, request_labels):
+        """Return the node identifier where the content is persistently stored.
+
+        Parameters
+        ----------
+        labels : list of label strings
+            The identifiers for the labels of interest
+
+        Returns
+        -------
+        node : any hashable type
+            The node persistently storing the given content or None if the
+            source is unavailable
+        """
+
+        current_reuse = 0
+        auth_node = None
+        del_nodes = []
+        nodes = self.labels_reuse(request_labels)
+        for n in nodes:
+            if n not in self.model.storageSize:
+                del_nodes.append(n)
+        for n in del_nodes:
+            del nodes[n]
+        for n in nodes:
+            if nodes[n] >= current_reuse and self.hasStorageCapability(n):
+                auth_node = self.model.repoStorage[n]
+                current_reuse = nodes[n]
         return auth_node
 
     def storage_labels_closest_service(self, labels, path):
@@ -1137,10 +1209,17 @@ class NetworkModel(object):
         self.node_labels = {}
         self.replications_from = Counter()
         self.replications_to = Counter()
+        self.reuse = {}
+        self.node_reused_count = {}
+        self.node_new_count = {}
+        self.label_node_reused_count = {}
+        self.label_node_new_count = {}
+        self.label_node_reuse = {}
         self.rate = rate
         for node in topology.nodes():
             # TODO: Sort out content association in the case that "contents" aren't objects!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             self.all_node_labels[node] = Counter()
+            self.reuse[n] = 0
             stack_name, stack_props = fnss.get_stack(topology, node)
             extra_types = None
             try:
@@ -1778,6 +1857,68 @@ class NetworkController(object):
                 self.model.labels_sources[l] = Counter()
             self.model.labels_sources[l].update([s])
 
+    def update_node_reuse(self, s, reused=True):
+        """Forward a content from node *s* to node *t* over the provided path.
+
+        TODO: This (and all called methods, defined within this class) should be
+            redefined, to account for the feedback and redirection of the content,
+            towards the optimal storage locations. BUT (!!!) once the content gets
+            redirected, it should also be stored by the appropriate Repo.
+            The _content methods defined from here on need to be adapted for storage,
+            as well!
+
+        Parameters
+        ----------
+        s : any hashable type
+            Origin node
+        content: hashable object
+            Message with content hash (name), labels and properties
+        """
+        if s not in self.model.reuse:
+            self.model.node_reused_count[s] = Counter()
+            self.model.node_new_count[s] = Counter()
+            self.model.reuse[n] = 0
+        if reused:
+            self.model.node_reused_count.update(s)
+            self.model.node_new_count.update(s)
+            self.model.reuse[s] = self.model.node_reused_count[s]/self.model.node_new_count[s]
+        else:
+            self.model.node_new_count.update(s)
+            self.model.reuse[s] = self.model.node_reused_count[s]/self.model.node_new_count[s]
+
+
+    def update_label_node_reuse(self, s, label, reused=True):
+        """Forward a content from node *s* to node *t* over the provided path.
+
+        TODO: This (and all called methods, defined within this class) should be
+            redefined, to account for the feedback and redirection of the content,
+            towards the optimal storage locations. BUT (!!!) once the content gets
+            redirected, it should also be stored by the appropriate Repo.
+            The _content methods defined from here on need to be adapted for storage,
+            as well!
+
+        Parameters
+        ----------
+        s : any hashable type
+            Origin node
+        content: hashable object
+            Message with content hash (name), labels and properties
+        """
+        if label not in self.model.label_node_reuse:
+            self.model.label_node_reuse[label]={}
+            self.model.label_node_reused_count[label] = Counter()
+            self.model.label_node_new_count[label] = Counter()
+            self.model.reuse[n] = 0
+        if s not in self.model.label_node_reuse[label]:
+            self.model.label_node_reuse[label][s] = 0
+        if reused:
+            self.model.label_node_reused_count[label].update(s)
+            self.model.label_node_new_count[label].update(s)
+            self.model.lael_node_reuse[label][s] = self.model.label_node_reused_count[label]/\
+                                                   self.model.label_node_new_count[label]
+        else:
+            self.model.label_node_new_count[label].update(s)
+            self.model.label_node_reuse[label][s] = self.model.node_reused_count[s]/self.model.node_new_count[s]
 
 
     def replicate(self, s, d):

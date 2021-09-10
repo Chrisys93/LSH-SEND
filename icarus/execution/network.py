@@ -1216,10 +1216,14 @@ class NetworkModel(object):
         self.label_node_new_count = {}
         self.label_node_reuse = {}
         self.rate = rate
+        self.epochs_label_node_reuse = {}
+        self.epochs_node_reuse = {}
         for node in topology.nodes():
             # TODO: Sort out content association in the case that "contents" aren't objects!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             self.all_node_labels[node] = Counter()
-            self.reuse[n] = 0
+            self.epochs_node_reuse[node] = []
+            self.reuse[node] = 0
+            self.epochs_node_reuse[node] = 0
             stack_name, stack_props = fnss.get_stack(topology, node)
             extra_types = None
             try:
@@ -1908,17 +1912,74 @@ class NetworkController(object):
             self.model.label_node_reuse[label]={}
             self.model.label_node_reused_count[label] = Counter()
             self.model.label_node_new_count[label] = Counter()
-            self.model.reuse[n] = 0
         if s not in self.model.label_node_reuse[label]:
             self.model.label_node_reuse[label][s] = 0
         if reused:
             self.model.label_node_reused_count[label].update(s)
             self.model.label_node_new_count[label].update(s)
-            self.model.lael_node_reuse[label][s] = self.model.label_node_reused_count[label]/\
+            self.model.label_node_reuse[label][s] = self.model.label_node_reused_count[label]/\
                                                    self.model.label_node_new_count[label]
         else:
             self.model.label_node_new_count[label].update(s)
             self.model.label_node_reuse[label][s] = self.model.node_reused_count[s]/self.model.node_new_count[s]
+
+    def update_node_epoch_reuse(self, s, reused=True):
+        """Forward a content from node *s* to node *t* over the provided path.
+
+        TODO: These should be purged each 100 or 1000 entries, so that they don't just use historic memory for nothing.
+
+        Parameters
+        ----------
+        s : any hashable type
+            Origin node
+        reused : Boolean
+            Whether the last message was reused or not
+
+        content: hashable object
+            Message with content hash (name), labels and properties
+        """
+        if s not in self.model.epochs_node_reuse:
+            self.model.node_reused_count[s] = Counter()
+            self.model.node_new_count[s] = Counter()
+            self.model.epochs_node_reuse[s] = list()
+        if reused:
+            self.model.node_reused_count.update(s)
+            self.model.node_new_count.update(s)
+            self.model.epochs_node_reuse[s].append(self.model.node_reused_count[s]/self.model.node_new_count[s])
+        else:
+            self.model.node_new_count.update(s)
+            self.model.epochs_node_reuse[s].append(self.model.node_reused_count[s]/self.model.node_new_count[s])
+
+
+    def update_label_node_epoch_reuse(self, s, label, reused=True):
+        """Forward a content from node *s* to node *t* over the provided path.
+
+        TODO: These should be purged each 100 or 1000 entries, so that they don't just use historic memory for nothing.
+
+        Parameters
+        ----------
+        s : any hashable type
+            Origin node
+        label : any hashable type
+            The label of a message with a content hash (name)
+        reused : Boolean
+            Message with content hash (name), labels and properties
+
+        """
+        if label not in self.model.epochs_label_node_reuse:
+            self.model.epochs_label_node_epoch_reuse[label]={}
+            self.model.label_node_reused_count[label] = Counter()
+            self.model.label_node_new_count[label] = Counter()
+        if s not in self.model.label_node_reuse[label]:
+            self.model.epochs_label_node_reuse[label][s] = []
+        if reused:
+            self.model.label_node_reused_count[label].update(s)
+            self.model.label_node_new_count[label].update(s)
+            self.model.epochs_label_node_reuse[label][s].append(self.model.label_node_reused_count[label]/\
+                                                   self.model.label_node_new_count[label])
+        else:
+            self.model.label_node_new_count[label].update(s)
+            self.model.label_node_reuse[label][s].append(self.model.node_reused_count[s]/self.model.node_new_count[s])
 
 
     def replicate(self, s, d):

@@ -231,6 +231,39 @@ class NetworkView(object):
                 loc.add(node)
         return loc
 
+    def label_locations(self, h_spaces):
+        """Return a set of all current locations of a specific content.
+
+        TODO: Add MOST_POPULAR_STORAGE_ and _REQUEST_LABELS, which return
+            the nodes which have the most hits of certain labels, through
+            the "NetworkView" class.
+
+        This include both persistent content sources and temporary caches.
+
+        Parameters
+        ----------
+        labels : any hashable type
+            The content identifier
+
+        Returns
+        -------
+        nodes : set
+            A set of all nodes currently storing the given content
+        """
+        loc = set()
+        # This ^ locates all the nodes which have that content (with that hash)
+        # cached. TODO: Add a content type/topic_present method and a
+        #               hashed_function_present method to the RepoStorage class,
+        #               to check if that node has the requested item and keep note
+        #               in the centralised mgmt system for that service hash/content
+        #               topic. Add RepoStorage - node associations in NetworkModel!!!
+
+        locations = self.h_space_sources(h_spaces)
+        if locations:
+            for node, num in locations:
+                loc.add(node)
+        return loc
+
     def replications_destination(self, node):
 
         if self.model.replications_to[node]:
@@ -422,7 +455,48 @@ class NetworkView(object):
             del nodes[n]
 
 
-        return nodes 
+        return nodes
+
+    def h_space_sources(self, h_spaces):
+        """Return the node identifier where the content is persistently stored.
+
+        Parameters
+        ----------
+        labels : list of label strings
+            The identifiers for the labels of interest
+
+        Returns
+        -------
+        node : any hashable type
+            The node persistently storing the given content or None if the
+            source is unavailable
+        """
+        nodes = Counter()
+
+        for h_space in h_spaces:
+            nodes.update(self.model.h_space_sources[h_space])
+        valid_nodes = list(nodes)
+
+        del_nodes = []
+
+        for n in valid_nodes:
+            if type(n) != int and "src" in n:
+                del nodes[n]
+            for h in h_spaces:
+                if n in self.model.node_h_spaces:
+                    Found = False
+                    for h_space in self.model.node_h_spaces[n]:
+                        if h == h_space:
+                            Found = True
+                    if not Found:
+                        del_nodes.append(n)
+                        break
+
+        for n in del_nodes:
+            del nodes[n]
+
+
+        return nodes
 
     def labels_requests(self, r_labels):
         """Return the node identifier where the content is persistently stored.
@@ -462,6 +536,44 @@ class NetworkView(object):
 
         return nodes
 
+    def h_space_requests(self, h_space):
+        """Return the node identifier where the content is persistently stored.
+
+        Parameters
+        ----------
+        labels : list of label strings
+            The identifiers for the labels of interest
+
+        Returns
+        -------
+        node : any hashable type
+            The node persistently storing the given content or None if the
+            source is unavailable
+        """
+        nodes = Counter()
+
+        for label in r_labels:
+
+            nodes.update(self.model.request_h_space_nodes.get(label, None))
+
+        del_nodes = []
+
+        for n in nodes:
+            for h in h_space:
+                if n in self.model.request_h_spaces:
+                    Found = False
+                    for h_s in self.model.request_h_spaces[n]:
+                        if h == h_s:
+                            Found = True
+                    if not Found:
+                        del_nodes.append(n)
+                        break
+
+        for n in del_nodes:
+            del nodes[n]
+
+        return nodes
+
     def labels_reuse(self, r_labels, reuse_min):
         """Return the node identifier where the content is persistently stored.
 
@@ -490,6 +602,48 @@ class NetworkView(object):
                     Found = False
                     for label in self.model.request_labels[n]:
                         if l == label:
+                            Found = True
+                    if not Found:
+                        del_nodes.append(n)
+                        break
+            if self.model.reuse[n] < reuse_min and n not in del_nodes:
+                del_nodes.append(n)
+
+        for n in del_nodes:
+            del nodes[n]
+
+        return nodes
+
+
+
+    def h_space_reuse(self, h_spaces, reuse_min):
+        """Return the node identifier where the content is persistently stored.
+
+        Parameters
+        ----------
+        labels : list of label strings
+            The identifiers for the labels of interest
+
+        Returns
+        -------
+        node : any hashable type
+            The node persistently storing the given content or None if the
+            source is unavailable
+        """
+        nodes = Counter()
+
+        for h in h_spaces:
+
+            nodes.update(self.model.request_h_space_nodes.get(h, None))
+
+        del_nodes = []
+
+        for n in nodes:
+            for h in h_spaces:
+                if n in self.model.request_labels:
+                    Found = False
+                    for h_space in self.model.request_h_spaces[n]:
+                        if h == h_space:
                             Found = True
                     if not Found:
                         del_nodes.append(n)
@@ -580,6 +734,36 @@ class NetworkView(object):
         auth_node = None
         del_nodes = []
         nodes = self.labels_reuse(request_labels)
+        for n in nodes:
+            if n not in self.model.storageSize:
+                del_nodes.append(n)
+        for n in del_nodes:
+            del nodes[n]
+        for n in nodes:
+            if nodes[n] >= current_reuse and self.hasStorageCapability(n):
+                auth_node = self.model.repoStorage[n]
+                current_reuse = nodes[n]
+        return auth_node
+
+    def h_space_highest_reuse(self, h_space):
+        """Return the node identifier where the content is persistently stored.
+
+        Parameters
+        ----------
+        h_space : list of label strings
+            The identifiers for the labels of interest
+
+        Returns
+        -------
+        node : any hashable type
+            The node persistently storing the given content or None if the
+            source is unavailable
+        """
+
+        current_reuse = 0
+        auth_node = None
+        del_nodes = []
+        nodes = self.h_space_reuse(h_space)
         for n in nodes:
             if n not in self.model.storageSize:
                 del_nodes.append(n)
@@ -1182,6 +1366,21 @@ class NetworkModel(object):
         # corresponding to a request-associated label
         self.request_labels = {}
 
+        # Dictionary mapping each node to sets of hash-spaces stored in each node
+        # dict of stored hash-spaces, keyed by node location, with counters for hashes
+        # in each hash-space, counting number of hashes in that space for the node
+        self.node_hash_spaces = {}
+        # Dictionary mapping the reverse, i.e. content labels to their storing node(s)
+        # dict of locations of labels keyed by label name, with the number of labels of
+        # that label/key stored in each of these nodes
+        self.h_space_sources = {}
+        # Dictionary mapping the labels associated with requests, received by each node,
+        # and counted, for a quantisation of service popularity, related to those labels
+        self.request_h_space_nodes = {}
+        # Dictionary of counters, each entry/key corresponding to a node and each counter
+        # corresponding to a request-associated label
+        self.request_h_spaces = {}
+
         #  A heap with events (see Event class above)
         self.eventQ = []
 
@@ -1206,7 +1405,6 @@ class NetworkModel(object):
         self.contents = {}
         self.replication_hops = Counter()
         self.replication_overheads = {}
-        self.node_labels = {}
         self.replications_from = Counter()
         self.replications_to = Counter()
         self.reuse = {}
@@ -1218,6 +1416,8 @@ class NetworkModel(object):
         self.rate = rate
         self.epochs_label_node_reuse = {}
         self.epochs_node_reuse = {}
+        self.node_h_spaces = {}
+        self.all_node_h_spaces = {}
         for node in topology.nodes():
             # TODO: Sort out content association in the case that "contents" aren't objects!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             self.all_node_labels[node] = Counter()
@@ -1263,6 +1463,8 @@ class NetworkModel(object):
                                 self.replication_hops[self.contents[node][c]['content']] = 1
                                 for label in self.contents[node][c]['labels']:
                                     self.all_node_labels[node].update([label])
+                                for h_space in self.contents[node][c]['h_space']:
+                                    self.all_node_h_spaces[node].update([h_space])
 
                             self.source_node[node] = self.contents[node].keys()
                             for content in self.contents[node]:
@@ -1273,13 +1475,21 @@ class NetworkModel(object):
 
                             if not self.node_labels.has_key(node):
                                 self.node_labels[node] = Counter()
+                            if not self.node_h_spaces.has_key(node):
+                                self.node_h_spaces[node] = Counter()
                             for label in self.all_node_labels[node]:
                                 self.node_labels[node].update({label:self.all_node_labels[node][label]})
+                            for h_space in self.all_node_h_spaces[node]:
+                                self.node_h_spaces[node].update({h_space:self.all_node_h_spaces[node][h_space]})
 
                             for k in self.all_node_labels[node]:
                                 if k not in self.labels_sources:
                                     self.labels_sources[k] = Counter()
                                 self.labels_sources[k].update({node: self.all_node_labels[node][k]})
+                            for k in self.all_node_h_spaces[node]:
+                                if k not in self.h_space_sources:
+                                    self.h_space_sources[k] = Counter()
+                                self.h_space_sources[k].update({node: self.all_node_h_spaces[node][k]})
                         else:
                             self.contents[node] = stack_props['contents']
                             self.source_node[node] = self.contents[node]
@@ -1303,6 +1513,8 @@ class NetworkModel(object):
                             self.replication_hops[self.contents[node][c]['content']] = 1
                             for label in self.contents[node][c]['labels']:
                                 self.all_node_labels[node].update([label])
+                            for h in self.contents[node][c]['h_space']:
+                                self.all_node_h_spaces[node].update([h])
 
                         self.source_node[node] = self.contents[node].keys()
                         for content in self.contents[node]:
@@ -1317,10 +1529,21 @@ class NetworkModel(object):
                             self.node_labels[node] = Counter()
                             self.node_labels[node] = self.all_node_labels[node]
 
+                        if self.node_h_spaces.has_key(node):
+                            self.node_h_spaces[node].update(self.all_node_h_spaces[node])
+                        else:
+                            self.node_h_spaces[node] = Counter()
+                            self.node_h_spaces[node] = self.all_node_h_spaces[node]
+
                         for k in self.all_node_labels[node]:
                             if k not in self.labels_sources:
                                 self.labels_sources[k] = Counter()
                             self.labels_sources[k].update({node: self.all_node_labels[node][k]})
+
+                        for k in self.all_node_h_spaces[node]:
+                            if k not in self.h_space_sources:
+                                self.h_space_sources[k] = Counter()
+                            self.h_space_sources[k].update({node: self.all_node_h_spaces[node][k]})
                     else:
                         self.contents[node] = stack_props['contents']
                         self.source_node[node] = self.contents[node]
@@ -1740,6 +1963,39 @@ class NetworkController(object):
                 self.model.request_labels_nodes[label] = Counter()
             self.model.request_labels_nodes[label].update([s])
 
+    def add_request_h_spaces_to_node(self, s, service_request):
+        """Forward a request from node *s* to node *t* over the provided path.
+
+        TODO: This (and all called methods, defined within this class) should be
+            redefined, to account for the forwarding and redirection of the requests,
+            towards the appropriate collectors, for optimal storage placement decisions,
+            depending on service request type and data request source, popularity and
+            distance.
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            *AND YES! - flow_id's are basically the identifiers for requests - currently*
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        Parameters
+        ----------
+        s : any hashable type
+            Origin node
+        t : any hashable type
+            Destination node
+        request_labels : list, optional
+            The path to use. If not provided, shortest path is used
+
+        """
+
+        if s not in self.model.request_h_spaces:
+            self.model.request_h_spaces[s] = Counter()
+        elif type(self.model.request_h_spaces[s]) is not Counter():
+            self.model.request_h_spaces[s] = Counter()
+        for h_space in service_request['h_space']:
+            self.model.request_h_spaces[s].update([h_space])
+            if not self.model.request_h_space_nodes.has_key(h_space):
+                self.model.request_h_space_nodes[h_space] = Counter()
+            self.model.request_h_space_nodes[h_space].update([s])
+
 
     def has_request_labels(self, s, labels):
         all_in = []
@@ -1756,6 +2012,26 @@ class NetworkController(object):
                 if l == label:
                     n += 1
         if n == len(labels):
+            return True
+        else:
+            return False
+
+
+    def has_request_h_spaces(self, s, h_spaces):
+        all_in = []
+        for h in h_spaces:
+            if s not in self.model.request_h_spaces:
+                return False
+            if h in self.model.request_h_spaces[s]:
+                all_in.append(h)
+
+        n = 0
+
+        for h_s in all_in:
+            for h in h_spaces:
+                if h == h_s:
+                    n += 1
+        if n == len(h_spaces):
             return True
         else:
             return False
@@ -1799,6 +2075,45 @@ class NetworkController(object):
         for label in Deletion:
             if label in self.model.request_labels[s]:
                 del self.model.request_labels[s][label]
+
+    def add_request_h_spaces_to_storage(self, s, labels, add=False):
+        """Forward a request from node *s* to node *t* over the provided path.
+
+        TODO: This (and all called methods, defined within this class) should be
+            redefined, to account for the forwarding and redirection of the requests,
+            towards the appropriate collectors, for optimal storage placement decisions,
+            depending on service request type and data request source, popularity and
+            distance.
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            *AND YES! - flow_id's are basically the identifiers for requests - currently*
+            !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        Parameters
+        ----------
+        s : any hashable type
+            Origin node
+        t : any hashable type
+            Destination node
+        request_labels : list, optional
+            The path to use. If not provided, shortest path is used
+
+        """
+
+        Deletion = []
+        for h_space in labels:
+            if h_space in self.model.request_h_spaces[s]:
+                Deletion.append(h_space)
+                if add:
+                    if s not in self.model.node_h_spaces:
+                        self.model.node_h_spaces[s] = Counter()
+                    self.model.node_h_spaces[s].update([h_space])
+                    if h_space not in self.model.h_space_sources:
+                        self.model.h_space_sources[h_space] = Counter()
+                    self.model.h_space_sources[h_space].update([s])
+
+        for h in Deletion:
+            if h in self.model.request_h_spaces[s]:
+                del self.model.request_h_spaces[s][h]
 
     def add_message_to_storage(self, s, content):
         """Forward a content from node *s* to node *t* over the provided path.
@@ -1860,6 +2175,31 @@ class NetworkController(object):
             if l not in self.model.labels_sources:
                 self.model.labels_sources[l] = Counter()
             self.model.labels_sources[l].update([s])
+
+    def add_storage_h_spaces_to_node(self, s, content):
+        """Forward a content from node *s* to node *t* over the provided path.
+
+        TODO: This (and all called methods, defined within this class) should be
+            redefined, to account for the feedback and redirection of the content,
+            towards the optimal storage locations. BUT (!!!) once the content gets
+            redirected, it should also be stored by the appropriate Repo.
+            The _content methods defined from here on need to be adapted for storage,
+            as well!
+
+        Parameters
+        ----------
+        s : any hashable type
+            Origin node
+        content: hashable object
+            Message with content hash (name), labels and properties
+        """
+        if s not in self.model.node_h_spaces:
+            self.model.node_h_spaces[s] = Counter()
+        for l in content["h_space"]:
+            self.model.node_h_spaces[s].update([l])
+            if l not in self.model.h_space_sources:
+                self.model.h_space_sources[l] = Counter()
+            self.model.h_space_sources[l].update([s])
 
     def update_node_reuse(self, s, reused=True):
         """Forward a content from node *s* to node *t* over the provided path.

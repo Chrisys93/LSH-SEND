@@ -713,6 +713,54 @@ class NetworkView(object):
                 current_count = nodes[n]
         return auth_node
 
+    def most_proc_usage(self, list_len):
+        """
+
+        Parameters
+        ----------
+        list_len: integer
+            The number of nodes with the highest processing power usage
+        nodes: list
+            The list of nodes with the highest procesing power usage
+        """
+
+        nodes = []
+        max_proc = 0
+
+        while len(nodes) < list_len:
+            for n in self.model.busy_proc:
+                proc = self.model.busy_proc[n]
+                if proc >= max_proc:
+                    max_proc = proc
+                    max_node = n
+            nodes.append(max_node)
+
+        return nodes
+
+    def least_proc_usage(self, list_len):
+        """
+
+        Parameters
+        ----------
+        list_len: integer
+            The number of nodes with the lowest processing power usage
+        nodes: list
+            The list of nodes with the lowest processing power usage
+        """
+
+        nodes = []
+        min_proc = float('inf')
+
+        while len(nodes) < list_len:
+            for n in self.model.busy_proc:
+                proc = self.model.busy_proc[n]
+                if proc >= min_proc:
+                    min_proc = proc
+                    min_node = n
+            nodes.append(min_node)
+
+        return nodes
+
 
 
     def all_labels_highest_reuse(self, request_labels):
@@ -1399,8 +1447,9 @@ class NetworkModel(object):
 
         cache_size = {}
         self.storageSize = {}
-        self.comp_size = {}
-        self.service_size = {}
+        self.busy_proc = {}
+        self.comp_size = {}     # NOTE that this is the number of cores
+        self.service_size = {}  # NOTE that this is the number of supported services per comp spot
         self.all_node_labels = {}
         self.contents = {}
         self.replication_hops = Counter()
@@ -1422,6 +1471,7 @@ class NetworkModel(object):
             # TODO: Sort out content association in the case that "contents" aren't objects!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             self.all_node_labels[node] = Counter()
             self.epochs_node_reuse[node] = []
+            self.busy_proc[node] = 0
             self.reuse[node] = 0
             self.epochs_node_reuse[node] = 0
             stack_name, stack_props = fnss.get_stack(topology, node)
@@ -1712,6 +1762,28 @@ class NetworkModel(object):
         self.removed_sources = {}
         self.removed_caches = {}
         self.removed_local_caches = {}
+
+    def add_proc(self, node):
+        """
+        Add one to the processing functions of one node's comp spot
+
+        node: Any hashable type
+            The node for which to add one count in busy_proc
+        
+        """
+
+        self.busy_proc[node] += 1
+
+    def sub_proc(self, node):
+        """
+        Subtract one from the processing functions of one node's comp spot
+
+        node: Any hashable type
+            The node for which to subtract one count in busy_proc
+        
+        """
+
+        self.busy_proc[node] -= 1
 
 
 class NetworkController(object):

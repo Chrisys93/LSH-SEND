@@ -593,6 +593,9 @@ class ComputationSpot(object):
         if dist is None and self.is_cloud == False:
             # setup a random set of services to run in the memory
             while num_of_VMs < self.numOfVMs:
+                # TODO: This is where all services get associated initially to each computational spot. This might
+                #  change over time, but this should not be changed. It might however be worth tracking how these
+                #  services get (re)distributed
                 service_index = random.choice(range(0, self.service_population_size))
                 #if self.numberOfVMInstances[service_index] == 0:
                 self.numberOfVMInstances[service_index] += 1
@@ -631,6 +634,7 @@ class ComputationSpot(object):
 
         self.scheduler.busyVMs[task.service].remove(vm)
         self.scheduler.idleVMs[task.service].append(vm)
+        self.model.sub_proc(self.node)
 
         if len(task.nextTask) > 0:
             self.scheduler.addVMStartToTaskQ(task, curTime,  curTime)
@@ -660,6 +664,7 @@ class ComputationSpot(object):
             self.scheduler.startingVMs[aTask.serviceToInstantiate].append(aVM)
         elif aTask.taskType == Task.TASK_TYPE_SERVICE:
             self.scheduler.busyVMs[aTask.service].append(aVM)
+            self.model.add_proc(self.node)
         else:
             raise ValueError("Invalid TaskType: " + str(aTask.taskType))
         aTask.setVM(aVM)

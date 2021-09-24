@@ -246,9 +246,6 @@ def topology_edge_tree(k, h, delay=0.020, **kwargs):
         else:
             topology.graph['parent'][v] = u
 
-        # TODO: Change(d) the edge allocation from .edges[u, v] to .edges[u, v]...don't really
-        #  understand where edges[u, v] came from originally, anyway, really...
-
         topology.edges[u, v]['type'] = 'internal'
         if u is 0 or v is 0:
             topology.edges[u, v]['delay'] = delay

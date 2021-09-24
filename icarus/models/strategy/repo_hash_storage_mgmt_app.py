@@ -50,8 +50,8 @@ SUCCESS = 2
 CLOUD = 3
 NO_INSTANCES = 4
 
-@register_strategy('HASH_REUSE_REPO_APP')
-class HashRepoReuseStorApp(Strategy):
+@register_strategy('HASH_PROC_REPO_APP')
+class HashRepoProcStorApp(Strategy):
     """
     Run in passive mode - don't process messages, but store
     """
@@ -61,7 +61,7 @@ class HashRepoReuseStorApp(Strategy):
                  **kwargs):
         super(HashRepoReuseStorApp, self).__init__(view, controller)
 
-        self.view.model.strategy = 'HYBRIDS_REPO_APP'
+        self.view.model.strategy = 'HASH_PROC_REPO_APP'
         self.replacement_interval = replacement_interval
         self.n_replacements = n_replacements
         self.last_replacement = 0
@@ -286,7 +286,7 @@ class HashRepoReuseStorApp(Strategy):
         return ProcApplication(self)
 
     # @profile
-    def handle(self, curTime, receiver, msg, node, log, feedback, flow_id, rtt_delay, deadline):
+    def handle(self, curTime, receiver, msg, node, log, feedback, flow_id, rtt_delay, deadline, status):
         """
 
         :param curTime:
@@ -313,14 +313,22 @@ class HashRepoReuseStorApp(Strategy):
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         """
         msg['receiveTime'] = time.time()
+        new_status = False
         # TODO: First do storage hash space matching:
         # and then (in the same checks)
         # FIXME: Add data to storage:
-        if msg["h_space"] in self.view.get_h_spaces(node):
+        if msg["h_space"] in self.view.get_h_spaces(node) and status != RESPONSE:
             # TODO: Here is where the reuse happens, basically, and we only care to basically add the reuse delay to the
             #  request (if request) execution/RTT and return the SATISFIED request.
 
-        if self.view.hasStorageCapability(node) and 'satisfied' not in msg or 'Shelf' not in msg:
+
+            msg['service_type'] = "processed"
+            new_status = True
+
+            # TODO: Need to also account for
+
+
+        elif self.view.hasStorageCapability(node) and 'satisfied' not in msg or 'Shelf' not in msg:
             self.controller.add_replication_hops(msg)
             if node is self.view.all_labels_main_source(msg["labels"]):
                 self.controller.add_message_to_storage(node, msg)
@@ -372,7 +380,7 @@ class HashRepoReuseStorApp(Strategy):
         # TODO: Last, but CERTAINLY NOT LEAST, update storage/computational requirements - might need to add another
         #  message characteristic for this: cycles/time used
 
-        return msg
+        return msg, new_status
 
     def epoch_node_reuse_update(self):
         """
@@ -448,15 +456,18 @@ class HashRepoReuseStorApp(Strategy):
         # if node == 12:
         #    self.debug = True
         service = None
+        new_s = False
         if type(content) is dict and 'shelf_life' in content and 'max_replications' in content:
             if content["shelf_life"] and content['replications'] <= content['max_replications']:
                 source, in_cache = self.view.closest_source(node, content)
                 path = self.view.shortest_path(node, source)
-                self.handle(curTime, receiver, content, node, log, feedback, flow_id, rtt_delay, deadline)
+                m, new_s = self.handle(curTime, receiver, content, node, log, feedback, flow_id, rtt_delay, deadline, status)
         elif type(content) is dict and 'shelf_life' in content and content["shelf_life"] :
             source, in_cache = self.view.closest_source(node, content)
             path = self.view.shortest_path(node, source)
-            self.handle(curTime, receiver, content, node, log, feedback, flow_id, rtt_delay, deadline)
+            m, new_s = self.handle(curTime, receiver, content, node, log, feedback, flow_id, rtt_delay, deadline)
+        if new_s:
+            status = RESPONSE
         service = content
 
         if curTime - self.last_replacement > self.replacement_interval:
@@ -551,6 +562,8 @@ class HashRepoReuseStorApp(Strategy):
                 #     self.controller.add_replication_hops(content)
                 # self.controller.replication_overhead_update(content)
                 # self.controller.remove_replication_hops(service)
+                # TODO: Here and in any other relevant place, we need to track the CPU usage!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                #  (we also need to track it live, within the compspots)
                 ret, reason = compSpot.admit_task(service['content'], labels, curTime, flow_id, deadline, receiver,
                                                   rtt_delay + cache_delay, self.controller, self.debug)
 
@@ -697,6 +710,25 @@ class HashRepoReuseStorApp(Strategy):
                 if node == receiver:
                     self.controller.end_session(True, curTime, flow_id)  # TODO add flow_time
                     return
+
+                elif new_s:
+                    # TODO:
+                    #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    #  create event, to send the response back, with the LSH-lookup-similarity-fetching delays
+                    #  accounted for
+                    #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    path = self.view.shortest_path(node, receiver)
+                    next_node = path[0]
+                    delay = self.view.link_delay(node, next_node)
+                    path_del = self.view.path_delay(node, receiver)
+                    self.controller.add_event(curTime + delay, receiver, service, labels, next_node,
+                                      flow_id, deadline, rtt_delay, RESPONSE)
+                    if path_del + curTime > deadline:
+                        if type(content) is dict:
+                            compSpot.missed_requests[content['content']] += 1
+                        else:
+                            compSpot.missed_requests[content] += 1
+
                 else:
                     path = self.view.shortest_path(node, receiver)
                     next_node = path[1]

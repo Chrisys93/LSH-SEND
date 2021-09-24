@@ -139,6 +139,7 @@ RATES_FILE = dir_path + '/Google_target_and_rates.csv'
 CONTENTS_FILE = dir_path + '/Google_contents.csv'
 LABELS_FILE = dir_path + '/Google_labels.csv'
 CONTENT_LOCATIONS = dir_path + '/Google_content_locations.csv'
+SPACES_FILE = dir_path + '/Google_hash_spaces.csv'
 
 
 # Queue of experiments
@@ -166,7 +167,8 @@ default['workload'] = {'name': WORKLOAD,
                        'rates_file': RATES_FILE,
                        'contents_file': CONTENTS_FILE,
                        'labels_file': LABELS_FILE,
-                       'content_locations': CONTENT_LOCATIONS
+                       'content_locations': CONTENT_LOCATIONS,
+                       'spaces_file' : SPACES_FILE
                        }
 
 default['cache_placement']['name'] = 'CONSOLIDATED_REPO_CACHE'

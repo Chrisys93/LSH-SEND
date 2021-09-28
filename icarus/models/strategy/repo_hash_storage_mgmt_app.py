@@ -23,8 +23,7 @@ from .base import Strategy
 from icarus.models.service import Task, VM
 
 __all__ = [
-    'GenRepoStorApp',
-    'HServRepoStorApp',
+    'HashRepoProcStorApp',
     'HServProStorApp',
     'HServReStorApp',
     'HServSpecStorApp'
@@ -56,10 +55,10 @@ class HashRepoProcStorApp(Strategy):
     Run in passive mode - don't process messages, but store
     """
 
-    def __init__(self, view, controller, replacement_interval=10, debug=False, n_replacements=1,
+    def __init__(self, view, controller, replacement_interval=10, debug=False, n_replacements=1, hit_rate=1,
                  depl_rate=10000000, cloud_lim=20000000, max_stor=9900000000, min_stor=10000000, epoch_ticks=float('inf'),
                  **kwargs):
-        super(HashRepoReuseStorApp, self).__init__(view, controller)
+        super(HashRepoProcStorApp, self).__init__(view, controller)
 
         self.view.model.strategy = 'HASH_PROC_REPO_APP'
         self.replacement_interval = replacement_interval
@@ -70,6 +69,7 @@ class HashRepoProcStorApp(Strategy):
         self.num_nodes = len(self.compSpots.keys())
         self.num_services = self.view.num_services()
         self.debug = debug
+        self.hit_rate = hit_rate
         # metric to rank each VM of Comp. Spot
         self.deadline_metric = {x: {} for x in range(0, self.num_nodes)}
         self.cand_deadline_metric = {x: {} for x in range(0, self.num_nodes)}
@@ -99,6 +99,10 @@ class HashRepoProcStorApp(Strategy):
         self.lastDepl = 0
 
         self.epoch_count = 0
+
+        self.in_count = dict()
+
+        self.hit_count = dict()
 
         self.epoch_ticks = epoch_ticks
 
@@ -314,22 +318,36 @@ class HashRepoProcStorApp(Strategy):
         """
         msg['receiveTime'] = time.time()
         new_status = False
+
+        if node not in self.in_count:
+            self.in_count[node] = Counter()
+
+        if node not in self.hit_count:
+            self.hit_count = Counter()
+
         # TODO: First do storage hash space matching:
         # and then (in the same checks)
         # FIXME: Add data to storage:
-        if msg["h_space"] in self.view.get_h_spaces(node) and status != RESPONSE:
+        if msg["h_space"] in self.view.get_node_h_spaces(node) and status == REQUEST or self.in_count == 0 or \
+                self.hit_count/self.in_count < self.hit_rate:
             # TODO: Here is where the reuse happens, basically, and we only care to basically add the reuse delay to the
             #  request (if request) execution/RTT and return the SATISFIED request.
 
+            if self.in_count == 0 or self.hit_count/self.in_count < self.hit_rate:
+                self.view.update_node_reuse(node, True)
+                self.hit_count += 1
+                msg['service_type'] = "processed"
+                new_status = True
+            else:
+                self.view.update_node_reuse(node, False)
+            self.in_count += 1
 
-            msg['service_type'] = "processed"
-            new_status = True
-
-            # TODO: Need to also account for
-
-
-        elif self.view.hasStorageCapability(node) and 'satisfied' not in msg or 'Shelf' not in msg:
+        elif self.view.hasStorageCapability(node) and not new_status and ('satisfied' not in msg or 'Shelf' not in msg):
             self.controller.add_replication_hops(msg)
+            self.controller.add_request_h_spaces_to_node(node, msg)
+            # FIXME: There might be an error here, adding request labels to storage without the requests first actually
+            #  being satisfied via processing (!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!)
+            #  UPDATE: Because of the new, hash structure, the below could need revision!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             if node is self.view.all_labels_main_source(msg["labels"]):
                 self.controller.add_message_to_storage(node, msg)
                 self.controller.add_replication_hops(msg)
@@ -362,7 +380,7 @@ class HashRepoProcStorApp(Strategy):
                     # print "Message: " + str(msg['content']) + " sent from node " + str(node) + " to node " + str(next_node)
                     self.controller.replicate(node, next_node)
 
-        else:
+        elif not new_status and msg["h_space"] in self.view.get_node_h_spaces(node):
             msg['overtime'] = False
             source = self.view.content_source_cloud(msg, msg['labels'])
             if not source:
@@ -373,8 +391,8 @@ class HashRepoProcStorApp(Strategy):
             next_node = path[1]
             delay = self.view.path_delay(node, next_node)
             rtt_delay += delay * 2
-            self.controller.add_event(curTime + delay, receiver, msg, msg['labels'], next_node, flow_id, deadline, rtt_delay,
-                                      STORE)
+            self.controller.add_event(curTime + delay, receiver, msg, msg['labels'], next_node, flow_id, deadline,
+                                      rtt_delay, STORE)
             # print "Message: " + str(msg['content']) + " sent from node " + str(node) + " to node " + str(next_node)
 
         # TODO: Last, but CERTAINLY NOT LEAST, update storage/computational requirements - might need to add another
@@ -382,11 +400,29 @@ class HashRepoProcStorApp(Strategy):
 
         return msg, new_status
 
-    def epoch_node_reuse_update(self):
+    def epoch_node_proc_update(self, max_count=5):
         """
         This method updates the repo-associated hash spaces based on the reuse performance of each repo (and potentially
         ranking hash spaces based on the reuse quotes they need.
         """
+
+        high_proc = self.view.most_proc_usage(max_count)
+        low_proc = self.view.least_proc_usage(max_count)
+        h_spaces = []
+        for node in self.view.model.all_node_h_spaces:
+            if node in high_proc:
+                for h in self.view.model.all_node_h_spaces[node]:
+                    if h not in h_spaces:
+                        h_spaces.append(h)
+
+        count = 0
+        for n in range(0, len(high_proc)):
+            if count < int(max_count/2):
+                for h in self.view.model.all_node_h_spaces[high_proc[n]]:
+                    self.controller.move_h_space_proc(high_proc[n], low_proc[n], h)  # TODO: define move_h_space in network controller
+                    count += 1
+        self.epoch_count = 0
+
 
 
     @inheritdoc(Strategy)
@@ -418,7 +454,7 @@ class HashRepoProcStorApp(Strategy):
 
         self.epoch_count += 1
         if self.epoch_count == self.epoch_ticks:
-            self.epoch_node_reuse_update()
+            self.epoch_node_proc_update()
 
         if self.view.hasStorageCapability(node):
             feedback = True
@@ -564,6 +600,8 @@ class HashRepoProcStorApp(Strategy):
                 # self.controller.remove_replication_hops(service)
                 # TODO: Here and in any other relevant place, we need to track the CPU usage!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 #  (we also need to track it live, within the compspots)
+
+                self.view.update_node_reuse(node, False)
                 ret, reason = compSpot.admit_task(service['content'], labels, curTime, flow_id, deadline, receiver,
                                                   rtt_delay + cache_delay, self.controller, self.debug)
 
@@ -643,6 +681,7 @@ class HashRepoProcStorApp(Strategy):
                                 compSpot.missed_requests[content] += 1
                         return
                 if compSpot is not None and self.view.has_service(node, service) and service["service_type"] is "proc":
+                    self.view.update_node_reuse(node, False)
                     ret, reason = compSpot.admit_task(service['content'], labels, curTime, flow_id, deadline, receiver,
                                                       rtt_delay + cache_delay, self.controller, self.debug)
 
@@ -720,10 +759,12 @@ class HashRepoProcStorApp(Strategy):
                     path = self.view.shortest_path(node, receiver)
                     next_node = path[0]
                     delay = self.view.link_delay(node, next_node)
+                    # TODO: Need to add fetch delay to the response in this case.
+                    fetch_del = 0.02
                     path_del = self.view.path_delay(node, receiver)
-                    self.controller.add_event(curTime + delay, receiver, service, labels, next_node,
+                    self.controller.add_event(curTime + fetch_del + delay, receiver, service, labels, next_node,
                                       flow_id, deadline, rtt_delay, RESPONSE)
-                    if path_del + curTime > deadline:
+                    if path_del + fetch_del + curTime > deadline:
                         if type(content) is dict:
                             compSpot.missed_requests[content['content']] += 1
                         else:
@@ -885,6 +926,7 @@ class HashRepoProcStorApp(Strategy):
                             if all_in == len(labels):
                                 self.controller.add_message_to_storage(node, service)
                                 self.controller.add_request_labels_to_storage(node, service, True)
+                                self.controller.add_request_h_spaces_to_storage(node, service, True)
                     elif self.controller.has_message(node, service['labels'], service['content']) and service['msg_size'] == 500000:
                         self.view.storage_nodes()[node].deleteAnyMessage(service['content'])
                         self.controller.replication_overhead_update(service)
@@ -898,6 +940,7 @@ class HashRepoProcStorApp(Strategy):
                             if all_in == len(labels):
                                 self.controller.add_message_to_storage(node, service)
                                 self.controller.add_request_labels_to_storage(node, service, True)
+                                self.controller.add_request_h_spaces_to_storage(node, service, True)
                     else:
                         if service['msg_size'] == 1000000:
                             self.controller.replication_overhead_update(service)
@@ -992,6 +1035,7 @@ class HashRepoProcStorApp(Strategy):
                                 return
                         if self.debug:
                             print("Calling admit_task")
+                        self.view.update_node_reuse(node, False)
                         ret, reason = compSpot.admit_task(service['content'], labels, curTime, flow_id, deadline,
                                                           receiver, rtt_delay, self.controller, self.debug)
                         if self.debug:
@@ -1375,8 +1419,8 @@ class HashRepoProcStorApp(Strategy):
                     source = self.view.content_source_cloud(msg, msg['labels'])
                     if not source:
                         for n in self.view.model.comp_size:
-                            if type(self.view.model.comp_size[n]) is not int and self.view.model.comp_size[
-                                node] is not None:
+                            if type(self.view.model.comp_size[n]) is not int and self.view.model.comp_size[node] is not \
+                                    None:
                                 source = n
                     path = self.view.shortest_path(node, source)
                     next_node = path[1]
@@ -1386,7 +1430,7 @@ class HashRepoProcStorApp(Strategy):
                                               rtt_delay, STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
-                #
+
                 else:
                     self.cloudEmptyLoop = False
                     # System.out.prln("Depletion is at: "+ self.cloudBW)
@@ -2232,8 +2276,9 @@ class HServProStorApp(Strategy):
                         return
                 # for n in range(0, 3):
                 #     self.controller.add_replication_hops(content)
-                ret, reason = compSpot.admit_task(service['content'], labels, curTime, flow_id, deadline, receiver,
-                                                  rtt_delay + cache_delay, self.controller, self.debug)
+                else:
+                    ret, reason = compSpot.admit_task(service['content'], labels, curTime, flow_id, deadline, receiver,
+                                                    rtt_delay + cache_delay, self.controller, self.debug)
 
                 if ret == False:
                     if type(node) == str and "src" in node:

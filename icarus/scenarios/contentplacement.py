@@ -66,6 +66,23 @@ def apply_labels_association(association, data):
                 data[c]['labels'].append(label)
     return data
 
+def apply_space_association(association, data):
+    """
+    Apply association of labels to contents
+
+    Parameters
+    ----------
+    association:
+    topics:
+    types:
+    :return:
+    """
+    for h_space, contents in association.items():
+        for c in contents:
+            if h_space not in data[c]['h_space']:
+                data[c]['h_space'].append(h_space)
+    return data
+
 def get_sources(topology):
     return [v for v in topology if topology.node[v]['stack'][0] == 'source']
 
@@ -293,3 +310,127 @@ def weighted_repo_content_placement(topology, contents, freshness_per, shelf_lif
             content_placement[rand][d] = placed_data[d]
     apply_content_placement(content_placement, topology)
     topology.placed_data = placed_data
+
+@register_content_placement('WEIGHTED_REPO_HASH')
+def weighted_repo_hash_placement(topology, contents, freshness_per, shelf_life, msg_size, space_weights,
+                                 max_replications, source_weights, service_weights, max_label_nos, seed=None):
+    """Places content objects to source nodes randomly according to the weight
+    of the source node.
+
+    TODO: This should be modified, or another one created, to include content
+        placement parameters, like the freshness periods, shelf-lives, topics/types
+        of labels and placement possibilities, maybe depending on hashes, placement
+        of nodes and possibly other scenario-specific/service-specific parameters.
+        ADD SERVICE TYPE TO MESSAGE PROPERTIES!
+
+    Parameters
+    ----------
+    topology : Topology
+        The topology object
+    contents : iterable
+        Iterable of content objects
+    topics :
+
+    types :
+
+    freshness_per :
+
+    shelf_life :
+
+    msg_size :
+
+    source_weights : dict
+        Dict mapping nodes of the topology which are content sources and
+        the weight according to which content placement decision is made.
+
+    Returns
+    -------
+    cache_placement : dict
+       Dictionary mapping content objects to source nodes
+
+    Notes
+    -----
+    A deterministic placement of objects (e.g., for reproducing results) can be
+    achieved by using a fix seed value
+    """
+
+    # TODO: This is the format that each datum (message) shuold have
+    #       placed_data = {content, msg_topics, msg_type, freshness_per,
+    #                       shelf_life, msg_size}
+
+    placed_data = dict()
+    random.seed(seed)
+    norm_factor = float(sum(source_weights.values()))
+    # TODO: These ^\/^\/^ might need redefining, to make label-specific
+    #  source weights, and then the labels distributed according to these.
+    #  OR the other way around, distributing sources according to label weights
+    space_norm_factor = float(sum(space_weights.values()))
+    service_labels_norm_factor = float(sum(service_weights.values()))
+    # TODO: Think about a way to randomise, but still maintain a certain
+    #  distribution among the users that receive data with certain labels.
+    #  Maybe associate the pdf with labels, rather than contents, SOMEHOW!
+    source_pdf = dict((k, v / norm_factor) for k, v in source_weights.items())
+    space_pdf = dict((k, v / space_norm_factor) for k, v in space_weights.items())
+    service_labels_pdf = dict((k, v / service_labels_norm_factor) for k, v in service_weights.items())
+    service_association = collections.defaultdict(set)
+    space_association = collections.defaultdict(set)
+    content_placement = collections.defaultdict(set)
+    # Further TODO: Add all the other data characteristics and maybe place
+    #           content depending on those at a later point (create other
+    #           placement strategies)
+    # NOTE: All label names will come as a list of strings
+    for c in contents:
+        alter = False
+        if freshness_per is not None:
+            if placed_data.has_key(contents[c]['content']):
+                placed_data[contents[c]['content']].update(freshness_per=freshness_per)
+            else:
+                placed_data[contents[c]['content']] = dict()
+                placed_data[contents[c]['content']]['freshness_per'] = freshness_per
+        if shelf_life is not None:
+            placed_data[contents[c]['content']].update(shelf_life=shelf_life)
+        if max_replications:
+            placed_data[contents[c]['content']].update(max_replications=max_replications)
+            placed_data[contents[c]['content']].update(replications=0)
+        service_association[random_from_pdf(service_labels_pdf)].add(c)
+        placed_data[contents[c]['content']].update(content=c)
+        placed_data[contents[c]['content']].update(msg_size=msg_size)
+        placed_data[contents[c]['content']]["receiveTime"] = 0
+        placed_data[contents[c]['content']]['labels'] = contents[c]['labels']
+        placed_data[contents[c]['content']]['h_space'] = contents[c]['h_space']
+        placed_data[contents[c]['content']]['service_type'] = "non-proc"
+        if not placed_data[contents[c]['content']]['labels']:
+            for i in range(0, max_label_nos):
+                if space_weights is not None:
+                    space_association[random_from_pdf(space_pdf)].add(c)
+
+    placed_data = apply_space_association(space_association, placed_data)
+    #placed_data = apply_service_association(service_association, placed_data)
+    # FIXME: HERE is where data should be randomly distributed via hash-space!
+    #  (Possibly - need to re-check) FIXED!
+    content_h_space = dict()
+    for d in placed_data:
+        rand = random_from_pdf(source_pdf)
+        if not content_placement[rand]:
+            content_placement[rand] = dict()
+            content_h_space[rand] = []
+            content_h_space[rand].append(placed_data[d]['h_space'])
+        if placed_data[d]['h_space'] not in content_h_space[rand] and len(content_h_space[rand]) < 10:
+            content_h_space[rand].append(placed_data[d]['h_space'])
+        if content_placement[rand].has_key(d) and placed_data[d]['h_space'] in content_h_space[rand]:
+            content_placement[rand][d].update(placed_data[d])
+        elif placed_data[d]['h_space'] in content_h_space[rand]:
+            content_placement[rand][d] = dict()
+            content_placement[rand][d] = placed_data[d]
+        else:
+            for node in content_h_space:
+                if placed_data[d]['h_space'] in content_h_space[node]:
+                    if content_placement[node].has_key(d):
+                        content_placement[node][d].update(placed_data[d])
+                    elif placed_data[d]['h_space'] in content_h_space[node]:
+                        content_placement[node][d] = dict()
+                        content_placement[node][d] = placed_data[d]
+    apply_content_placement(content_placement, topology)
+    topology.placed_data = placed_data
+
+

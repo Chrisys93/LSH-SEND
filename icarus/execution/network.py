@@ -282,6 +282,26 @@ class NetworkView(object):
 
         return self.model.replication_overheads[content]
 
+    def get_node_h_spaces(self, s):
+        """Return the node identifier where the content is persistently stored.
+
+        Parameters
+        ----------
+        s : node index
+            The node identifier
+
+        Returns
+        -------
+        h_spaces : list
+            The hash-spaces persistently stored in the given repo or None if the
+            source is unavailable
+        """
+        h_spaces = None
+        if self.model.all_node_h_spaces[s] is not None:
+            h_spaces = self.model.all_node_h_spaces[s]
+
+        return h_spaces
+
     def content_source(self, k, labels):
         """Return the node identifier where the content is persistently stored.
 
@@ -730,7 +750,7 @@ class NetworkView(object):
         while len(nodes) < list_len:
             for n in self.model.busy_proc:
                 proc = self.model.busy_proc[n]
-                if proc >= max_proc:
+                if proc >= max_proc and n not in nodes:
                     max_proc = proc
                     max_node = n
             nodes.append(max_node)
@@ -754,7 +774,7 @@ class NetworkView(object):
         while len(nodes) < list_len:
             for n in self.model.busy_proc:
                 proc = self.model.busy_proc[n]
-                if proc >= min_proc:
+                if proc >= min_proc and n not in nodes:
                     min_proc = proc
                     min_node = n
             nodes.append(min_node)
@@ -1638,8 +1658,8 @@ class NetworkModel(object):
         self.n_services = n_services
         internal_link_delay = 0.001  #  This is the delay from receiver to router
 
-        service_time_min = 0.10  # used to be 0.001
-        service_time_max = 0.10  # used to be 0.1
+        service_time_min = 0.50  # used to be 0.10 # used to be 0.001
+        service_time_max = 0.70  # used to be 0.10  # used to be 0.1
         # delay_min = 0.005
         if 'depth' in topology.graph:
             delay_min = 2 * topology.graph['receiver_access_delay'] + service_time_max
@@ -2002,6 +2022,28 @@ class NetworkController(object):
         if self.collector is not None and self.session['feedback']:
             self.collector.content_storage_labels(u, self.session.storage_labels)
 
+    def move_h_space_proc(self, high_proc, low_proc, h):
+        """
+        This function moves PART OF the hash spaces at each epoch from each of the highest
+        processing power usage repos to the lowest processing power usage repos
+
+        high_proc:
+
+        low_proc:
+
+        h:
+
+        """
+
+        low_spaces = self.model.all_node_h_spaces[low_proc]
+        self.model.h_space_sources[high_proc].append(low_spaces[0])
+        self.model.all_node_h_spaces[low_proc].remove(low_spaces[0])
+        self.model.h_space_sources[low_proc].append([h])
+        self.model.all_node_h_spaces[high_proc].remove([h])
+
+
+
+
     def add_request_labels_to_node(self, s, service_request):
         """Forward a request from node *s* to node *t* over the provided path.
 
@@ -2148,7 +2190,7 @@ class NetworkController(object):
             if label in self.model.request_labels[s]:
                 del self.model.request_labels[s][label]
 
-    def add_request_h_spaces_to_storage(self, s, labels, add=False):
+    def add_request_h_spaces_to_storage(self, s, spaces, add=False):
         """Forward a request from node *s* to node *t* over the provided path.
 
         TODO: This (and all called methods, defined within this class) should be
@@ -2172,7 +2214,7 @@ class NetworkController(object):
         """
 
         Deletion = []
-        for h_space in labels:
+        for h_space in spaces:
             if h_space in self.model.request_h_spaces[s]:
                 Deletion.append(h_space)
                 if add:
@@ -2293,7 +2335,7 @@ class NetworkController(object):
         if s not in self.model.reuse:
             self.model.node_reused_count[s] = Counter()
             self.model.node_new_count[s] = Counter()
-            self.model.reuse[n] = 0
+            self.model.reuse[s] = 0
         if reused:
             self.model.node_reused_count.update(s)
             self.model.node_new_count.update(s)

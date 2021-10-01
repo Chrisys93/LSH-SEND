@@ -733,8 +733,7 @@ class NetworkView(object):
                 current_count = nodes[n]
         return auth_node
 
-    # TODO: Might need to consider node minimums and maximums separately...
-    #  then we can actually get more accurate results...
+    # TODO: Should be OK, BUT CHECK!
     #  (valid for the next two methods)
 
     def most_proc_usage(self, list_len):
@@ -757,16 +756,17 @@ class NetworkView(object):
             for n in self.model.busy_proc:
                 node_proc = 0
                 for h in self.model.busy_proc[n]:
-                    proc = self.model.busy_proc[n][h]
                     node_proc += self.model.busy_proc[n][h]
-                    if proc >= max_proc:
-                        max_proc = proc
-                        max_hash = h
-                        max_node = n
-                # if node_proc >= max_node_proc:
-                #     max_node_proc = node_proc
-                #     max_node = n
+                if node_proc >= max_node_proc:
+                    max_node_proc = node_proc
+                    max_node = n
             nodes.append(max_node)
+        for n in nodes:
+            for h in self.model.busy_proc[n]:
+                proc = self.model.busy_proc[n][h]
+                if proc >= max_proc:
+                    max_proc = proc
+                    max_hash = h
             hashes.append(max_hash)
 
         return nodes, hashes
@@ -791,17 +791,18 @@ class NetworkView(object):
             for n in self.model.busy_proc:
                 node_proc = 0
                 for h in self.model.busy_proc[n]:
-                    proc = self.model.busy_proc[n][h]
                     node_proc += self.model.busy_proc[n][h]
-                    if proc <= min_proc:
-                        min_proc = proc
-                        min_hash = h
+                    if node_proc <= min_node_proc:
+                        min_node_proc = node_proc
                         min_node = n
-                # if node_proc <= min_node_proc:
-                #     min_node_proc = node_proc
-                #     min_node = n
-            nodes.append(min_node)
-            hashes.append(min_hash)
+                nodes.append(min_node)
+                for n in nodes:
+                    for h in self.model.busy_proc[n]:
+                        proc = self.model.busy_proc[n][h]
+                        if proc <= min_proc:
+                            min_proc = proc
+                            min_hash = h
+                    hashes.append(min_hash)
 
         return nodes, hashes
 

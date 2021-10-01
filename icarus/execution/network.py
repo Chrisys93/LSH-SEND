@@ -733,6 +733,10 @@ class NetworkView(object):
                 current_count = nodes[n]
         return auth_node
 
+    # TODO: Might need to consider node minimums and maximums separately...
+    #  then we can actually get more accurate results...
+    #  (valid for the next two methods)
+
     def most_proc_usage(self, list_len):
         """
 
@@ -745,17 +749,27 @@ class NetworkView(object):
         """
 
         nodes = []
+        hashes = []
         max_proc = 0
+        max_node_proc = 0
 
         while len(nodes) < list_len:
             for n in self.model.busy_proc:
-                proc = self.model.busy_proc[n]
-                if proc >= max_proc and n not in nodes:
-                    max_proc = proc
-                    max_node = n
+                node_proc = 0
+                for h in self.model.busy_proc[n]:
+                    proc = self.model.busy_proc[n][h]
+                    node_proc += self.model.busy_proc[n][h]
+                    if proc >= max_proc:
+                        max_proc = proc
+                        max_hash = h
+                        max_node = n
+                # if node_proc >= max_node_proc:
+                #     max_node_proc = node_proc
+                #     max_node = n
             nodes.append(max_node)
+            hashes.append(max_hash)
 
-        return nodes
+        return nodes, hashes
 
     def least_proc_usage(self, list_len):
         """
@@ -769,17 +783,27 @@ class NetworkView(object):
         """
 
         nodes = []
+        hashes = []
         min_proc = float('inf')
+        min_node_proc = float('inf')
 
         while len(nodes) < list_len:
             for n in self.model.busy_proc:
-                proc = self.model.busy_proc[n]
-                if proc >= min_proc and n not in nodes:
-                    min_proc = proc
-                    min_node = n
+                node_proc = 0
+                for h in self.model.busy_proc[n]:
+                    proc = self.model.busy_proc[n][h]
+                    node_proc += self.model.busy_proc[n][h]
+                    if proc <= min_proc:
+                        min_proc = proc
+                        min_hash = h
+                        min_node = n
+                # if node_proc <= min_node_proc:
+                #     min_node_proc = node_proc
+                #     min_node = n
             nodes.append(min_node)
+            hashes.append(min_hash)
 
-        return nodes
+        return nodes, hashes
 
 
 
@@ -1491,7 +1515,7 @@ class NetworkModel(object):
             # TODO: Sort out content association in the case that "contents" aren't objects!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             self.all_node_labels[node] = Counter()
             self.epochs_node_reuse[node] = []
-            self.busy_proc[node] = 0
+            self.busy_proc[node] = {}
             self.reuse[node] = 0
             self.epochs_node_reuse[node] = 0
             stack_name, stack_props = fnss.get_stack(topology, node)
@@ -1783,28 +1807,6 @@ class NetworkModel(object):
         self.removed_caches = {}
         self.removed_local_caches = {}
 
-    def add_proc(self, node):
-        """
-        Add one to the processing functions of one node's comp spot
-
-        node: Any hashable type
-            The node for which to add one count in busy_proc
-        
-        """
-
-        self.busy_proc[node] += 1
-
-    def sub_proc(self, node):
-        """
-        Subtract one from the processing functions of one node's comp spot
-
-        node: Any hashable type
-            The node for which to subtract one count in busy_proc
-        
-        """
-
-        self.busy_proc[node] -= 1
-
 
 class NetworkController(object):
     """Network controller
@@ -2022,7 +2024,7 @@ class NetworkController(object):
         if self.collector is not None and self.session['feedback']:
             self.collector.content_storage_labels(u, self.session.storage_labels)
 
-    def move_h_space_proc(self, high_proc, low_proc, h):
+    def move_h_space_proc(self, high_proc, low_proc, h_h, h_l):
         """
         This function moves PART OF the hash spaces at each epoch from each of the highest
         processing power usage repos to the lowest processing power usage repos
@@ -2035,13 +2037,33 @@ class NetworkController(object):
 
         """
 
-        low_spaces = self.model.all_node_h_spaces[low_proc]
-        self.model.h_space_sources[high_proc].append(low_spaces[0])
-        self.model.all_node_h_spaces[low_proc].remove(low_spaces[0])
-        self.model.h_space_sources[low_proc].append([h])
-        self.model.all_node_h_spaces[high_proc].remove([h])
+        self.model.all_node_h_spaces[high_proc].append([h_l])
+        self.model.all_node_h_spaces[low_proc].remove([h_l])
+        self.model.all_node_h_spaces[low_proc].append([h_h])
+        self.model.all_node_h_spaces[high_proc].remove([h_h])
 
+    def add_proc(self, node, h_space):
+        """
+        Add one to the processing functions of one node's comp spot
 
+        node: Any hashable type
+            The node for which to add one count in busy_proc
+
+        """
+
+        if h_space in self.model.all_node_h_spaces[node]:
+            self.busy_proc[node][h_space] += 1
+
+    def sub_proc(self, node, h_space):
+        """
+        Subtract one from the processing functions of one node's comp spot
+
+        node: Any hashable type
+            The node for which to subtract one count in busy_proc
+
+        """
+        if h_space in self.model.all_node_h_spaces[node]:
+            self.busy_proc[node][h_space] -= 1
 
 
     def add_request_labels_to_node(self, s, service_request):

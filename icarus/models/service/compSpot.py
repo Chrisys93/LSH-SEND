@@ -70,13 +70,15 @@ class Task(object):
     """
     TASK_TYPE_SERVICE = 1
     TASK_TYPE_VM_START = 2
-    def __init__(self, curTime,  taskType, deadline, rtt_delay, node, service, labels, service_time, flow_id, receiver, arrivalTime=None, completionTime=None):
+    def __init__(self, curTime,  taskType, deadline, rtt_delay, node, service, labels, h_spaces, service_time, flow_id, receiver, arrivalTime=None, completionTime=None):
         ### Type of the task #
         self.taskType = taskType
         ### The service associated with the task #
         self.service = service
         ### The labels associated to the associated service with the task #
         self.labels = labels
+        ### The h_spaces associated to the associated service with the task #
+        self.h_spaces = h_spaces
         ### The VM that the task is scheduled to run at #
         self.vm = None 
         ### The current curTime? # XXX remove this if not used
@@ -127,6 +129,7 @@ class Task(object):
     def print_task(self):
         print ("---Task.service: " + repr(self.service))
         print ("\tTask.labels:" + repr(self.labels))
+        print ("\tTask.h_spaces:" + repr(self.h_spaces))
         print ("\tTask.curTime: " + repr(self.curTime))
         print ("\tTask.type: " + repr(self.taskType))
         print ("\tTask.deadline: " + repr(self.expiry))
@@ -634,7 +637,6 @@ class ComputationSpot(object):
 
         self.scheduler.busyVMs[task.service].remove(vm)
         self.scheduler.idleVMs[task.service].append(vm)
-        self.model.sub_proc(self.node)
 
         if len(task.nextTask) > 0:
             self.scheduler.addVMStartToTaskQ(task, curTime,  curTime)
@@ -642,7 +644,7 @@ class ComputationSpot(object):
                 newTask = self.scheduler.schedule(curTime)
                 if newTask is not None:
                 #print("In complete_service_task(): scheduling a VM reassign: " + str(newTask.service) + " to " + str(newTask.serviceToInstantiate))
-                    controller.add_event(newTask.completionTime, newTask.receiver, newTask.service, newTask.labels, self.node, newTask.flow_id, newTask.expiry, newTask.rtt_delay, TASK_COMPLETE, newTask)
+                    controller.add_event(newTask.completionTime, newTask.receiver, newTask.service, newTask.labels, newTask.h_spaces, self.node, newTask.flow_id, newTask.expiry, newTask.rtt_delay, TASK_COMPLETE, newTask)
                 else:
                     break
 
@@ -664,7 +666,6 @@ class ComputationSpot(object):
             self.scheduler.startingVMs[aTask.serviceToInstantiate].append(aVM)
         elif aTask.taskType == Task.TASK_TYPE_SERVICE:
             self.scheduler.busyVMs[aTask.service].append(aVM)
-            self.model.add_proc(self.node)
         else:
             raise ValueError("Invalid TaskType: " + str(aTask.taskType))
         aTask.setVM(aVM)
@@ -810,7 +811,7 @@ class ComputationSpot(object):
             if debug:
                 print ("NumRunning: " + str(numRunning))
 
-    def admit_task_FIFO(self, service, labels, curTime,  flow_id, deadline, receiver, rtt_delay, controller, debug):
+    def admit_task_FIFO(self, service, labels, h_spaces, curTime,  flow_id, deadline, receiver, rtt_delay, controller, debug):
         """
         Parameters
         ----------
@@ -826,7 +827,7 @@ class ComputationSpot(object):
         serviceTime = self.services[service].service_time
         if self.is_cloud:
             aTask = Task(curTime,  Task.TASK_TYPE_SERVICE, deadline, rtt_delay, self.node, service, serviceTime, flow_id, receiver)
-            controller.add_event(curTime+serviceTime, receiver, service, labels, self.node, flow_id, deadline, rtt_delay, TASK_COMPLETE, aTask)
+            controller.add_event(curTime+serviceTime, receiver, service, labels, h_spaces, self.node, flow_id, deadline, rtt_delay, TASK_COMPLETE, aTask)
             controller.execute_service(flow_id, service, self.node, curTime,  self.is_cloud)
             if debug:
                 print ("CLOUD: Accepting TASK")
@@ -846,7 +847,7 @@ class ComputationSpot(object):
         numVMs = len(self.scheduler.idleVMs[service]) + len(self.scheduler.busyVMs[service])
         if numVMs <= 0:
             return [False, NO_INSTANCES]
-        aTask = Task(curTime,  Task.TASK_TYPE_SERVICE, deadline, rtt_delay, self.node, service, labels, serviceTime, flow_id, receiver)
+        aTask = Task(curTime,  Task.TASK_TYPE_SERVICE, deadline, rtt_delay, self.node, service, labels, h_spaces, serviceTime, flow_id, receiver)
         self.scheduler.addToTaskQueue(aTask, curTime)
         self.compute_completion_times(curTime,  True, debug)
         for task in self.scheduler._taskQueue[:]:
@@ -870,7 +871,7 @@ class ComputationSpot(object):
         # Run the next task (if there is any)
         newTask = self.scheduler.schedule(curTime)
         if newTask is not None:
-            controller.add_event(newTask.completionTime, newTask.receiver, newTask.service, newTask.labels, self.node, newTask.flow_id, newTask.expiry, newTask.rtt_delay, TASK_COMPLETE, newTask)
+            controller.add_event(newTask.completionTime, newTask.receiver, newTask.service, newTask.labels, newTask.h_spaces, self.node, newTask.flow_id, newTask.expiry, newTask.rtt_delay, TASK_COMPLETE, newTask)
 
         if self.numberOfVMInstances[service] == 0:
             print ("Error: this should not happen in admit_task_FIFO()")
@@ -879,7 +880,7 @@ class ComputationSpot(object):
             print ("Accepting Task")
         return [True, SUCCESS]
 
-    def admit_task_EDF(self, service, labels, curTime,  flow_id, deadline, receiver, rtt_delay, controller, debug):
+    def admit_task_EDF(self, service, labels, h_spaces, curTime,  flow_id, deadline, receiver, rtt_delay, controller, debug):
         """
         Parameters
         ----------
@@ -894,8 +895,8 @@ class ComputationSpot(object):
 
         serviceTime = self.services[service].service_time
         if self.is_cloud:
-            aTask = Task(curTime,  Task.TASK_TYPE_SERVICE, deadline, rtt_delay, self.node, service, labels, serviceTime, flow_id, receiver)
-            controller.add_event(curTime+serviceTime, receiver, service, labels, self.node, flow_id, deadline, rtt_delay, TASK_COMPLETE, aTask)
+            aTask = Task(curTime,  Task.TASK_TYPE_SERVICE, deadline, rtt_delay, self.node, service, labels, h_spaces, serviceTime, flow_id, receiver)
+            controller.add_event(curTime+serviceTime, receiver, service, labels, h_spaces, self.node, flow_id, deadline, rtt_delay, TASK_COMPLETE, aTask)
             controller.execute_service(flow_id, service, self.node, curTime,  self.is_cloud)
             if debug:
                 print ("CLOUD: Accepting TASK")
@@ -919,7 +920,7 @@ class ComputationSpot(object):
         if numVMs <= 0:
             return [False, NO_INSTANCES]
 
-        aTask = Task(curTime,  Task.TASK_TYPE_SERVICE, deadline, rtt_delay, self.node, service, labels, serviceTime, flow_id, receiver)
+        aTask = Task(curTime,  Task.TASK_TYPE_SERVICE, deadline, rtt_delay, self.node, service, labels, h_spaces, serviceTime, flow_id, receiver)
         self.scheduler.addToTaskQueue(aTask, curTime)
         self.compute_completion_times(curTime,  True, debug)
         for task in self.scheduler._taskQueue[:]:
@@ -943,7 +944,7 @@ class ComputationSpot(object):
         # Run the next task (if there is any)
         newTask = self.scheduler.schedule(curTime) 
         if newTask is not None:
-            controller.add_event(newTask.completionTime, newTask.receiver, newTask.service, newTask.labels, self.node, newTask.flow_id, newTask.expiry, newTask.rtt_delay, TASK_COMPLETE, newTask) 
+            controller.add_event(newTask.completionTime, newTask.receiver, newTask.service, newTask.labels, newTask.h_spaces, self.node, newTask.flow_id, newTask.expiry, newTask.rtt_delay, TASK_COMPLETE, newTask)
 
         if self.numberOfVMInstances[service] == 0:
             print ("Error: this should not happen in admit_task_EDF()")
@@ -954,12 +955,12 @@ class ComputationSpot(object):
 
     # TODO: ADAPT BOTH FOR LABELS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    def admit_task(self, service, labels, curTime,  flow_id, deadline, receiver, rtt_delay, controller, debug):
+    def admit_task(self, service, labels, h_spaces, curTime,  flow_id, deadline, receiver, rtt_delay, controller, debug):
         ret = None
         if self.scheduler.sched_policy == "EDF":
-            ret = self.admit_task_EDF(service, labels, curTime,  flow_id, deadline, receiver, rtt_delay, controller, debug)
+            ret = self.admit_task_EDF(service, labels, h_spaces, curTime,  flow_id, deadline, receiver, rtt_delay, controller, debug)
         elif self.scheduler.sched_policy == "FIFO":
-            ret = self.admit_task_FIFO(service, labels, curTime,  flow_id, deadline, receiver, rtt_delay, controller, debug)
+            ret = self.admit_task_FIFO(service, labels, h_spaces, curTime,  flow_id, deadline, receiver, rtt_delay, controller, debug)
         else:
             print ("Error: This should not happen in admit_task(): " +repr(self.scheduler.sched_policy))
             
@@ -1065,7 +1066,7 @@ class ComputationSpot(object):
             self.scheduler.addToTaskQueue(aTask, curTime)
             newTask = self.scheduler.schedule(curTime)
             if newTask is not None:
-                controller.add_event(newTask.completionTime, newTask.receiver, newTask.service, newTask.labels, self.node, newTask.flow_id, newTask.expiry, newTask.rtt_delay, TASK_COMPLETE, newTask)
+                controller.add_event(newTask.completionTime, newTask.receiver, newTask.service, newTask.labels, newTask.h_spaces, self.node, newTask.flow_id, newTask.expiry, newTask.rtt_delay, TASK_COMPLETE, newTask)
         else:
             aTask = Task(curTime,  Task.TASK_TYPE_VM_START, float('inf'), 0, self.node, serviceToReplace, [], VM.instantiationDuration, None, None, float('inf'))
             self.scheduler.addToUpcomingTaskQueue(aTask, curTime)

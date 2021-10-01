@@ -328,21 +328,21 @@ class HashRepoProcStorApp(Strategy):
         # TODO: First do storage hash space matching:
         # and then (in the same checks)
         # FIXME: Add data to storage:
-        if msg["h_space"] in self.view.get_node_h_spaces(node) and status == REQUEST or self.in_count == 0 or \
+        self.in_count += 1
+        if msg["h_space"] in self.view.get_node_h_spaces(node) and status == REQUEST or \
                 self.hit_count/self.in_count < self.hit_rate:
             # TODO: Here is where the reuse happens, basically, and we only care to basically add the reuse delay to the
             #  request (if request) execution/RTT and return the SATISFIED request.
 
-            if self.in_count == 0 or self.hit_count/self.in_count < self.hit_rate:
+            if self.hit_count/self.in_count < self.hit_rate:
                 self.view.update_node_reuse(node, True)
                 self.hit_count += 1
                 msg['service_type'] = "processed"
                 new_status = True
-            else:
-                self.view.update_node_reuse(node, False)
-            self.in_count += 1
 
-        elif self.view.hasStorageCapability(node) and not new_status and ('satisfied' not in msg or 'Shelf' not in msg):
+        elif self.view.hasStorageCapability(node) and not new_status and ('satisfied' not in msg or 'Shelf' not in msg)\
+                and msg["h_space"] in self.view.get_node_h_spaces(node):
+            self.view.update_node_reuse(node, False)
             self.controller.add_replication_hops(msg)
             self.controller.add_request_h_spaces_to_node(node, msg)
             # FIXME: There might be an error here, adding request labels to storage without the requests first actually
@@ -375,12 +375,13 @@ class HashRepoProcStorApp(Strategy):
                     delay = self.view.path_delay(node, next_node)
                     self.controller.add_request_labels_to_node(node, msg)
 
-                    self.controller.add_event(curTime + delay, node, msg, msg['labels'], next_node, flow_id,
-                                              curTime + msg['shelf_life'], rtt_delay, STORE)
+                    self.controller.add_event(curTime + delay, node, msg, msg['labels'], msg['h_space'], next_node,
+                                              flow_id, curTime + msg['shelf_life'], rtt_delay, STORE)
                     # print "Message: " + str(msg['content']) + " sent from node " + str(node) + " to node " + str(next_node)
                     self.controller.replicate(node, next_node)
 
         elif not new_status and msg["h_space"] in self.view.get_node_h_spaces(node):
+            self.view.update_node_reuse(node, False)
             msg['overtime'] = False
             source = self.view.content_source_cloud(msg, msg['labels'])
             if not source:
@@ -391,8 +392,8 @@ class HashRepoProcStorApp(Strategy):
             next_node = path[1]
             delay = self.view.path_delay(node, next_node)
             rtt_delay += delay * 2
-            self.controller.add_event(curTime + delay, receiver, msg, msg['labels'], next_node, flow_id, deadline,
-                                      rtt_delay, STORE)
+            self.controller.add_event(curTime + delay, receiver, msg, msg['labels'], msg['h_space'], next_node, flow_id,
+                                      deadline, rtt_delay, STORE)
             # print "Message: " + str(msg['content']) + " sent from node " + str(node) + " to node " + str(next_node)
 
         # TODO: Last, but CERTAINLY NOT LEAST, update storage/computational requirements - might need to add another
@@ -404,10 +405,13 @@ class HashRepoProcStorApp(Strategy):
         """
         This method updates the repo-associated hash spaces based on the reuse performance of each repo (and potentially
         ranking hash spaces based on the reuse quotes they need.
+
+        max_count: integer (optional)
+            Maximum amount of moves between higher and lower CPU-usage nodes
         """
 
-        high_proc = self.view.most_proc_usage(max_count)
-        low_proc = self.view.least_proc_usage(max_count)
+        high_proc = zip(self.view.most_proc_usage(max_count))
+        low_proc = zip(self.view.least_proc_usage(max_count))
         h_spaces = []
         for node in self.view.model.all_node_h_spaces:
             if node in high_proc:
@@ -416,10 +420,10 @@ class HashRepoProcStorApp(Strategy):
                         h_spaces.append(h)
 
         count = 0
-        for n in range(0, len(high_proc)):
+        for n in range(0, len(self.view.most_proc_usage(max_count)[0])):
             if count < int(max_count/2):
-                for h in self.view.model.all_node_h_spaces[high_proc[n]]:
-                    self.controller.move_h_space_proc(high_proc[n], low_proc[n], h)  # TODO: define move_h_space in network controller
+                for n_h, h, n_l, l in zip(high_proc, low_proc):
+                    self.controller.move_h_space_proc(n_h, n_l, h, l)  # TODO: define move_h_space in network controller
                     count += 1
         self.epoch_count = 0
 
@@ -427,7 +431,7 @@ class HashRepoProcStorApp(Strategy):
 
     @inheritdoc(Strategy)
     # @profile
-    def process_event(self, curTime, receiver, content, log, labels, node, flow_id, deadline, rtt_delay, status,
+    def process_event(self, curTime, receiver, content, log, labels, h_spaces, node, flow_id, deadline, rtt_delay, status,
                       task=None):
         # System.out.prln("processor update is accessed")
 
@@ -470,13 +474,13 @@ class HashRepoProcStorApp(Strategy):
         if self.view.hasStorageCapability(node):
 
             self.updateCloudBW(node, period)
-            self.deplCloud(node, receiver, content, labels, log, flow_id, deadline, rtt_delay, period)
+            self.deplCloud(node, receiver, content, labels, h_spaces, log, flow_id, deadline, rtt_delay, period)
             self.updateDeplBW(node, period)
-            self.deplStorage(node, receiver, content, labels, log, flow_id, deadline, rtt_delay, period)
+            self.deplStorage(node, receiver, content, labels, h_spaces, log, flow_id, deadline, rtt_delay, period)
 
         elif not self.view.hasStorageCapability(node) and self.view.has_computationalSpot(node):
             self.updateUpBW(node, period)
-            self.deplUp(node, receiver, content, labels, log, flow_id, deadline, rtt_delay, period)
+            self.deplUp(node, receiver, content, labels, h_spaces, log, flow_id, deadline, rtt_delay, period)
 
         """
                 response : True, if this is a response from the cloudlet/cloud
@@ -501,7 +505,7 @@ class HashRepoProcStorApp(Strategy):
         elif type(content) is dict and 'shelf_life' in content and content["shelf_life"] :
             source, in_cache = self.view.closest_source(node, content)
             path = self.view.shortest_path(node, source)
-            m, new_s = self.handle(curTime, receiver, content, node, log, feedback, flow_id, rtt_delay, deadline)
+            m, new_s = self.handle(curTime, receiver, content, node, log, feedback, flow_id, rtt_delay, deadline, status)
         if new_s:
             status = RESPONSE
         service = content
@@ -564,8 +568,8 @@ class HashRepoProcStorApp(Strategy):
                         next_node = path[1]
                         delay = self.view.link_delay(node, next_node)
                         path_del = self.view.path_delay(node, receiver)
-                        self.controller.add_event(curTime + cache_delay + delay, receiver, service, labels, next_node,
-                                                  flow_id, deadline, rtt_delay, RESPONSE)
+                        self.controller.add_event(curTime + cache_delay + delay, receiver, service, labels, h_spaces,
+                                                  next_node, flow_id, deadline, rtt_delay, RESPONSE)
                         if path_del + curTime > deadline:
                             if type(content) is dict:
                                 compSpot.missed_requests[content['content']] += 1
@@ -586,7 +590,7 @@ class HashRepoProcStorApp(Strategy):
                         next_node = path[1]
                         delay = self.view.link_delay(node, next_node)
                         path_del = self.view.path_delay(node, receiver)
-                        self.controller.add_event(curTime + delay, receiver, service, labels, next_node,
+                        self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces, next_node,
                                                   flow_id, deadline, rtt_delay, RESPONSE)
                         if path_del + curTime > deadline:
                             if type(content) is dict:
@@ -602,8 +606,11 @@ class HashRepoProcStorApp(Strategy):
                 #  (we also need to track it live, within the compspots)
 
                 self.view.update_node_reuse(node, False)
-                ret, reason = compSpot.admit_task(service['content'], labels, curTime, flow_id, deadline, receiver,
-                                                  rtt_delay + cache_delay, self.controller, self.debug)
+                ret, reason = compSpot.admit_task(service['content'], service['labels'], service['h_space'], curTime, flow_id,
+                                                  deadline, receiver, rtt_delay + cache_delay, self.controller,
+                                                  self.debug)
+                if ret:
+                    self.controller.add_proc(node, service['h_space'])
 
                 if ret == False:
                     if type(node) == str and "src" in node:
@@ -617,7 +624,7 @@ class HashRepoProcStorApp(Strategy):
                         services = self.view.services()
                         serviceTime = services[service['content']].service_time
                         self.controller.add_event(curTime + rtt_delay + serviceTime, receiver, service, labels,
-                                                  receiver, flow_id, deadline, rtt_delay, RESPONSE)
+                                                  h_spaces, receiver, flow_id, deadline, rtt_delay, RESPONSE)
                         if self.debug:
                             print("Request is scheduled to run at the CLOUD")
                     for n in path[1:]:
@@ -650,8 +657,8 @@ class HashRepoProcStorApp(Strategy):
                         next_node = path[1]
                         delay = self.view.link_delay(node, next_node)
                         path_del = self.view.path_delay(node, receiver)
-                        self.controller.add_event(curTime + cache_delay + delay, receiver, service, labels, next_node,
-                                                  flow_id, deadline, rtt_delay, RESPONSE)
+                        self.controller.add_event(curTime + cache_delay + delay, receiver, service, labels, h_spaces,
+                                                  next_node, flow_id, deadline, rtt_delay, RESPONSE)
                         if path_del + curTime > deadline:
                             if type(content) is dict:
                                 compSpot.missed_requests[content['content']] += 1
@@ -672,7 +679,7 @@ class HashRepoProcStorApp(Strategy):
                         next_node = path[1]
                         delay = self.view.link_delay(node, next_node)
                         path_del = self.view.path_delay(node, receiver)
-                        self.controller.add_event(curTime + delay, receiver, service, labels, next_node,
+                        self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces, next_node,
                                                   flow_id, deadline, rtt_delay, RESPONSE)
                         if path_del + curTime > deadline:
                             if type(content) is dict:
@@ -682,8 +689,11 @@ class HashRepoProcStorApp(Strategy):
                         return
                 if compSpot is not None and self.view.has_service(node, service) and service["service_type"] is "proc":
                     self.view.update_node_reuse(node, False)
-                    ret, reason = compSpot.admit_task(service['content'], labels, curTime, flow_id, deadline, receiver,
-                                                      rtt_delay + cache_delay, self.controller, self.debug)
+                    ret, reason = compSpot.admit_task(service['content'], service['labels'], service['h_space'],
+                                                      curTime, flow_id, deadline, receiver, rtt_delay + cache_delay,
+                                                      self.controller, self.debug)
+                    if ret:
+                        self.controller.add_proc(node, service['h_space'])
 
                     if ret == False:
 
@@ -706,8 +716,8 @@ class HashRepoProcStorApp(Strategy):
                         #                           deadline, rtt_delay, STORE)
                         rtt_delay += delay * 2
                         if upstream_node != source:
-                            self.controller.add_event(curTime + delay, receiver, content, labels, upstream_node,
-                                                      flow_id, deadline, rtt_delay, REQUEST)
+                            self.controller.add_event(curTime + delay, receiver, content, labels, h_spaces,
+                                                      upstream_node, flow_id, deadline, rtt_delay, REQUEST)
                             if self.view.hasStorageCapability(node) and not self.view.storage_nodes()[node].hasMessage(
                                     service['content'], service['labels']):
                                 self.controller.add_request_labels_to_node(node, service)
@@ -717,7 +727,7 @@ class HashRepoProcStorApp(Strategy):
                             services = self.view.services()
                             serviceTime = services[service['content']].service_time
                             self.controller.add_event(curTime + rtt_delay + serviceTime, receiver, service, labels,
-                                                      receiver, flow_id, deadline, rtt_delay, RESPONSE)
+                                                      h_spaces, receiver, flow_id, deadline, rtt_delay, RESPONSE)
                             if self.debug:
                                 print("Request is scheduled to run at the CLOUD")
                     return
@@ -726,12 +736,12 @@ class HashRepoProcStorApp(Strategy):
             #  Request at the receiver
             if receiver == node and status == REQUEST:
 
-                self.controller.start_session(curTime, receiver, service, labels, log, flow_id, deadline)
+                self.controller.start_session(curTime, receiver, service, labels, h_spaces, log, flow_id, deadline)
                 path = self.view.shortest_path(node, cloud_source)
                 next_node = path[1]
                 delay = self.view.path_delay(node, next_node)
                 rtt_delay += delay * 2
-                self.controller.add_event(curTime + delay, receiver, service, labels, next_node, flow_id,
+                self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces, next_node, flow_id,
                                           deadline, rtt_delay, REQUEST)
                 if self.view.hasStorageCapability(node) and not self.view.storage_nodes()[node].hasMessage(
                         service['content'], service['labels']):
@@ -762,8 +772,8 @@ class HashRepoProcStorApp(Strategy):
                     # TODO: Need to add fetch delay to the response in this case.
                     fetch_del = 0.02
                     path_del = self.view.path_delay(node, receiver)
-                    self.controller.add_event(curTime + fetch_del + delay, receiver, service, labels, next_node,
-                                      flow_id, deadline, rtt_delay, RESPONSE)
+                    self.controller.add_event(curTime + fetch_del + delay, receiver, service, labels, h_spaces,
+                                              next_node, flow_id, deadline, rtt_delay, RESPONSE)
                     if path_del + fetch_del + curTime > deadline:
                         if type(content) is dict:
                             compSpot.missed_requests[content['content']] += 1
@@ -775,7 +785,7 @@ class HashRepoProcStorApp(Strategy):
                     next_node = path[1]
                     delay = self.view.link_delay(node, next_node)
                     path_del = self.view.path_delay(node, receiver)
-                    self.controller.add_event(curTime + delay, receiver, service, labels, next_node,
+                    self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces, next_node,
                                               flow_id, deadline, rtt_delay, RESPONSE)
                     if path_del + curTime > deadline:
                         if type(content) is dict:
@@ -785,12 +795,13 @@ class HashRepoProcStorApp(Strategy):
 
             elif status == TASK_COMPLETE:
                 self.controller.complete_task(task, curTime)
+                self.controller.sub_proc(node, service['h_space'])
                 if node != source:
                     newTask = compSpot.scheduler.schedule(curTime)
                     # schedule the next queued task at this node
                     if newTask is not None:
                         self.controller.add_event(newTask.completionTime, newTask.receiver, newTask.service,
-                                                  newTask.labels, node, newTask.flow_id,
+                                                  newTask.labels, h_spaces, node, newTask.flow_id,
                                                   newTask.expiry, newTask.rtt_delay, TASK_COMPLETE, newTask)
 
                 # forward the completed task
@@ -817,7 +828,7 @@ class HashRepoProcStorApp(Strategy):
                                 delay = self.view.link_delay(node, next_node)
                                 path_del = self.view.path_delay(node, receiver)
                                 self.controller.add_event(curTime + cache_delay + delay, receiver, service, labels,
-                                                          next_node, flow_id, deadline, rtt_delay, RESPONSE)
+                                                          h_spaces, next_node, flow_id, deadline, rtt_delay, RESPONSE)
                                 if path_del + curTime > deadline:
                                     if type(content) is dict:
                                         compSpot.missed_requests[content['content']] += 1
@@ -831,8 +842,8 @@ class HashRepoProcStorApp(Strategy):
                                 next_node = path[1]
                                 delay = self.view.link_delay(node, next_node)
                                 path_del = self.view.path_delay(node, receiver)
-                                self.controller.add_event(curTime + delay, receiver, service, labels, next_node,
-                                                          flow_id, deadline, rtt_delay, RESPONSE)
+                                self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces,
+                                                          next_node, flow_id, deadline, rtt_delay, RESPONSE)
                                 if path_del + curTime > deadline:
                                     if type(content) is dict:
                                         compSpot.missed_requests[content['content']] += 1
@@ -862,7 +873,7 @@ class HashRepoProcStorApp(Strategy):
                                 delay = self.view.link_delay(node, next_node)
                                 path_del = self.view.path_delay(node, receiver)
                                 self.controller.add_event(curTime + cache_delay + delay, receiver, service, labels,
-                                                          next_node,flow_id, deadline, rtt_delay, RESPONSE)
+                                                          h_spaces, next_node,flow_id, deadline, rtt_delay, RESPONSE)
                                 if path_del + curTime > deadline:
                                     if type(content) is dict:
                                         compSpot.missed_requests[content['content']] += 1
@@ -883,8 +894,8 @@ class HashRepoProcStorApp(Strategy):
                                 next_node = path[1]
                                 delay = self.view.link_delay(node, next_node)
                                 path_del = self.view.path_delay(node, receiver)
-                                self.controller.add_event(curTime + delay, receiver, service, labels, next_node,
-                                                          flow_id, deadline, rtt_delay, RESPONSE)
+                                self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces,
+                                                          next_node, flow_id, deadline, rtt_delay, RESPONSE)
                                 if path_del + curTime > deadline:
                                     if type(content) is dict:
                                         compSpot.missed_requests[content['content']] += 1
@@ -892,6 +903,7 @@ class HashRepoProcStorApp(Strategy):
                                         compSpot.missed_requests[content] += 1
                                 return
                         service['labels'] = self.controller.has_message(node, labels, content)['labels']
+                        service['h_space'] = self.controller.has_message(node, labels, content)['h_space']
                         if service['freshness_per'] > curTime - service['receiveTime']:
                             service['Fresh'] = True
                             service['Shelf'] = True
@@ -907,6 +919,7 @@ class HashRepoProcStorApp(Strategy):
                         service = dict()
                         service['content'] = content
                         service['labels'] = labels
+                        service['h_space'] = h_spaces
                         service['msg_size'] = 1000000
                         service['Fresh'] = False
                         service['Shelf'] = False
@@ -950,10 +963,10 @@ class HashRepoProcStorApp(Strategy):
                         self.controller.add_storage_labels_to_node(node, service)
 
                 else:
-                    self.controller.add_event(curTime + delay, receiver, service, labels, next_node, flow_id,
+                    self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces, next_node, flow_id,
                                               deadline, rtt_delay, STORE)
 
-                self.controller.add_event(curTime + delay, receiver, service, labels, next_node, flow_id,
+                self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces, next_node, flow_id,
                                           deadline, rtt_delay, RESPONSE)
                 if (node != source and curTime + path_delay > deadline):
                     print("Error in HYBRID strategy: Request missed its deadline\nResponse at receiver at time: " + str(
@@ -1003,8 +1016,7 @@ class HashRepoProcStorApp(Strategy):
                                 delay = self.view.link_delay(node, next_node)
                                 path_del = self.view.path_delay(node, receiver)
                                 self.controller.add_event(curTime + cache_delay + delay, receiver, service, labels,
-                                                          next_node,
-                                                          flow_id, deadline, rtt_delay, RESPONSE)
+                                                          h_spaces, next_node, flow_id, deadline, rtt_delay, RESPONSE)
                                 if path_del + curTime > deadline:
                                     if type(content) is dict:
                                         compSpot.missed_requests[content['content']] += 1
@@ -1025,8 +1037,8 @@ class HashRepoProcStorApp(Strategy):
                                 next_node = path[1]
                                 delay = self.view.link_delay(node, next_node)
                                 path_del = self.view.path_delay(node, receiver)
-                                self.controller.add_event(curTime + delay, receiver, service, labels, next_node,
-                                                          flow_id, deadline, rtt_delay, RESPONSE)
+                                self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces,
+                                                          next_node, flow_id, deadline, rtt_delay, RESPONSE)
                                 if path_del + curTime > deadline:
                                     if type(content) is dict:
                                         compSpot.missed_requests[content['content']] += 1
@@ -1036,8 +1048,9 @@ class HashRepoProcStorApp(Strategy):
                         if self.debug:
                             print("Calling admit_task")
                         self.view.update_node_reuse(node, False)
-                        ret, reason = compSpot.admit_task(service['content'], labels, curTime, flow_id, deadline,
-                                                          receiver, rtt_delay, self.controller, self.debug)
+                        ret, reason = compSpot.admit_task(service['content'], labels, service['h_space'], curTime,
+                                                          flow_id, deadline, receiver, rtt_delay, self.controller,
+                                                          self.debug)
                         if self.debug:
                             print("Done Calling admit_task")
                         if ret is False:
@@ -1045,7 +1058,7 @@ class HashRepoProcStorApp(Strategy):
                             rtt_delay += delay * 2
                             # delay += 0.01 # delay associated with content fetch from storage
                             # WE DON'T INCLUDE THIS BECAUSE THE CONTENT MAY BE PRE-FETCHED INTO THE CACHE FROM STORAGE
-                            self.controller.add_event(curTime + delay, receiver, service, labels, next_node,
+                            self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces, next_node,
                                                       flow_id, deadline, rtt_delay, REQUEST)
                             if self.view.hasStorageCapability(node) and not self.view.storage_nodes()[node].hasMessage(
                                     service['content'], service['labels']):
@@ -1073,7 +1086,7 @@ class HashRepoProcStorApp(Strategy):
                         if self.debug:
                             print("Not running the service: Pass upstream to node: " + repr(next_node))
                         rtt_delay += delay * 2
-                        self.controller.add_event(curTime + delay, receiver, service, labels, next_node,
+                        self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces, next_node,
                                                   flow_id, deadline, rtt_delay, REQUEST)
                         if self.view.hasStorageCapability(node) and not self.view.storage_nodes()[node].hasMessage(
                                 service['content'], service['labels']):
@@ -1086,7 +1099,7 @@ class HashRepoProcStorApp(Strategy):
                     if self.debug:
                         print("Not running the service: Pass upstream to node: " + repr(next_node))
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, service, labels, next_node,
+                    self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces, next_node,
                                               flow_id, deadline, rtt_delay, REQUEST)
                     if self.view.hasStorageCapability(node) and not self.view.storage_nodes()[node].hasMessage(
                             service['content'], service['labels']):
@@ -1134,7 +1147,7 @@ class HashRepoProcStorApp(Strategy):
             serviceTime = cs.services[service['content']].service_time
             if deadline - curTime - rtt_to_cs < serviceTime:
                 continue
-            aTask = Task(curTime, Task.TASK_TYPE_SERVICE, deadline, rtt_to_cs, n, service['content'], service['labels'], serviceTime, flow_id, receiver, curTime+delay)
+            aTask = Task(curTime, Task.TASK_TYPE_SERVICE, deadline, rtt_to_cs, n, service['content'], service['labels'], service['h_space'], serviceTime, flow_id, receiver, curTime+delay)
             cs.scheduler.upcomingTaskQueue.append(aTask)
             cs.scheduler.upcomingTaskQueue = sorted(cs.scheduler.upcomingTaskQueue, key=lambda x: x.arrivalTime)
             cs.compute_completion_times(curTime, False, self.debug)
@@ -1176,7 +1189,7 @@ class HashRepoProcStorApp(Strategy):
         self.deplBW = self.view.model.repoStorage[node].getDepletedProcMessagesBW(period) + \
                       self.view.model.repoStorage[node].getDepletedUnProcMessagesBW(period) + \
                       self.view.model.repoStorage[node].getDepletedMessagesBW(period)
-    def deplCloud(self, node, receiver, content, labels, log, flow_id, deadline, rtt_delay=0, period=False):
+    def deplCloud(self, node, receiver, content, labels, h_spaces, log, flow_id, deadline, rtt_delay=0, period=False):
         curTime = time.time()
         if (self.view.model.repoStorage[node].getProcessedMessagesSize() +
                 self.view.model.repoStorage[node].getStaleMessagesSize() >
@@ -1213,8 +1226,8 @@ class HashRepoProcStorApp(Strategy):
                     next_node = path[1]
                     delay = self.view.path_delay(node, next_node)
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, msg, labels, next_node, flow_id, deadline,
-                                              rtt_delay, STORE)
+                    self.controller.add_event(curTime + delay, receiver, msg, labels, h_spaces, next_node, flow_id,
+                                              deadline, rtt_delay, STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
                     """ Oldest unprocessed message is depleted (as a FIFO type of storage) """
@@ -1230,8 +1243,8 @@ class HashRepoProcStorApp(Strategy):
                     next_node = path[1]
                     delay = self.view.path_delay(node, next_node)
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, msg, labels, next_node, flow_id, deadline,
-                                              rtt_delay, STORE)
+                    self.controller.add_event(curTime + delay, receiver, msg, labels, h_spaces, next_node, flow_id,
+                                              deadline, rtt_delay, STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
 
@@ -1249,8 +1262,8 @@ class HashRepoProcStorApp(Strategy):
                     next_node = path[1]
                     delay = self.view.path_delay(node, next_node)
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, msg, labels, next_node, flow_id, deadline,
-                                              rtt_delay, STORE)
+                    self.controller.add_event(curTime + delay, receiver, msg, labels, h_spaces, next_node, flow_id,
+                                              deadline, rtt_delay, STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
 
@@ -1293,8 +1306,8 @@ class HashRepoProcStorApp(Strategy):
                     next_node = path[1]
                     delay = self.view.path_delay(node, next_node)
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, msg, labels, next_node, flow_id, deadline,
-                                              rtt_delay, STORE)
+                    self.controller.add_event(curTime + delay, receiver, msg, labels, h_spaces, next_node, flow_id,
+                                              deadline, rtt_delay, STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
 
@@ -1316,8 +1329,8 @@ class HashRepoProcStorApp(Strategy):
                     next_node = path[1]
                     delay = self.view.path_delay(node, next_node)
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, msg, labels, next_node, flow_id, deadline,
-                                              rtt_delay, STORE)
+                    self.controller.add_event(curTime + delay, receiver, msg, labels, h_spaces, next_node, flow_id,
+                                              deadline, rtt_delay, STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
 
@@ -1338,8 +1351,8 @@ class HashRepoProcStorApp(Strategy):
                     next_node = path[1]
                     delay = self.view.path_delay(node, next_node)
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, msg, labels, next_node, flow_id, deadline,
-                                              rtt_delay, STORE)
+                    self.controller.add_event(curTime + delay, receiver, msg, labels, h_spaces, next_node, flow_id,
+                                              deadline, rtt_delay, STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
 
@@ -1360,7 +1373,7 @@ class HashRepoProcStorApp(Strategy):
                       " Total space is " + self.view.model.repoStorage[node].getTotalStorageSpace()) """
                 # System.out.prln("Depleted  messages: " + sdepleted)
 
-    def deplUp(self, node, receiver, content, labels, log, flow_id, deadline, rtt_delay=0, period=False):
+    def deplUp(self, node, receiver, content, labels, h_spaces, log, flow_id, deadline, rtt_delay=0, period=False):
         curTime = time.time()
         if (self.view.model.repoStorage[node].getProcessedMessagesSize() >
                 (self.view.model.repoStorage[node].getTotalStorageSpace() * self.min_stor)):
@@ -1389,8 +1402,8 @@ class HashRepoProcStorApp(Strategy):
                     next_node = path[1]
                     delay = self.view.path_delay(node, next_node)
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, msg, labels, next_node, flow_id, deadline,
-                                              rtt_delay, STORE)
+                    self.controller.add_event(curTime + delay, receiver, msg, labels, h_spaces, next_node, flow_id,
+                                              deadline, rtt_delay, STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
 
@@ -1408,8 +1421,8 @@ class HashRepoProcStorApp(Strategy):
                     next_node = path[1]
                     delay = self.view.path_delay(node, next_node)
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, msg, labels, next_node, flow_id, deadline,
-                                              rtt_delay, STORE)
+                    self.controller.add_event(curTime + delay, receiver, msg, labels, h_spaces, next_node, flow_id,
+                                              deadline, rtt_delay, STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
 
@@ -1426,8 +1439,8 @@ class HashRepoProcStorApp(Strategy):
                     next_node = path[1]
                     delay = self.view.path_delay(node, next_node)
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, msg, labels, next_node, flow_id, deadline,
-                                              rtt_delay, STORE)
+                    self.controller.add_event(curTime + delay, receiver, msg, labels, h_spaces, next_node, flow_id,
+                                              deadline, rtt_delay, STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
 
@@ -1463,7 +1476,7 @@ class HashRepoProcStorApp(Strategy):
 
     # System.out.prln("Depletion is at: "+ self.cloudBW)
 
-    def deplStorage(self, node, receiver, content, labels, log, flow_id, deadline, rtt_delay=0, period=False):
+    def deplStorage(self, node, receiver, content, labels, h_spaces, log, flow_id, deadline, rtt_delay=0, period=False):
         curTime = time.time()
         if (self.view.model.repoStorage[node].getProcMessagesSize() +
                 self.view.model.repoStorage[node].getMessagesSize() >
@@ -1485,8 +1498,8 @@ class HashRepoProcStorApp(Strategy):
                     next_node = path[1]
                     delay = self.view.path_delay(node, next_node)
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, msg, labels, next_node, flow_id, deadline,
-                                              rtt_delay, STORE)
+                    self.controller.add_event(curTime + delay, receiver, msg, labels, h_spaces, next_node, flow_id,
+                                              deadline, rtt_delay, STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
                     """ Oldest unprocessed message is depleted (as a FIFO type of storage) """
@@ -1506,8 +1519,8 @@ class HashRepoProcStorApp(Strategy):
                     next_node = path[1]
                     delay = self.view.path_delay(node, next_node)
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, msg, labels, next_node, flow_id, deadline,
-                                              rtt_delay, STORE)
+                    self.controller.add_event(curTime + delay, receiver, msg, labels, h_spaces, next_node, flow_id,
+                                              deadline, rtt_delay, STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
 
@@ -1527,8 +1540,8 @@ class HashRepoProcStorApp(Strategy):
                     next_node = path[1]
                     delay = self.view.path_delay(node, next_node)
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, msg, labels, next_node, flow_id, deadline,
-                                              rtt_delay, STORE)
+                    self.controller.add_event(curTime + delay, receiver, msg, labels, h_spaces, next_node, flow_id,
+                                              deadline, rtt_delay, STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
 
@@ -1549,7 +1562,7 @@ class HashRepoProcStorApp(Strategy):
                                     source = n
                     delay = self.view.path_delay(node, source)
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, ctemp, labels, source, flow_id, deadline, rtt_delay,
+                    self.controller.add_event(curTime + delay, receiver, ctemp, labels, h_spaces, source, flow_id, deadline, rtt_delay,
                                               STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
@@ -1571,7 +1584,7 @@ class HashRepoProcStorApp(Strategy):
                                     source = n
                     delay = self.view.path_delay(node, source)
                     rtt_delay += delay * 2
-                    self.controller.add_event(curTime + delay, receiver, ctemp, labels, source, flow_id, deadline, rtt_delay,
+                    self.controller.add_event(curTime + delay, receiver, ctemp, labels, h_spaces, source, flow_id, deadline, rtt_delay,
                                               STORE)
                     if self.debug:
                         print("Message is scheduled to be stored in the CLOUD")
@@ -1590,7 +1603,7 @@ class HashRepoProcStorApp(Strategy):
                                     source = n
                         delay = self.view.path_delay(node, source)
                         rtt_delay += delay * 2
-                        self.controller.add_event(curTime + delay, receiver, content, labels, source, flow_id, deadline, rtt_delay,
+                        self.controller.add_event(curTime + delay, receiver, content, labels, h_spaces, source, flow_id, deadline, rtt_delay,
                                                   STORE)
                         if self.debug:
                             print("Message is scheduled to be stored in the CLOUD")
@@ -1603,7 +1616,7 @@ class HashRepoProcStorApp(Strategy):
                                     source = n
                         delay = self.view.path_delay(node, source)
                         rtt_delay += delay * 2
-                        self.controller.add_event(curTime + delay, receiver, content, labels, source, flow_id, deadline, rtt_delay,
+                        self.controller.add_event(curTime + delay, receiver, content, labels, h_spaces, source, flow_id, deadline, rtt_delay,
                                                   STORE)
                         if self.debug:
                             print("Message is scheduled to be stored in the CLOUD")
@@ -2115,7 +2128,7 @@ class HServProStorApp(Strategy):
         return msg
 
     @inheritdoc(Strategy)
-    def process_event(self, curTime, receiver, content, log, labels, node, flow_id, deadline, rtt_delay, status,
+    def process_event(self, curTime, receiver, content, log, labels, h_spaces, node, flow_id, deadline, rtt_delay, status,
                       task=None):
         # System.out.prln("processor update is accessed")
 
@@ -2443,7 +2456,7 @@ class HServProStorApp(Strategy):
                     # schedule the next queued task at this node
                     if newTask is not None:
                         self.controller.add_event(newTask.completionTime, newTask.receiver, newTask.service,
-                                                  newTask.labels, node, newTask.flow_id,
+                                                  newTask.labels, h_spaces, node, newTask.flow_id,
                                                   newTask.expiry, newTask.rtt_delay, TASK_COMPLETE, newTask)
 
                 # forward the completed task
@@ -3807,7 +3820,7 @@ class HServReStorApp(Strategy):
         return msg
 
     @inheritdoc(Strategy)
-    def process_event(self, curTime, receiver, content, log, labels, node, flow_id, deadline, rtt_delay, status,
+    def process_event(self, curTime, receiver, content, log, labels, h_spaces, node, flow_id, deadline, rtt_delay, status,
                       task=None):
         # System.out.prln("processor update is accessed")
 
@@ -4134,7 +4147,7 @@ class HServReStorApp(Strategy):
                     # schedule the next queued task at this node
                     if newTask is not None:
                         self.controller.add_event(newTask.completionTime, newTask.receiver, newTask.service,
-                                                  newTask.labels, node, newTask.flow_id,
+                                                  newTask.labels, h_spaces, node, newTask.flow_id,
                                                   newTask.expiry, newTask.rtt_delay, TASK_COMPLETE, newTask)
 
                 # forward the completed task
@@ -5502,7 +5515,7 @@ class HServSpecStorApp(Strategy):
         return msg
 
     @inheritdoc(Strategy)
-    def process_event(self, curTime, receiver, content, log, labels, node, flow_id, deadline, rtt_delay, status,
+    def process_event(self, curTime, receiver, content, log, labels, h_spaces, node, flow_id, deadline, rtt_delay, status,
                       task=None):
         # System.out.prln("processor update is accessed")
 
@@ -5828,7 +5841,7 @@ class HServSpecStorApp(Strategy):
                     # schedule the next queued task at this node
                     if newTask is not None:
                         self.controller.add_event(newTask.completionTime, newTask.receiver, newTask.service,
-                                                  newTask.labels, node, newTask.flow_id,
+                                                  newTask.labels, newTask.h_spaces, node, newTask.flow_id,
                                                   newTask.expiry, newTask.rtt_delay, TASK_COMPLETE, newTask)
 
                 # forward the completed task

@@ -572,7 +572,7 @@ class NetworkView(object):
         """
         nodes = Counter()
 
-        for label in r_labels:
+        for label in h_space:
 
             nodes.update(self.model.request_h_space_nodes.get(label, None))
 

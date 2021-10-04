@@ -18,6 +18,7 @@ TODO: Create collectors for the different feedback mechanisms, which can then
 """
 from __future__ import division
 import collections
+import os
 
 from icarus.registry import register_data_collector
 from icarus.tools import cdf
@@ -557,69 +558,38 @@ class LatencyCollector(DataCollector):
     @inheritdoc(DataCollector)
     def results(self):
         # TODO: Maybe revise the below and make it even more customisable
-        if self.view.model.strategy == 'HYBRID':
-            res_file = "/hybrid.txt"
-            overhead_file = "/hybrid_overheads.txt"
-        elif self.view.model.strategy == 'HYBRIDS_REPO_APP':
-            res_file = "/hybrid_repo.txt"
-            r_replicas_file = "/gen_r_replicas.txt"
-            s_replicas_file = "/gen_s_replicas.txt"
-            r_labels_dist_file = "/gen_r_labels.txt"
-            s_labels_dist_file = "/gen_s_labels.txt"
-            overhead_file = "/gen_overheads.txt"
-        elif self.view.model.strategy == 'HYBRIDS_PRO_REPO_APP':
-            res_file = "/hybrid_pro_repo.txt"
-            r_replicas_file = "/pro_r_replicas.txt"
-            s_replicas_file = "/pro_s_replicas.txt"
-            r_labels_dist_file = "/pro_r_labels.txt"
-            s_labels_dist_file = "/pro_s_labels.txt"
-            overhead_file = "/pro_overheads.txt"
-        elif self.view.model.strategy == 'HYBRIDS_RE_REPO_APP':
-            res_file = "/hybrid_repo.txt"
-            r_replicas_file = "/re_r_replicas.txt"
-            s_replicas_file = "/re_s_replicas.txt"
-            r_labels_dist_file = "/re_r_labels.txt"
-            s_labels_dist_file = "/re_s_labels.txt"
-            overhead_file = "/re_overheads.txt"
-        elif self.view.model.strategy == 'HYBRIDS_SPEC_REPO_APP':
-            res_file = "/hybrid_repo.txt"
-            r_replicas_file = "/spec_r_replicas.txt"
-            s_replicas_file = "/spec_s_replicas.txt"
-            r_labels_dist_file = "/spec_r_labels.txt"
-            s_labels_dist_file = "/spec_s_labels.txt"
-            overhead_file = "/spec_overheads.txt"
 
         if self.view.model.strategy == 'HYBRID':
-            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/hybrid.txt", 'a')
-            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/hybrid_overheads.txt", 'a')
+            res = open(os.getcwd() + "/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hybrid.txt", 'a')
+            overhead = open(os.getcwd() + "/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hybrid_overheads.txt", 'a')
         elif self.view.model.strategy == 'HYBRIDS_REPO_APP':
-            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/hybrid_repo.txt", 'a')
-            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/gen_r_replicas.txt", 'a')
-            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/gen_s_replicas.txt", 'a')
-            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/gen_r_labels.txt", 'a')
-            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/gen_s_labels.txt", 'a')
-            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/gen_overheads.txt", 'a')
+            res = open(os.getcwd() + "/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hybrid_repo.txt", 'a')
+            r_replicas = open(os.getcwd() + "/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/gen_r_replicas.txt", 'a')
+            s_replicas = open(os.getcwd() + "/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/gen_s_replicas.txt", 'a')
+            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/gen_r_labels.txt", 'a')
+            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/gen_s_labels.txt", 'a')
+            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/gen_overheads.txt", 'a')
         elif self.view.model.strategy == 'HYBRIDS_PRO_REPO_APP':
-            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/hybrid_pro_repo.txt", 'a')
-            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/pro_r_replicas.txt", 'a')
-            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/pro_s_replicas.txt", 'a')
-            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/pro_r_labels.txt", 'a')
-            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/pro_s_labels.txt", 'a')
-            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/pro_overheads.txt", 'a')
+            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hybrid_pro_repo.txt", 'a')
+            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/pro_r_replicas.txt", 'a')
+            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/pro_s_replicas.txt", 'a')
+            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/pro_r_labels.txt", 'a')
+            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/pro_s_labels.txt", 'a')
+            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/pro_overheads.txt", 'a')
         elif self.view.model.strategy == 'HYBRIDS_RE_REPO_APP':
-            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/hybrid_re_repo.txt", 'a')
-            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/re_r_replicas.txt", 'a')
-            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/re_s_replicas.txt", 'a')
-            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/re_r_labels.txt", 'a')
-            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/re_s_labels.txt", 'a')
-            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/re_overheads.txt", 'a')
+            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hybrid_re_repo.txt", 'a')
+            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/re_r_replicas.txt", 'a')
+            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/re_s_replicas.txt", 'a')
+            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/re_r_labels.txt", 'a')
+            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/re_s_labels.txt", 'a')
+            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/re_overheads.txt", 'a')
         elif self.view.model.strategy == 'HYBRIDS_SPEC_REPO_APP':
-            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/hybrid_spec_repo.txt", 'a')
-            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/spec_r_replicas.txt", 'a')
-            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/spec_s_replicas.txt", 'a')
-            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/spec_r_labels.txt", 'a')
-            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/spec_s_labels.txt", 'a')
-            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/spec_overheads.txt", 'a')
+            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hybrid_spec_repo.txt", 'a')
+            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/spec_r_replicas.txt", 'a')
+            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/spec_s_replicas.txt", 'a')
+            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/spec_r_labels.txt", 'a')
+            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/spec_s_labels.txt", 'a')
+            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/spec_overheads.txt", 'a')
         if self.cdf:
             self.results['CDF'] = cdf(self.latency_data)
         results = Tree({'SATISFACTION': 1.0 * self.n_satisfied / self.sess_count})
@@ -698,11 +668,11 @@ class LatencyCollector(DataCollector):
         results['CLOUD_SAT_TIMES'] = self.cloud_sat_times
         results['INSTANTIATION_OVERHEAD'] = self.instantiations_times
 
-        print "Printing Sat. rate times:"
+        print ("Printing Sat. rate times:")
         for key in sorted(self.satrate_times):
             print (repr(key) + " " + repr(self.satrate_times[key]))
 
-        print "Printing Idle times:"
+        print ("Printing Idle times:")
         for key in sorted(self.idle_times):
             print (repr(key) + " " + repr(self.idle_times[key]))
         # results['VMS_PER_SERVICE'] = self.vms_per_service
@@ -718,7 +688,7 @@ class RepoStatsLatencyCollector(DataCollector):
     content.
     """
 
-    def __init__(self, view, logs_path='/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt', sampling_interval=500, cdf=False):
+    def __init__(self, view, logs_path='', sampling_interval=500, cdf=False):
         """Constructor
 
         Parameters
@@ -913,85 +883,65 @@ class RepoStatsLatencyCollector(DataCollector):
     @inheritdoc(DataCollector)
     def results(self):
         # TODO: Maybe revise the below and make it even more customisable
-        if self.view.model.strategy == 'HYBRID':
-            res_file = "/hybrid.txt"
-            overhead_file = "/hybrid_overheads.txt"
-        elif self.view.model.strategy == 'HYBRIDS_REPO_APP':
-            res_file = "/hybrid_repo.txt"
-            r_replicas_file = "/gen_r_replicas.txt"
-            s_replicas_file = "/gen_s_replicas.txt"
-            r_labels_dist_file = "/gen_r_labels.txt"
-            s_labels_dist_file = "/gen_s_labels.txt"
-            overhead_file = "/gen_overheads.txt"
-        elif self.view.model.strategy == 'HYBRIDS_PRO_REPO_APP':
-            res_file = "/hybrid_pro_repo.txt"
-            r_replicas_file = "/pro_r_replicas.txt"
-            s_replicas_file = "/pro_s_replicas.txt"
-            r_labels_dist_file = "/pro_r_labels.txt"
-            s_labels_dist_file = "/pro_s_labels.txt"
-            overhead_file = "/pro_overheads.txt"
-        elif self.view.model.strategy == 'HYBRIDS_RE_REPO_APP':
-            res_file = "/hybrid_repo.txt"
-            r_replicas_file = "/re_r_replicas.txt"
-            s_replicas_file = "/re_s_replicas.txt"
-            r_labels_dist_file = "/re_r_labels.txt"
-            s_labels_dist_file = "/re_s_labels.txt"
-            overhead_file = "/re_overheads.txt"
-        elif self.view.model.strategy == 'HYBRIDS_SPEC_REPO_APP':
-            res_file = "/hybrid_repo.txt"
-            r_replicas_file = "/spec_r_replicas.txt"
-            s_replicas_file = "/spec_s_replicas.txt"
-            r_labels_dist_file = "/spec_r_labels.txt"
-            s_labels_dist_file = "/spec_s_labels.txt"
-            overhead_file = "/spec_overheads.txt"
 
         if self.view.model.strategy == 'HYBRID':
-            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/hybrid.txt", 'a')
-            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/hybrid_overheads.txt", 'a')
+            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hybrid.txt", 'a')
+            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hybrid_overheads.txt", 'a')
         elif self.view.model.strategy == 'HYBRIDS_REPO_APP':
-            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/hybrid_repo.txt", 'a')
-            repo_usage = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/repo_usage.txt", 'a')
-            repo_proc_vs_stor = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/repo_proc_vs_stor.txt", 'a')
-            repo_overtime = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/repo_overtime.txt", 'a')
-            repo_incoming_BW = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/repo_incoming.txt", 'a')
-            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/gen_r_replicas.txt", 'a')
-            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/gen_s_replicas.txt", 'a')
-            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/gen_r_labels.txt", 'a')
-            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/gen_s_labels.txt", 'a')
-            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/gen_overheads.txt", 'a')
+            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hybrid_repo.txt", 'a')
+            repo_usage = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/repo_usage.txt", 'a')
+            repo_proc_vs_stor = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/repo_proc_vs_stor.txt", 'a')
+            repo_overtime = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/repo_overtime.txt", 'a')
+            repo_incoming_BW = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/repo_incoming.txt", 'a')
+            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/gen_r_replicas.txt", 'a')
+            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/gen_s_replicas.txt", 'a')
+            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/gen_r_labels.txt", 'a')
+            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/gen_s_labels.txt", 'a')
+            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/gen_overheads.txt", 'a')
         elif self.view.model.strategy == 'HYBRIDS_PRO_REPO_APP':
-            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/hybrid_pro_repo.txt", 'a')
-            repo_usage = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/pro_usage.txt", 'a')
-            repo_proc_vs_stor = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/pro_proc_vs_stor.txt", 'a')
-            repo_overtime = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/pro_overtime.txt", 'a')
-            repo_incoming_BW = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/pro_incoming.txt", 'a')
-            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/pro_r_replicas.txt", 'a')
-            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/pro_s_replicas.txt", 'a')
-            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/pro_r_labels.txt", 'a')
-            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/pro_s_labels.txt", 'a')
-            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/pro_overheads.txt", 'a')
+            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hybrid_pro_repo.txt", 'a')
+            repo_usage = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/pro_usage.txt", 'a')
+            repo_proc_vs_stor = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/pro_proc_vs_stor.txt", 'a')
+            repo_overtime = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/pro_overtime.txt", 'a')
+            repo_incoming_BW = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/pro_incoming.txt", 'a')
+            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/pro_r_replicas.txt", 'a')
+            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/pro_s_replicas.txt", 'a')
+            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/pro_r_labels.txt", 'a')
+            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/pro_s_labels.txt", 'a')
+            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/pro_overheads.txt", 'a')
         elif self.view.model.strategy == 'HYBRIDS_RE_REPO_APP':
-            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/hybrid_re_repo.txt", 'a')
-            repo_usage = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/re_usage.txt", 'a')
-            repo_proc_vs_stor = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/re_proc_vs_stor.txt", 'a')
-            repo_overtime = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/re_overtime.txt", 'a')
-            repo_incoming_BW = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/re_incoming.txt", 'a')
-            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/re_r_replicas.txt", 'a')
-            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/re_s_replicas.txt", 'a')
-            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/re_r_labels.txt", 'a')
-            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/re_s_labels.txt", 'a')
-            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/re_overheads.txt", 'a')
+            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hybrid_re_repo.txt", 'a')
+            repo_usage = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/re_usage.txt", 'a')
+            repo_proc_vs_stor = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/re_proc_vs_stor.txt", 'a')
+            repo_overtime = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/re_overtime.txt", 'a')
+            repo_incoming_BW = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/re_incoming.txt", 'a')
+            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/re_r_replicas.txt", 'a')
+            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/re_s_replicas.txt", 'a')
+            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/re_r_labels.txt", 'a')
+            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/re_s_labels.txt", 'a')
+            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/re_overheads.txt", 'a')
         elif self.view.model.strategy == 'HYBRIDS_SPEC_REPO_APP':
-            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/hybrid_spec_repo.txt", 'a')
-            repo_usage = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/spec_usage.txt", 'a')
-            repo_proc_vs_stor = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/spec_proc_vs_stor.txt", 'a')
-            repo_overtime = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/spec_overtime.txt", 'a')
-            repo_incoming_BW = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/spec_incoming.txt", 'a')
-            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/spec_r_replicas.txt", 'a')
-            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/spec_s_replicas.txt", 'a')
-            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/spec_r_labels.txt", 'a')
-            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/spec_s_labels.txt", 'a')
-            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmt/spec_overheads.txt", 'a')
+            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hybrid_spec_repo.txt", 'a')
+            repo_usage = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/spec_usage.txt", 'a')
+            repo_proc_vs_stor = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/spec_proc_vs_stor.txt", 'a')
+            repo_overtime = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/spec_overtime.txt", 'a')
+            repo_incoming_BW = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/spec_incoming.txt", 'a')
+            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/spec_r_replicas.txt", 'a')
+            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/spec_s_replicas.txt", 'a')
+            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/spec_r_labels.txt", 'a')
+            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/spec_s_labels.txt", 'a')
+            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/spec_overheads.txt", 'a')
+        elif self.view.model.strategy == 'HASH_PROC_REPO_APP':
+            res = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hash_proc_repo.txt", 'a')
+            repo_usage = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hash_proc_usage.txt", 'a')
+            repo_proc_vs_stor = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hash_proc_proc_vs_stor.txt", 'a')
+            repo_overtime = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hash_proc_overtime.txt", 'a')
+            repo_incoming_BW = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/repos-mgmthash_proc_incoming.txt", 'a')
+            r_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hash_proc_r_replicas.txt", 'a')
+            s_replicas = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hash_proc_s_replicas.txt", 'a')
+            r_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hash_proc_r_labels.txt", 'a')
+            s_labels_dist = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hash_proc_s_labels.txt", 'a')
+            overhead = open("/home/chrisys/Icarus-repos/IcarusEdgeSim/examples/LSH_reuse/hash_proc_overheads.txt", 'a')
         if self.cdf:
             self.results['CDF'] = cdf(self.latency_data)
         results = Tree({'SATISFACTION': 1.0 * self.n_satisfied / self.sess_count})
@@ -1097,11 +1047,11 @@ class RepoStatsLatencyCollector(DataCollector):
         results['CLOUD_SAT_TIMES'] = self.cloud_sat_times
         results['INSTANTIATION_OVERHEAD'] = self.instantiations_times
 
-        print "Printing Sat. rate times:"
+        print ("Printing Sat. rate times:")
         for key in sorted(self.satrate_times):
             print (repr(key) + " " + repr(self.satrate_times[key]))
 
-        print "Printing Idle times:"
+        print ("Printing Idle times:")
         for key in sorted(self.idle_times):
             print (repr(key) + " " + repr(self.idle_times[key]))
         # results['VMS_PER_SERVICE'] = self.vms_per_service

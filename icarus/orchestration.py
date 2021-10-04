@@ -290,6 +290,7 @@ def run_scenario(settings, params, curr_exp, n_exp):
         strategy = tree['strategy']
         warmup_strategy = tree['warmup_strategy']
         if strategy['name'] not in STRATEGY:
+            print(STRATEGY)
             logger.error('No implementation of strategy %s was found.' % strategy['name'])
             return None
         if warmup_strategy['name'] not in STRATEGY:

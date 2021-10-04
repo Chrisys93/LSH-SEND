@@ -41,7 +41,7 @@ N_REPLICATIONS = 1
 
 # List of metrics to be measured in the experiments
 # The implementation of data collectors are located in ./icaurs/execution/collectors.py
-DATA_COLLECTORS = ['LATENCY']
+DATA_COLLECTORS = ['REPO_STATS_W_LATENCY']
 
 # Range of alpha values of the Zipf distribution using to generate content requests
 # alpha values must be positive. The greater the value the more skewed is the 
@@ -102,7 +102,7 @@ WORKLOAD = 'TRACE_DRIVEN_REPO'
 
 # List of caching and routing strategies
 # The code is located in ./icarus/models/strategy.py
-STRATEGIES = ['HYBRID']
+STRATEGIES = ['HASH_PROC_REPO_APP']
 #STRATEGIES = ['COORDINATED']  # service-based routing
 
 # Cache replacement policy used by the network caches.
@@ -119,14 +119,14 @@ REPO_POLICY = 'REPO_STORAGE'
 # Supported policies are: 'EDF' (Earliest Deadline First), 'FIFO'
 SCHED_POLICY = 'EDF'
 
-FRESHNESS_PER = 0.15
-SHELF_LIFE = 10
+FRESHNESS_PER = 0.8
+SHELF_LIFE = 30
 MSG_SIZE = 1000000
 SOURCE_WEIGHTS = {'src_0': 0.2, 7: 0.1, 8: 0.1, 10: 0.2, 11: 0.2, 13: 0.1, 14: 0.1}
 SERVICE_WEIGHTS = {"proc": 0.7, "non-proc": 0.3}
 TYPES_WEIGHTS = {"value": 0.3, "video": 0.2, "control": 0.1, "photo": 0.2, "audio": 0.2}
 TOPICS_WEIGHTS = {"traffic": 0.3, "home_IoT": 0.3, "office_IoT": 0.2, "security": 0.2}
-MAX_REQUESTED_LABELS = 3
+MAX_REQUESTED_LABELS = 1
 MAX_REPLICATIONS = None
 ALPHA_LABELS = 0.5
 DATA_TOPICS = ["traffic", "home_IoT", "office_IoT", "security"]

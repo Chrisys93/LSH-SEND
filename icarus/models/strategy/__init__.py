@@ -8,3 +8,4 @@ from .service import *
 from .optimal import *
 from .placement import *
 from .repo_storage_mgmt_app import *
+from .repo_hash_storage_mgmt_app import *

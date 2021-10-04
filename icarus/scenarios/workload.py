@@ -960,9 +960,11 @@ class BurstyRepoWorkload(object):
         #       rather than just contents (could be either or both, depending on restrictions - maybe create
         #       more strategies in that case, if needed.
 
-        if self.first:  # TODO remove this first variable, this is not necessary here
+
+        if self.first:
             random.seed(self.seed)
             self.first = False
+            num_rec_disrupt = random.uniform(0, len(self.receivers) - 1)
         # aFile = open('workload.txt', 'w')
         # aFile.write("# Time\tNodeID\tserviceID\n")
         eventObj = self.model.eventQ[0] if len(self.model.eventQ) > 0 else None
@@ -994,6 +996,7 @@ class BurstyRepoWorkload(object):
                 for n in self.receivers_down:
                     if n is not None:
                         count += 1
+
                 if num_rec_disrupt >= count:
                     self.receivers_downtime[node] = random.uniform(0, self.max_off)
                     self.receivers_uptime[node] = random.uniform(0, self.max_on)
@@ -1007,7 +1010,7 @@ class BurstyRepoWorkload(object):
                     self.last_event[node] = t_event
 
 
-            elif self.disrupt_mode == 'WEIGHTED' or disrupt_mode == "POISSON":
+            elif self.disrupt_mode == 'WEIGHTED' or self.disrupt_mode == "POISSON":
 
                 if self.beta == 0:
                     w_receiver = random.choice(self.receivers)
@@ -1921,7 +1924,7 @@ class BurstyTraceRepoWorkload(object):
     def __init__(self, topology, rates_file, contents_file, labels_file, content_locations, n_contents,
                  n_warmup, n_measured, max_on=0, max_off=0, disrupt_mode=None, disrupt_weights=None, n_services=10,
                  max_labels=1, msg_sizes=1000000, freshness_pers=0.2, shelf_lives=5, rate=1.0, label_ex=False,
-                 alpha_labels=0, beta=0, seed=0, **kwargs):
+                 alpha_labels=0, beta=0, seed=0, mu=0, sigma=0, **kwargs):
         """Constructor"""
 
         if alpha_labels < 0:
@@ -2417,7 +2420,7 @@ class BurstyRepoDataAndWorkload(object):
                     self.last_event[node] = t_event
 
 
-            elif self.disrupt_mode == 'WEIGHTED' or disrupt_mode == "POISSON":
+            elif self.disrupt_mode == 'WEIGHTED' or self.disrupt_mode == "POISSON":
 
                 if self.beta == 0:
                     w_receiver = random.choice(self.receivers)

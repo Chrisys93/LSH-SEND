@@ -13,7 +13,7 @@ ICARUS_DIR=${CURR_DIR}/../..
 PLOTS_DIR=${CURR_DIR}/plots
 
 # Config file
-CONFIG_FILE=${CURR_DIR}/config1_Google_trace.py
+CONFIG_FILE=${CURR_DIR}/config2.py
 
 # FIle where results will be saved
 RESULTS_FILE=${CURR_DIR}/results.json
@@ -23,7 +23,7 @@ export PYTHONPATH=${ICARUS_DIR}:$PYTHONPATH
 
 # Run experiments
 echo "Run experiments"
-python ${ICARUS_DIR}/icarus.py --results ${RESULTS_FILE} ${CONFIG_FILE}
+python3 ${ICARUS_DIR}/icarus.py --results ${RESULTS_FILE} ${CONFIG_FILE}
 
 ## Plot results
 #echo "Plot results"

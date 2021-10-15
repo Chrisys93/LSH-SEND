@@ -48,7 +48,7 @@ logger = logging.getLogger('orchestration')
 class Event(object):
     """Implementation of an Event object: arrival of a request to a node"""
 
-    def __init__(self, time, receiver, service, labels, node, flow_id, deadline, rtt_delay, status, task=None):
+    def __init__(self, time, receiver, service, labels, h_spaces, node, flow_id, deadline, rtt_delay, status, task=None):
         """Constructor
         Parameters
         ----------
@@ -62,6 +62,7 @@ class Event(object):
         self.node = node
         self.service = service
         self.labels = labels
+        self.h_spaces = h_spaces
         self.flow_id = flow_id
         self.deadline = deadline
         self.rtt_delay = rtt_delay
@@ -76,7 +77,7 @@ class Event(object):
 class Service(object):
     """Implementation of a service object"""
 
-    def __init__(self, service_time=None, deadline=None, labels=None):
+    def __init__(self, service_time=None, deadline=None, labels=None, h_spaces=None):
         """Constructor
         Parameters
         ----------
@@ -193,7 +194,7 @@ class NetworkView(object):
         #               in the centralised mgmt system for that service hash/content
         #               topic. Add RepoStorage - node associations in NetworkModel!!!
 
-        source = self.content_source(k, k['labels'])
+        source = self.content_source(k, k['labels'], k['h_space'], True)
         if source:
             loc.add(source)
         return loc
@@ -297,12 +298,12 @@ class NetworkView(object):
             source is unavailable
         """
         h_spaces = None
-        if self.model.all_node_h_spaces[s] is not None:
+        if s in self.model.all_node_h_spaces and self.model.all_node_h_spaces[s] is not None:
             h_spaces = self.model.all_node_h_spaces[s]
 
         return h_spaces
 
-    def content_source(self, k, labels):
+    def content_source(self, k, labels, h_spaces, L_H=False):
         """Return the node identifier where the content is persistently stored.
 
         Parameters
@@ -320,14 +321,17 @@ class NetworkView(object):
 
         if type(k) is dict:
             if k['content'] == '':
-                return self.labels_sources(labels)
+                if L_H:
+                    return self.h_space_sources(h_spaces)
+                else:
+                    return self.labels_sources(labels)
             return self.model.content_source[k['content']]
         else:
             for i in self.model.content_source:
                 if i == k:
                     return self.model.content_source[k]
 
-    def content_source_cloud(self, k, labels):
+    def content_source_cloud(self, k, labels, h_spaces, L_H):
         """Return the node identifier where the content is persistently stored.
 
         Parameters
@@ -344,10 +348,16 @@ class NetworkView(object):
 
         if type(k) is dict:
             if k['content'] == '':
-                for node in self.labels_sources(labels):
-                    if type(node) != int:
-                        if "src" in node:
-                            return node
+                if L_H:
+                    for node in self.h_space_sources(h_spaces):
+                        if type(node) != int:
+                            if "src" in node:
+                                return node
+                else:
+                    for node in self.labels_sources(labels):
+                        if type(node) != int:
+                            if "src" in node:
+                                return node
             else:
                 for node in self.model.content_source[k['content']]:
                     if type(node) != int:
@@ -386,7 +396,7 @@ class NetworkView(object):
         """
         if type(k) is dict:
             hops = 100
-            if node in self.content_source(k, k['labels']):
+            if node in self.content_source(k, k['labels'], k['h_space'], True):
                 if self.has_cache(node):
                     if self.cache_lookup(node, k['content']) or self.local_cache_lookup(node, k['content']):
                         cache = True
@@ -395,7 +405,7 @@ class NetworkView(object):
                 else:
                     cache = False
                 return node, cache
-            for n in self.content_source(k, k['labels']):
+            for n in self.content_source(k, k['labels'], k['h_space'], True):
                 content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
                 if len(self.shortest_path(node, n)) < hops:
                     hops = len(self.shortest_path(node, n))
@@ -411,8 +421,9 @@ class NetworkView(object):
             content = dict()
             content['content'] = k
             content['labels'] = []
+            content['h_space'] = []
             hops = 100
-            if node in self.content_source(content, content['labels']):
+            if node in self.content_source(content, content['labels'], content['h_space'], True):
                 if self.has_cache(node):
                     if self.cache_lookup(node, content['content']) or self.local_cache_lookup(node, content['content']):
                         cache = True
@@ -421,7 +432,7 @@ class NetworkView(object):
                 else:
                     cache = False
                 return node, cache
-            for n in self.content_source(content, content['labels']):
+            for n in self.content_source(content, content['labels'], content['h_space'], True):
                 content = self.model.contents[n][k]
                 if len(self.shortest_path(node, n)) < hops:
                     hops = len(self.shortest_path(node, n))
@@ -676,6 +687,33 @@ class NetworkView(object):
 
         return nodes
 
+    def all_spaces_main_source(self, h_spaces):
+        """Return the node identifier where the content is persistently stored.
+
+        Parameters
+        ----------
+        h_spaces : list of bin/hash-space strings
+            The identifiers for the hash-spaces of interest
+
+        Returns
+        -------
+        node : any hashable type
+            The node persistently storing the given content or None if the
+            source is unavailable
+        """
+
+        current_count = 0
+        auth_node = None
+        for n in self.h_space_sources(h_spaces):
+            count = self.h_space_sources(h_spaces)[n]
+            if count >= current_count:
+                if type(n) != int and "src" in n:
+                    auth_node = n
+                    continue
+                auth_node = self.storage_nodes()[n]
+                current_count = count
+        return auth_node
+
     def all_labels_main_source(self, labels):
         """Return the node identifier where the content is persistently stored.
 
@@ -751,15 +789,19 @@ class NetworkView(object):
         hashes = []
         max_proc = 0
         max_node_proc = 0
+        max_node = float('inf')
+        max_hash = float('inf')
 
         while len(nodes) < list_len:
             for n in self.model.busy_proc:
+                if n in nodes:
+                    continue
                 node_proc = 0
                 for h in self.model.busy_proc[n]:
                     node_proc += self.model.busy_proc[n][h]
-                if node_proc >= max_node_proc:
-                    max_node_proc = node_proc
-                    max_node = n
+                    if node_proc >= max_node_proc:
+                        max_node_proc = node_proc
+                        max_node = n
             nodes.append(max_node)
         for n in nodes:
             for h in self.model.busy_proc[n]:
@@ -786,23 +828,27 @@ class NetworkView(object):
         hashes = []
         min_proc = float('inf')
         min_node_proc = float('inf')
+        min_node = 10
+        node_proc = 0
 
         while len(nodes) < list_len:
             for n in self.model.busy_proc:
                 node_proc = 0
                 for h in self.model.busy_proc[n]:
                     node_proc += self.model.busy_proc[n][h]
-                    if node_proc <= min_node_proc:
-                        min_node_proc = node_proc
-                        min_node = n
-                nodes.append(min_node)
-                for n in nodes:
-                    for h in self.model.busy_proc[n]:
-                        proc = self.model.busy_proc[n][h]
-                        if proc <= min_proc:
-                            min_proc = proc
-                            min_hash = h
-                    hashes.append(min_hash)
+                if node_proc <= min_node_proc and n != 'src_0' and n not in nodes and self.model.busy_proc[n]:
+                    min_node_proc = node_proc
+                    min_node = n
+            nodes.append(min_node)
+        min_hash = min(h)
+        for n in nodes:
+            proc = 0
+            for h in self.model.busy_proc[n]:
+                proc = self.model.busy_proc[n][h]
+            if proc <= min_proc and h not in hashes:
+                min_proc = proc
+                min_hash = h
+            hashes.append(min_hash)
 
         return nodes, hashes
 
@@ -1474,6 +1520,14 @@ class NetworkModel(object):
         # corresponding to a request-associated label
         self.request_h_spaces = {}
 
+        # Similarity miss counts updated on each epoch change,
+        # calculated as: (similarity misses/epoch*100)/number of request ticks per epoch
+        self.last_miss_count = 0
+
+        # Similarity per repo miss counts, updated on each epoch change,
+        # calculated as: (similarity misses/epoch*100)/number of request ticks per epoch for each repo
+        self.last_repo_misses = {}
+
         #  A heap with events (see Event class above)
         self.eventQ = []
 
@@ -1502,8 +1556,8 @@ class NetworkModel(object):
         self.replications_from = Counter()
         self.replications_to = Counter()
         self.reuse = {}
-        self.node_reused_count = {}
-        self.node_new_count = {}
+        self.node_reused_count = Counter()
+        self.node_new_count = Counter()
         self.label_node_reused_count = {}
         self.label_node_new_count = {}
         self.label_node_reuse = {}
@@ -1514,11 +1568,6 @@ class NetworkModel(object):
         self.all_node_h_spaces = {}
         for node in topology.nodes():
             # TODO: Sort out content association in the case that "contents" aren't objects!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            self.all_node_labels[node] = Counter()
-            self.epochs_node_reuse[node] = []
-            self.busy_proc[node] = {}
-            self.reuse[node] = 0
-            self.epochs_node_reuse[node] = 0
             stack_name, stack_props = fnss.get_stack(topology, node)
             extra_types = None
             try:
@@ -1544,6 +1593,15 @@ class NetworkModel(object):
                 if 'service_size' in stack_props:
                     self.service_size[node] = stack_props['service_size']
                 #  A "leaf" or EDGE node, with some of the information and limited resources
+                if 'source' and 'router' in extra_types:
+                    self.all_node_labels[node] = Counter()
+                    self.all_node_h_spaces[node] = Counter()
+                    self.epochs_node_reuse[node] = []
+                    self.busy_proc[node] = {}
+                    self.reuse[node] = 0
+                    self.epochs_node_reuse[node] = 0
+                    self.request_labels[node] = Counter()
+                    self.request_h_spaces[node] = Counter()
                 if 'source' and 'router' in extra_types and stack_props.has_key('contents'):
                     self.contents[node] = stack_props['contents']
                     # print("contents[0] is: ", contents[0], " and its type is: ", type(contents[0]))
@@ -1597,6 +1655,14 @@ class NetworkModel(object):
                                 else:
                                     self.content_source[content] = [node]
             elif stack_name == 'source' and 'router' not in extra_types:
+                self.all_node_labels[node] = Counter()
+                self.all_node_h_spaces[node] = Counter()
+                self.epochs_node_reuse[node] = []
+                self.busy_proc[node] = {}
+                self.reuse[node] = 0
+                self.epochs_node_reuse[node] = 0
+                self.request_labels[node] = Counter()
+                self.request_h_spaces[node] = Counter()
                 self.storageSize[node] = float('inf')
                 self.comp_size[node] = float('inf')
                 self.service_size[node] = float('inf')
@@ -1847,7 +1913,7 @@ class NetworkController(object):
         """Detach the data collector."""
         self.collector = None
 
-    def start_session(self, timestamp, receiver, content, labels, log, flow_id=0, deadline=0):
+    def start_session(self, timestamp, receiver, content, labels, h_spaces, log, flow_id=0, deadline=0):
         """Instruct the controller to start a new session (i.e. the retrieval
         of a content).
 
@@ -1872,12 +1938,13 @@ class NetworkController(object):
                                      receiver=receiver,
                                      content=content,
                                      labels=labels,
+                                     h_spaces=h_spaces,
                                      log=log,
                                      deadline=deadline)
 
         self.sess_content = content
 
-        # if self.collector is not None and self.session[flow_id]['log']:
+        # if self.collector is not None and self.session[flow_id]['loLATENCYg']:
         self.collector.start_session(timestamp, receiver, content, labels, flow_id, deadline)
 
     def forward_request_path(self, s, t, path=None, main_path=True):
@@ -2038,10 +2105,20 @@ class NetworkController(object):
 
         """
 
-        self.model.all_node_h_spaces[high_proc].append([h_l])
-        self.model.all_node_h_spaces[low_proc].remove([h_l])
-        self.model.all_node_h_spaces[low_proc].append([h_h])
-        self.model.all_node_h_spaces[high_proc].remove([h_h])
+        self.model.all_node_h_spaces[high_proc].update([h_l])
+        del self.model.all_node_h_spaces[low_proc][h_l]
+        self.model.all_node_h_spaces[low_proc].update([h_h])
+        del self.model.all_node_h_spaces[high_proc][h_h]
+
+        self.model.node_h_spaces[high_proc].update([h_l])
+        del self.model.node_h_spaces[low_proc][h_l]
+        self.model.node_h_spaces[low_proc].update([h_h])
+        del self.model.node_h_spaces[high_proc][h_h]
+
+        self.model.h_space_sources[h_l].update({high_proc: self.model.all_node_h_spaces[high_proc][h_l]})
+        del self.model.h_space_sources[h_l][low_proc]
+        self.model.h_space_sources[h_h].update({low_proc: self.model.all_node_h_spaces[low_proc][h_h]})
+        del self.model.h_space_sources[h_h][high_proc]
 
     def add_proc(self, node, h_space):
         """
@@ -2052,8 +2129,12 @@ class NetworkController(object):
 
         """
 
-        if h_space in self.model.all_node_h_spaces[node]:
-            self.busy_proc[node][h_space] += 1
+        for h in h_space:
+            if h in self.model.all_node_h_spaces[node]:
+                if h in self.model.busy_proc[node]:
+                    self.model.busy_proc[node][h] += 1
+                else:
+                    self.model.busy_proc[node][h] = 1
 
     def sub_proc(self, node, h_space):
         """
@@ -2063,8 +2144,10 @@ class NetworkController(object):
             The node for which to subtract one count in busy_proc
 
         """
-        if h_space in self.model.all_node_h_spaces[node]:
-            self.busy_proc[node][h_space] -= 1
+
+        for h in h_space:
+            if h in self.model.all_node_h_spaces[node]:
+                self.model.busy_proc[node][h] -= 1
 
 
     def add_request_labels_to_node(self, s, service_request):
@@ -2090,9 +2173,7 @@ class NetworkController(object):
 
         """
 
-        if s not in self.model.request_labels:
-            self.model.request_labels[s] = Counter()
-        elif type(self.model.request_labels[s]) is not Counter():
+        if type(self.model.request_labels[s]) is not Counter():
             self.model.request_labels[s] = Counter()
         for label in service_request['labels']:
             self.model.request_labels[s].update([label])
@@ -2123,9 +2204,7 @@ class NetworkController(object):
 
         """
 
-        if s not in self.model.request_h_spaces:
-            self.model.request_h_spaces[s] = Counter()
-        elif type(self.model.request_h_spaces[s]) is not Counter():
+        if type(self.model.request_h_spaces[s]) is not Counter():
             self.model.request_h_spaces[s] = Counter()
         for h_space in service_request['h_space']:
             self.model.request_h_spaces[s].update([h_space])
@@ -2356,15 +2435,13 @@ class NetworkController(object):
             Message with content hash (name), labels and properties
         """
         if s not in self.model.reuse:
-            self.model.node_reused_count[s] = Counter()
-            self.model.node_new_count[s] = Counter()
             self.model.reuse[s] = 0
         if reused:
-            self.model.node_reused_count.update(s)
-            self.model.node_new_count.update(s)
+            self.model.node_reused_count.update([s])
+            self.model.node_new_count.update([s])
             self.model.reuse[s] = self.model.node_reused_count[s]/self.model.node_new_count[s]
         else:
-            self.model.node_new_count.update(s)
+            self.model.node_new_count.update([s])
             self.model.reuse[s] = self.model.node_reused_count[s]/self.model.node_new_count[s]
 
 
@@ -2457,6 +2534,35 @@ class NetworkController(object):
         else:
             self.model.label_node_new_count[label].update(s)
             self.model.label_node_reuse[label][s].append(self.model.node_reused_count[s]/self.model.node_new_count[s])
+
+    def simil_miss_update(self, miss_count, epoch_ticks):
+        """
+        Update the amount of similarity miss number that has occured on each epoch.
+        This is for the purpose of collecting statistics on the similarity misses,
+        to determine whether this should be studied (this may be more relevant for
+        cases where processing times are much longer than routing and storage "fetch" times)
+
+        miss_count:
+
+        epoch_ticks:
+
+        """
+        self.model.last_miss_count = miss_count * 100 / epoch_ticks
+
+    def repo_miss_update(self, repo_miss_count, epoch_ticks):
+        """
+        Update the amount of similarity miss number that has occured on each epoch.
+        This is for the purpose of collecting statistics on the similarity misses,
+        to determine whether this should be studied (this may be more relevant for
+        cases where processing times are much longer than routing and storage "fetch" times)
+
+        miss_count:
+
+        epoch_ticks:
+
+        """
+        for n in self.model.repoStorage:
+            self.model.last_repo_misses[n] = repo_miss_count[n] * 100 / epoch_ticks
 
 
     def replicate(self, s, d):
@@ -2665,12 +2771,12 @@ class NetworkController(object):
         if node in self.model.cache:
             return self.model.cache[node].remove(self.session['content'])
 
-    def add_event(self, time, receiver, service, labels, node, flow_id, deadline, rtt_delay, status, task=None):
+    def add_event(self, time, receiver, service, labels, h_spaces, node, flow_id, deadline, rtt_delay, status, task=None):
         """Add an arrival event to the eventQ
         """
         if time == float('inf'):
             raise ValueError("Invalid argument in add_event(): time parameter is infinite")
-        e = Event(time, receiver, service, labels, node, flow_id, deadline, rtt_delay, status, task)
+        e = Event(time, receiver, service, labels, h_spaces, node, flow_id, deadline, rtt_delay, status, task)
         heapq.heappush(self.model.eventQ, e)
 
     def replacement_interval_over(self, flow_id, replacement_interval, timestamp):

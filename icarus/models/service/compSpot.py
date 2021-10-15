@@ -826,7 +826,7 @@ class ComputationSpot(object):
 
         serviceTime = self.services[service].service_time
         if self.is_cloud:
-            aTask = Task(curTime,  Task.TASK_TYPE_SERVICE, deadline, rtt_delay, self.node, service, serviceTime, flow_id, receiver)
+            aTask = Task(curTime,  Task.TASK_TYPE_SERVICE, deadline, rtt_delay, self.node, service, labels, h_spaces, serviceTime, flow_id, receiver)
             controller.add_event(curTime+serviceTime, receiver, service, labels, h_spaces, self.node, flow_id, deadline, rtt_delay, TASK_COMPLETE, aTask)
             controller.execute_service(flow_id, service, self.node, curTime,  self.is_cloud)
             if debug:
@@ -1061,14 +1061,14 @@ class ComputationSpot(object):
         #lastTask = self.get_latest_task(serviceToReplace)
         lastTask = self.get_latest_service_task()
         if lastTask is None:
-            aTask = Task(curTime,  Task.TASK_TYPE_VM_START, curTime + VM.instantiationDuration, 0, self.node, serviceToReplace, [], VM.instantiationDuration, None, None)
+            aTask = Task(curTime,  Task.TASK_TYPE_VM_START, curTime + VM.instantiationDuration, 0, self.node, serviceToReplace, [], [], VM.instantiationDuration, None, None)
             aTask.setServiceToInstantiate(newService)
             self.scheduler.addToTaskQueue(aTask, curTime)
             newTask = self.scheduler.schedule(curTime)
             if newTask is not None:
                 controller.add_event(newTask.completionTime, newTask.receiver, newTask.service, newTask.labels, newTask.h_spaces, self.node, newTask.flow_id, newTask.expiry, newTask.rtt_delay, TASK_COMPLETE, newTask)
         else:
-            aTask = Task(curTime,  Task.TASK_TYPE_VM_START, float('inf'), 0, self.node, serviceToReplace, [], VM.instantiationDuration, None, None, float('inf'))
+            aTask = Task(curTime,  Task.TASK_TYPE_VM_START, float('inf'), 0, self.node, serviceToReplace, [], [], VM.instantiationDuration, None, None, float('inf'))
             self.scheduler.addToUpcomingTaskQueue(aTask, curTime)
             aTask.setServiceToInstantiate(newService)
             lastTask.setNextTasktoRun(aTask)

@@ -312,8 +312,9 @@ def weighted_repo_content_placement(topology, contents, freshness_per, shelf_lif
     topology.placed_data = placed_data
 
 @register_content_placement('WEIGHTED_REPO_HASH')
-def weighted_repo_hash_placement(topology, contents, freshness_per, shelf_life, msg_size, space_weights,
-                                 max_replications, source_weights, service_weights, max_label_nos, seed=None):
+def weighted_repo_hash_placement(topology, contents, freshness_per, shelf_life, msg_size, topics_weights,
+                                 types_weights, space_weights, max_replications, source_weights, service_weights,
+                                 max_label_nos, seed=None):
     """Places content objects to source nodes randomly according to the weight
     of the source node.
 
@@ -346,7 +347,8 @@ def weighted_repo_hash_placement(topology, contents, freshness_per, shelf_life, 
     Returns
     -------
     cache_placement : dict
-       Dictionary mapping content objects to source nodes
+       Dictionary mapping content objects to source node
+    service_labels_norm_factor = float(sum(service_weights.values()))s
 
     Notes
     -----
@@ -364,6 +366,11 @@ def weighted_repo_hash_placement(topology, contents, freshness_per, shelf_life, 
     # TODO: These ^\/^\/^ might need redefining, to make label-specific
     #  source weights, and then the labels distributed according to these.
     #  OR the other way around, distributing sources according to label weights
+    if types_weights is not None:
+        types_labels_norm_factor = float(sum(types_weights.values()))
+        types_labels_pdf = dict((k, v / types_labels_norm_factor) for k, v in types_weights.items())
+    else: alter = True
+    topics_labels_norm_factor = float(sum(topics_weights.values()))
     space_norm_factor = float(sum(space_weights.values()))
     service_labels_norm_factor = float(sum(service_weights.values()))
     # TODO: Think about a way to randomise, but still maintain a certain
@@ -371,8 +378,10 @@ def weighted_repo_hash_placement(topology, contents, freshness_per, shelf_life, 
     #  Maybe associate the pdf with labels, rather than contents, SOMEHOW!
     source_pdf = dict((k, v / norm_factor) for k, v in source_weights.items())
     space_pdf = dict((k, v / space_norm_factor) for k, v in space_weights.items())
+    topics_labels_pdf = dict((k, v / topics_labels_norm_factor) for k, v in topics_weights.items())
     service_labels_pdf = dict((k, v / service_labels_norm_factor) for k, v in service_weights.items())
     service_association = collections.defaultdict(set)
+    labels_association = collections.defaultdict(set)
     space_association = collections.defaultdict(set)
     content_placement = collections.defaultdict(set)
     # Further TODO: Add all the other data characteristics and maybe place
@@ -380,7 +389,10 @@ def weighted_repo_hash_placement(topology, contents, freshness_per, shelf_life, 
     #           placement strategies)
     # NOTE: All label names will come as a list of strings
     for c in contents:
-        alter = False
+        if alter:
+            alter = False
+        else:
+            alter = None
         if freshness_per is not None:
             if placed_data.has_key(contents[c]['content']):
                 placed_data[contents[c]['content']].update(freshness_per=freshness_per)
@@ -399,12 +411,24 @@ def weighted_repo_hash_placement(topology, contents, freshness_per, shelf_life, 
         placed_data[contents[c]['content']]['labels'] = contents[c]['labels']
         placed_data[contents[c]['content']]['h_space'] = contents[c]['h_space']
         placed_data[contents[c]['content']]['service_type'] = "non-proc"
-        if not placed_data[contents[c]['content']]['labels']:
+        if not placed_data[contents[c]['content']]['h_space']:
             for i in range(0, max_label_nos):
                 if space_weights is not None:
                     space_association[random_from_pdf(space_pdf)].add(c)
+        if not placed_data[contents[c]['content']]['labels']:
+            for i in range(0, max_label_nos):
+                if types_weights is not None and alter is not None and not alter:
+                    labels_association[random_from_pdf(types_labels_pdf)].add(c)
+                    alter = True
+                elif topics_weights is not None and alter is not None and alter:
+                    labels_association[random_from_pdf(topics_labels_pdf)].add(c)
+                    alter = False
+                elif topics_weights is not None:
+                    labels_association[random_from_pdf(topics_labels_pdf)].add(c)
 
     placed_data = apply_space_association(space_association, placed_data)
+
+    placed_data = apply_labels_association(labels_association, placed_data)
     #placed_data = apply_service_association(service_association, placed_data)
     # FIXME: HERE is where data should be randomly distributed via hash-space!
     #  (Possibly - need to re-check) FIXED!
@@ -415,7 +439,7 @@ def weighted_repo_hash_placement(topology, contents, freshness_per, shelf_life, 
             content_placement[rand] = dict()
             content_h_space[rand] = []
             content_h_space[rand].append(placed_data[d]['h_space'])
-        if placed_data[d]['h_space'] not in content_h_space[rand] and len(content_h_space[rand]) < 10:
+        elif placed_data[d]['h_space'] not in content_h_space[rand] and len(content_h_space[rand]) < 10:
             content_h_space[rand].append(placed_data[d]['h_space'])
         if content_placement[rand].has_key(d) and placed_data[d]['h_space'] in content_h_space[rand]:
             content_placement[rand][d].update(placed_data[d])

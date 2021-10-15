@@ -34,6 +34,7 @@ from icarus.registry import register_topology_factory
 __all__ = [
         'IcnTopology',
         'topology_tree',
+        'topology_edge_tree',
         'topology_repo_tree',
         'topology_path',
         'topology_ring',
@@ -291,16 +292,35 @@ def topology_edge_tree(k, h, delay=0.020, **kwargs):
     topology.graph['receiver_access_delay'] = receiver_access_delay
     topology.graph['link_delay'] = delay
     topology.graph['depth'] = h
+    for v in routers:
+        fnss.add_stack(topology, v, 'router')
     for v in sources:
         fnss.add_stack(topology, v, 'source')
     for v in receivers:
         fnss.add_stack(topology, v, 'receiver')
     for v in routers:
-        fnss.add_stack(topology, v, 'router')
+        try:
+            if topology.node[v]['depth'] <= h and v not in receivers:
+                try:
+                    topology.node[v]['extra_types'].append('source')
+                    topology.node[v]['extra_types'].append('router')
+                except Exception as e:
+                    err_type = str(type(e)).split("'")[1].split(".")[1]
+                    if err_type == "KeyError":
+                        topology.node[v].update(extra_types=['source'])
+                        topology.node[v]['extra_types'].append('router')
+
+        except Exception as e:
+            err_type = str(type(e)).split("'")[1].split(".")[1]
+            if err_type == "KeyError":
+                continue
+
     # label links as internal
 
     topology.graph['receivers'] = receivers
     topology.graph['sources'] = sources
+    topology.graph['sources'].extend(routers)
+    topology.graph['sources'].extend(edge_routers)
     topology.graph['routers'] = routers
     topology.graph['edge_routers'] = edge_routers
 
@@ -393,7 +413,7 @@ def topology_repo_tree(k, h, delay=0.020, **kwargs):
                     try:
                         topology.node[v]['extra_types'].append('source')
                         topology.node[v]['extra_types'].append('router')
-                    except Exception as e:
+                    except err_type:
                         err_type = str(type(e)).split("'")[1].split(".")[1]
                         if err_type == "KeyError":
                             topology.node[v].update(extra_types=['source'])

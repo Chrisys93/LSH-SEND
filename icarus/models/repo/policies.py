@@ -323,11 +323,18 @@ class RepoStorage(object):
     def getnode(self):
         return self.node
 
-    def hasMessage(self, MessageId, labels):
+    def hasMessage(self, MessageId, labels, spaces=None, processed=False):
         answer = None
         for i in range(0, len(self.processedMessages)):
             if MessageId is not None and self.processedMessages[i]['content'] == MessageId:
                 answer = self.processedMessages[i]
+            elif spaces:
+                j_spaces = []
+                for space in self.processedMessages[i]['h_space']:
+                    if space in spaces:
+                        j_spaces.append(space)
+                if (j_spaces == spaces):
+                    answer = self.processedMessages[i]
             elif labels:
                 j_labels = []
                 for label in self.processedMessages[i]['labels']:
@@ -335,16 +342,30 @@ class RepoStorage(object):
                         j_labels.append(label)
                 if (j_labels == labels):
                     answer = self.processedMessages[i]
-        for i in range(0, len(self.Messages)):
-            if MessageId is not None and self.Messages[i]['content'] == MessageId:
-                answer = self.Messages[i]
-            elif labels:
-                j_labels = []
-                for label in self.Messages[i]['labels']:
-                    if label in labels:
-                        j_labels.append(label)
-                if (j_labels == labels):
+        if answer:
+            return answer
+        if not processed:
+            for i in range(0, len(self.Messages)):
+                if MessageId is not None and self.Messages[i]['content'] == MessageId:
                     answer = self.Messages[i]
+                elif labels:
+                    j_labels = []
+                    for label in self.Messages[i]['labels']:
+                        if label in labels:
+                            j_labels.append(label)
+                    if (j_labels == labels):
+                        answer = self.Messages[i]
+                elif spaces:
+                    j_spaces = []
+                    for space in self.Messages[i]['h_space']:
+                        if space in spaces:
+                            j_spaces.append(space)
+                    if (j_spaces == spaces):
+                        answer = self.Messages[i]
+        return answer
+
+    def hasProcMessage(self, MessageId, labels, spaces=None):
+        answer = None
         for i in range(0, len(self.processMessages)):
             if MessageId is not None and self.processMessages[i]['content'] == MessageId:
                 answer = self.processMessages[i]
@@ -355,9 +376,16 @@ class RepoStorage(object):
                         j_labels.append(label)
                 if (j_labels == labels):
                     answer = self.processMessages[i]
+            elif spaces:
+                j_spaces = []
+                for space in self.processMessages[i]['h_space']:
+                    if space in spaces:
+                        j_spaces.append(space)
+                if (j_spaces == spaces):
+                    answer = self.processMessages[i]
         return answer
 
-    def getProcessedMessages(self, labels):
+    def getProcessedMessages(self, labels, h_spaces=None):
         answer = None
         for i in range(0, len(self.processedMessages)):
             j_labels = []
@@ -366,20 +394,15 @@ class RepoStorage(object):
                     j_labels.append(label)
             if (j_labels == labels):
                 answer = self.processedMessages[i]
-        for i in range(0, len(self.Messages)):
-            j_labels = []
-            for label in self.Messages[i]['labels']:
-                if label in labels:
-                    j_labels.append(label)
-            if (j_labels == labels):
+        if answer:
+            return answer
+        for i in range(0, len(self.processedMessages)):
+            j_spaces = []
+            for space in self.processedMessages[i]['h_space']:
+                if space in h_spaces:
+                    j_spaces.append(space)
+            if (j_spaces == h_spaces):
                 answer = self.Messages[i]
-        for i in range(0, len(self.processMessages)):
-            j_labels = []
-            for label in self.processMessages[i]['labels']:
-                if label in labels:
-                    j_labels.append(label)
-            if (j_labels == labels):
-                answer = self.processMessages[i]
         return answer
 
     def deleteMessage(self, MessageId):

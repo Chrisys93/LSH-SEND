@@ -104,7 +104,7 @@ WORKLOAD = 'STATIONARY_HASH_LABEL_REQS'
 # The code is located in ./icarus/models/strategy.py
 STRATEGIES = ['HASH_PROC_REPO_APP']
 EPOCH_TICKS = 500
-HIT_RATE = 0.7
+HIT_RATE = 0.6
 #STRATEGIES = ['COORDINATED']  # service-based routing
 
 # Cache replacement policy used by the network caches.

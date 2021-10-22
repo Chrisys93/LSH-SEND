@@ -589,7 +589,7 @@ class Hybrid(Strategy):
 
     #HYBRID
     @inheritdoc(Strategy)
-    def process_event(self, time, receiver, content, labels, log, node, flow_id, deadline, rtt_delay, status, task=None):
+    def process_event(self, time, receiver, content, labels, h_spaces, log, node, flow_id, deadline, rtt_delay, status, task=None):
         """
         response : True, if this is a response from the cloudlet/cloud
         deadline : deadline for the request
@@ -604,9 +604,17 @@ class Hybrid(Strategy):
         #if node == 12:
         #    self.debug = True
 
+        if content is not '' or content['content'] != '':
+            service = content
+        elif type(content) is dict and all(elem in self.view.get_node_h_spaces(node) for elem in h_spaces):
+            service = self.view.h_space_sources(h_spaces)[node][content['content']]
+        elif all(elem in self.view.get_node_h_spaces(node) for elem in h_spaces):
+            service = self.view.h_space_sources(h_spaces)[node][content]
+        elif self.view.h_space_sources(h_spaces):
+            source = self.view.closest_source(node, content, h_spaces, True)
+            service = self.controller.get_message(self, source, h_spaces, labels, True)
 
-        service = content if content is not '' else self.view.all_labels_main_source(labels)['content']
-        source = self.view.content_source(service, labels)[len(self.view.content_source(service, labels))-1]
+        source = self.view.content_source(service, labels, h_spaces, True)[len(self.view.content_source(service, labels, h_spaces, True))-1]
 
         if time - self.last_replacement > self.replacement_interval:
             #self.print_stats()
@@ -1301,8 +1309,8 @@ class StrictestDeadlineFirst(Strategy):
         if self.debug:
             print ("\nEvent\n time: " + repr(time) + " receiver  " + repr(receiver) + " service " + repr(service) + " node " + repr(node) + " flow_id " + repr(flow_id) + " deadline " + repr(deadline) + " status " + repr(status))
 
-        # SDF  
-        if status == RESPONSE: 
+        # SDF
+        if status == RESPONSE:
             # response is on its way back to the receiver
             if node == receiver:
                 self.controller.end_session(True, time, flow_id) #TODO add flow_time
@@ -1320,7 +1328,7 @@ class StrictestDeadlineFirst(Strategy):
                 #schedule the next queued task at this node
                 if newTask is not None:
                     self.controller.add_event(newTask.completionTime, newTask.receiver, newTask.service, newTask.labels, node, newTask.flow_id, newTask.expiry, newTask.rtt_delay, TASK_COMPLETE, newTask)
-            
+
             # forward the completed task
             if task.taskType == Task.TASK_TYPE_VM_START:
                 return
@@ -1333,8 +1341,8 @@ class StrictestDeadlineFirst(Strategy):
                 print ("Error in SDF strategy: Request missed its deadline\nResponse at receiver at time: " + str(time+path_delay) + " deadline: " + str(deadline))
                 task.print_task()
                 #raise ValueError("This should not happen: a task missed its deadline after being executed at an edge node.")
-            
-        # SDF  
+
+        # SDF
         elif status == REQUEST:
             # Processing a request
             source = self.view.content_source(service, labels)[len(self.view.content_source(service, labels))-1]

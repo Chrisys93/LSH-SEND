@@ -27,6 +27,7 @@ import networkx as nx
 import fnss
 
 import heapq
+import copy
 
 from icarus.registry import CACHE_POLICY, REPO_POLICY
 from icarus.util import path_links, iround
@@ -347,35 +348,26 @@ class NetworkView(object):
         """
 
         if type(k) is dict:
-            if k['content'] == '':
-                if L_H:
-                    for node in self.h_space_sources(h_spaces):
-                        if type(node) != int:
-                            if "src" in node:
-                                return node
-                else:
-                    for node in self.labels_sources(labels):
-                        if type(node) != int:
-                            if "src" in node:
-                                return node
-            else:
-                for node in self.model.content_source[k['content']]:
+            if L_H:
+                for node in self.h_space_sources(h_spaces):
                     if type(node) != int:
                         if "src" in node:
                             return node
-                else:
-                    return None
-
-        else:
-            for node in self.model.content_source[k]:
-                if type(node) != int:
-                    if "src" in node:
-                        return node
             else:
-                return None
+                for node in self.labels_sources(labels):
+                    if type(node) != int:
+                        if "src" in node:
+                            return node
+
+        for node in self.model.source_node:
+            if type(node) != int:
+                if "src" in node:
+                    return node
+        else:
+            return None
 
 
-    def closest_source(self, node, k):
+    def closest_source(self, node, k, h_spaces, bin_based=False):
         """Return the node identifier where the content is persistently stored.
 
         Parameters
@@ -394,58 +386,116 @@ class NetworkView(object):
             * epoch-specific stats (for the change over larger periods of time - these could be used for ML or human-led,
                                     Edge-based or system-wide decisions)
         """
-        if type(k) is dict:
-            hops = 100
-            if node in self.content_source(k, k['labels'], k['h_space'], True):
-                if self.has_cache(node):
-                    if self.cache_lookup(node, k['content']) or self.local_cache_lookup(node, k['content']):
+        if bin_based:
+            if type(k) is dict:
+                sources_k = copy.deepcopy(k)
+                sources_k['content'] = ''
+                hops = 100
+                if node in self.content_source(sources_k, sources_k['labels'], h_spaces, True):
+                    if self.has_cache(node):
+                        if self.cache_lookup(node, k['content']) or self.local_cache_lookup(node, k['content']):
+                            cache = True
+                        else:
+                            cache = False
+                    else:
+                        cache = False
+                    return node, cache
+                for n in self.content_source(sources_k, sources_k['labels'], h_spaces, True):
+                    # content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
+                    if len(self.shortest_path(node, n)) < hops:
+                        hops = len(self.shortest_path(node, n))
+                        res = n
+                if self.has_cache(res):
+                    if self.cache_lookup(res, k['content']) or self.local_cache_lookup(res, k['content']):
                         cache = True
                     else:
                         cache = False
                 else:
                     cache = False
-                return node, cache
-            for n in self.content_source(k, k['labels'], k['h_space'], True):
-                content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
-                if len(self.shortest_path(node, n)) < hops:
-                    hops = len(self.shortest_path(node, n))
-                    res = n
-            if self.has_cache(res):
-                if self.cache_lookup(res, content['content']) or self.local_cache_lookup(res, content['content']):
-                    cache = True
-                else:
-                    cache = False
             else:
-                cache = False
-        else:
-            content = dict()
-            content['content'] = k
-            content['labels'] = []
-            content['h_space'] = []
-            hops = 100
-            if node in self.content_source(content, content['labels'], content['h_space'], True):
-                if self.has_cache(node):
-                    if self.cache_lookup(node, content['content']) or self.local_cache_lookup(node, content['content']):
+                content = dict()
+                content['content'] = k
+                content['labels'] = []
+                sources_content = content
+                sources_content['content'] = ''
+                hops = 100
+                if node in self.content_source(sources_content, content['labels'], h_spaces, True):
+                    res = node
+                    if self.has_cache(node):
+                        if self.cache_lookup(node, content['content']) or self.local_cache_lookup(node, content['content']):
+                            cache = True
+                        else:
+                            cache = False
+                    else:
+                        cache = False
+                    return node, cache
+                for n in self.content_source(content, content['labels'], h_spaces, True):
+                    # content = self.model.contents[n][k]
+                    if len(self.shortest_path(node, n)) < hops:
+                        hops = len(self.shortest_path(node, n))
+                        res = n
+                if self.has_cache(res) and res:
+                    if self.cache_lookup(res, content['content']) or self.local_cache_lookup(res, content['content']):
                         cache = True
                     else:
                         cache = False
                 else:
                     cache = False
-                return node, cache
-            for n in self.content_source(content, content['labels'], content['h_space'], True):
-                content = self.model.contents[n][k]
-                if len(self.shortest_path(node, n)) < hops:
-                    hops = len(self.shortest_path(node, n))
-                    res = n
-            if self.has_cache(res):
-                if self.cache_lookup(res, content['content']) or self.local_cache_lookup(res, content['content']):
-                    cache = True
-                else:
-                    cache = False
-            else:
-                cache = False
 
-        return res, cache
+            return res, cache
+        else:
+            if type(k) is dict:
+                hops = 100
+                if node in self.content_source(k, k['labels'], k['h_space'], True):
+                    if self.has_cache(node):
+                        if self.cache_lookup(node, k['content']) or self.local_cache_lookup(node, k['content']):
+                            cache = True
+                        else:
+                            cache = False
+                    else:
+                        cache = False
+                    return node, cache
+                for n in self.content_source(k, k['labels'], k['h_space'], True):
+                    content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
+                    if len(self.shortest_path(node, n)) < hops:
+                        hops = len(self.shortest_path(node, n))
+                        res = n
+                if self.has_cache(res):
+                    if self.cache_lookup(res, content['content']) or self.local_cache_lookup(res, content['content']):
+                        cache = True
+                    else:
+                        cache = False
+                else:
+                    cache = False
+            else:
+                content = dict()
+                content['content'] = k
+                content['labels'] = []
+                hops = 100
+                if node in self.content_source(content, content['labels'], h_spaces, True):
+                    if self.has_cache(node):
+                        if self.cache_lookup(node, content['content']) or self.local_cache_lookup(node,
+                                                                                                  content['content']):
+                            cache = True
+                        else:
+                            cache = False
+                    else:
+                        cache = False
+                    return node, cache
+                for n in self.content_source(content, content['labels'], h_spaces, True):
+                    content = self.model.contents[n][k]
+                    if len(self.shortest_path(node, n)) < hops:
+                        hops = len(self.shortest_path(node, n))
+                        res = n
+                if self.has_cache(res):
+                    if self.cache_lookup(res, content['content']) or self.local_cache_lookup(res, content['content']):
+                        cache = True
+                    else:
+                        cache = False
+                else:
+                    cache = False
+
+            return res, cache
 
     def labels_sources(self, labels):
         """Return the node identifier where the content is persistently stored.
@@ -836,11 +886,11 @@ class NetworkView(object):
                 node_proc = 0
                 for h in self.model.busy_proc[n]:
                     node_proc += self.model.busy_proc[n][h]
-                if node_proc <= min_node_proc and n != 'src_0' and n not in nodes and self.model.busy_proc[n]:
+                if node_proc <= min_node_proc and n != 'src_0' and n not in nodes:
                     min_node_proc = node_proc
                     min_node = n
             nodes.append(min_node)
-        min_hash = min(h)
+        min_hash = None
         for n in nodes:
             proc = 0
             for h in self.model.busy_proc[n]:
@@ -1602,6 +1652,7 @@ class NetworkModel(object):
                     self.epochs_node_reuse[node] = 0
                     self.request_labels[node] = Counter()
                     self.request_h_spaces[node] = Counter()
+                    self.node_h_spaces[node] = Counter()
                 if 'source' and 'router' in extra_types and stack_props.has_key('contents'):
                     self.contents[node] = stack_props['contents']
                     # print("contents[0] is: ", contents[0], " and its type is: ", type(contents[0]))
@@ -1674,7 +1725,7 @@ class NetworkModel(object):
                             self.replication_hops[self.contents[node][c]['content']] = 1
                             for label in self.contents[node][c]['labels']:
                                 self.all_node_labels[node].update([label])
-                            for h in self.contents[node][c]['h_space']:
+                            for h in self.h_space_sources:
                                 self.all_node_h_spaces[node].update([h])
 
                         self.source_node[node] = self.contents[node].keys()
@@ -2092,7 +2143,7 @@ class NetworkController(object):
         if self.collector is not None and self.session['feedback']:
             self.collector.content_storage_labels(u, self.session.storage_labels)
 
-    def move_h_space_proc(self, high_proc, low_proc, h_h, h_l):
+    def move_h_space_proc(self, high_proc, low_proc, h_h, h_l=None):
         """
         This function moves PART OF the hash spaces at each epoch from each of the highest
         processing power usage repos to the lowest processing power usage repos
@@ -2105,17 +2156,20 @@ class NetworkController(object):
 
         """
 
-        self.model.all_node_h_spaces[high_proc].update([h_l])
+        if h_l:
+            self.model.all_node_h_spaces[high_proc].update([h_l])
         del self.model.all_node_h_spaces[low_proc][h_l]
         self.model.all_node_h_spaces[low_proc].update([h_h])
         del self.model.all_node_h_spaces[high_proc][h_h]
 
-        self.model.node_h_spaces[high_proc].update([h_l])
+        if h_l:
+            self.model.node_h_spaces[high_proc].update([h_l])
         del self.model.node_h_spaces[low_proc][h_l]
         self.model.node_h_spaces[low_proc].update([h_h])
         del self.model.node_h_spaces[high_proc][h_h]
 
-        self.model.h_space_sources[h_l].update({high_proc: self.model.all_node_h_spaces[high_proc][h_l]})
+        if h_l:
+            self.model.h_space_sources[h_l].update({high_proc: self.model.all_node_h_spaces[high_proc][h_l]})
         del self.model.h_space_sources[h_l][low_proc]
         self.model.h_space_sources[h_h].update({low_proc: self.model.all_node_h_spaces[low_proc][h_h]})
         del self.model.h_space_sources[h_h][high_proc]
@@ -2722,7 +2776,7 @@ class NetworkController(object):
         else:
             return False
 
-    def has_message(self, node, labels=None, message_ID=''):
+    def has_message(self, node, labels=None, h_spaces=None, message_ID=''):
         """Get a content from a server or a cache.
 
         Parameters
@@ -2737,8 +2791,10 @@ class NetworkController(object):
         storage_hit : bool
             True if the content is available, False otherwise
         """
-        if (node in self.model.storageSize) and (message_ID or labels):
-            storage_hit = self.model.repoStorage[node].hasMessage(message_ID, labels)
+        if (node in self.model.storageSize) and (message_ID or labels or h_spaces):
+            storage_hit = False
+            if self.model.repoStorage[node].hasMessage(message_ID, labels, h_spaces):
+                storage_hit = True
             if storage_hit:
                 # if self.session['log']:
                 self.collector.storage_hit(node)
@@ -2754,6 +2810,97 @@ class NetworkController(object):
             return True
         else:
             return False
+
+
+
+    def has_proc_message(self, node, labels=None, h_spaces=None, message_ID=''):
+        """Get a content from a server or a cache.
+
+        Parameters
+        ----------
+        node : any hashable type
+            The node where the content is retrieved
+        message_ID : any hashable type
+            The ID of the message/content seeked by the function
+
+        Returns
+        -------
+        storage_hit : bool
+            True if the content is available, False otherwise
+        """
+        if (node in self.model.storageSize) and (message_ID or labels or h_spaces):
+            storage_hit = False
+            if self.model.repoStorage[node].hasProcMessage(message_ID, labels, h_spaces):
+                    storage_hit = True
+            return storage_hit
+
+        name, props = fnss.get_stack(self.model.topology, node)
+        if name == 'source':
+            if self.collector is not None:
+                self.collector.server_hit(node)
+            return True
+        else:
+            return False
+
+    def get_message(self, node, h_spaces=None, labels=None, H_C=False, message_ID=''):
+        """Get a content from a server or a cache.
+
+        Parameters
+        ----------
+        node : any hashable type
+            The node where the content is retrieved
+        message_ID : any hashable type
+            The ID of the message/content seeked by the function
+
+        Returns
+        -------
+        storage_hit : bool
+            True if the content is available, False otherwise
+        """
+
+        msg = None
+        if (node in self.model.storageSize) and (message_ID or labels or h_spaces):
+            if H_C:
+                all_h = []
+                for h in h_spaces:
+                    if h in self.model.all_node_h_spaces[node]:
+                        all_h.append(h)
+                if all_h == h_spaces:
+                    msg = self.model.repoStorage[node].hasMessage(message_ID, [], h_spaces)
+            else:
+                if self.model.repoStorage[node].hasMessage(message_ID, labels, h_spaces):
+                    msg = self.model.repoStorage[node].hasMessage(message_ID, labels, h_spaces)
+        return msg
+
+    def get_processed_message(self, node, h_spaces=None, labels=None, H_C=False, message_ID=''):
+        """Get a content from a server or a cache.
+
+        Parameters
+        ----------
+        node : any hashable type
+            The node where the content is retrieved
+        message_ID : any hashable type
+            The ID of the message/content seeked by the function
+
+        Returns
+        -------
+        storage_hit : bool
+            True if the content is available, False otherwise
+        """
+
+        msg = None
+        if (node in self.model.storageSize) and (message_ID or labels or h_spaces):
+            if H_C:
+                all_h = []
+                for h in h_spaces:
+                    if h in self.model.all_node_h_spaces[node]:
+                        all_h.append(h)
+                if all_h == h_spaces:
+                    msg = self.model.repoStorage[node].hasMessage(message_ID, [], h_spaces, True)
+            else:
+                if self.model.repoStorage[node].hasMessage(message_ID, labels, h_spaces, True):
+                    msg = self.model.repoStorage[node].hasMessage(message_ID, labels, h_spaces, True)
+        return msg
 
     def remove_content(self, node):
         """Remove the content being handled from the cache

@@ -276,7 +276,7 @@ class Scheduler(object):
 
     def get_available_core(self, curTime,  update_arrival_times=True):
         
-        self.update_state(curTime,  update_arrival_times)   
+        self.update_state(curTime,  update_arrival_times)
         indx = self.coreFinishTime.index(min(self.coreFinishTime))
         if self.coreFinishTime[indx] <= curTime:
             self.coreFinishTime[indx] = curTime

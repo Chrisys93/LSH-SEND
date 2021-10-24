@@ -735,6 +735,9 @@ class RepoStatsLatencyCollector(DataCollector):
         self.deadline_metric_times = {}
         self.cloud_sat_times = {}
         self.instantiations_times = {}
+        self.rtt_delays_edge = {'count': 0}
+        self.rtt_delays_cloud = {'count': 0}
+        self.rtt_delays_overall = {'count': 0}
 
         # Log-specific variables TODO: Maybe set up in the same way that the result output is set up.
         # self.logs_path = self.view.get_logs_path
@@ -848,6 +851,27 @@ class RepoStatsLatencyCollector(DataCollector):
     def end_session(self, success=True, timestamp=0, flow_id=0):
         sat = False
         if flow_id in self.flow_deadline:
+            service = self.flow_service[flow_id]
+            if self.view.model.cloud_admissions[flow_id]:
+                if service['content'] in self.rtt_delays_cloud:
+                    self.rtt_delays_cloud[service['content']] += timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_cloud['count'] += 1
+                else:
+                    self.rtt_delays_cloud[service['content']] = timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_cloud['count'] += 1
+            else:
+                if service['content'] in self.rtt_delays_edge:
+                    self.rtt_delays_edge[service['content']] += timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_edge['count'] += 1
+                else:
+                    self.rtt_delays_edge[service['content']] = timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_edge['count'] += 1
+            if service['content'] in self.rtt_delays_overall:
+                self.rtt_delays_overall[service['content']] += timestamp - self.flow_start[flow_id]
+                self.rtt_delays_overall['count'] += 1
+            else:
+                self.rtt_delays_overall[service['content']] = timestamp - self.flow_start[flow_id]
+                self.rtt_delays_overall['count'] += 1
             if not success:
                 return
             if self.cdf:
@@ -863,7 +887,6 @@ class RepoStatsLatencyCollector(DataCollector):
                 self.latency_interval += timestamp - self.flow_start[flow_id]
                 self.deadline_metric_interval += self.flow_deadline[flow_id] - timestamp
 
-            service = self.flow_service[flow_id]
             if service['content'] not in self.service_requests.keys():
                 self.service_requests[service['content']] = 1
                 self.service_satisfied[service['content']] = 0
@@ -947,11 +970,19 @@ class RepoStatsLatencyCollector(DataCollector):
             overhead = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_overheads.txt", 'a')
             simil_misses = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_simil_miss.txt", 'a')
             repo_simil_misses = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_repo_miss.txt", 'a')
+            cloud_proc = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_cloud_proc.txt", 'a')
+            edge_proc = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_edge_proc.txt", 'a')
+            reuse_hits = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_reuse_hits.txt", 'a')
+            overall_delay_averages = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_overall_delay_avg.txt", 'a')
+            edge_delay_averages = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_edge_delay_avg.txt", 'a')
+            cloud_delay_averages = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_cloud_delay_avg.txt", 'a')
         if self.cdf:
             self.results['CDF'] = cdf(self.latency_data)
         results = Tree({'SATISFACTION': 1.0 * self.n_satisfied / self.sess_count})
 
-        # TODO: Possibly create another file, specifically for tracking repo/service-specific performance!!!!!!!!!!!!!!!
+        # TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #  Possibly create another file, specifically for tracking edge/cloud processing and reuse hit counts!!!!!!!!!!!
+        #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         per_service_sats = {}
         per_node_r_replicas_requested = {}
@@ -989,10 +1020,48 @@ class RepoStatsLatencyCollector(DataCollector):
         if self.view.model.strategy == 'HASH_PROC_REPO_APP':
             simil_misses.write(str(self.view.model.last_miss_count))
             simil_misses.write("\n")
+            cloud_proc.write(str(self.view.model.last_cloud_proc))
+            cloud_proc.write("\n")
+            edge_proc.write(str(self.view.model.last_edge_proc))
+            edge_proc.write("\n")
+            reuse_hits.write(str(self.view.model.last_reuse_hits))
+            reuse_hits.write("\n")
             for node in self.view.model.storageSize:
                 per_node_simil_misses[node] = self.view.model.last_repo_misses[node]
                 repo_simil_misses.write(str(node) + ':' + str(per_node_simil_misses[node]) + ", ")
             repo_simil_misses.write("\n")
+
+            total_delays = 0
+            for service in self.rtt_delays_overall:
+                if service != 'count':
+                    total_delays += self.rtt_delays_overall[service]
+            if self.rtt_delays_overall['count']:
+                avg_overall_delay = total_delays/self.rtt_delays_overall['count']
+            else:
+                avg_overall_delay = 0
+            overall_delay_averages.write(str(avg_overall_delay) + "\n")
+            repo_simil_misses.write("\n")
+
+            total_delays = 0
+            for service in self.rtt_delays_edge:
+                if service != 'count':
+                    total_delays += self.rtt_delays_edge[service]
+            if self.rtt_delays_edge['count']:
+                avg_edge_delay = total_delays/self.rtt_delays_edge['count']
+            else:
+                avg_cloud_delay = 0
+            edge_delay_averages.write(str(avg_edge_delay) + "\n")
+            repo_simil_misses.write("\n")
+
+            total_delays = 0
+            for service in self.rtt_delays_cloud:
+                if service != 'count':
+                    total_delays += self.rtt_delays_cloud[service]
+            if self.rtt_delays_cloud['count']:
+                avg_cloud_delay = total_delays/self.rtt_delays_cloud['count']
+            else:
+                avg_cloud_delay = 0
+            cloud_delay_averages.write(str(avg_cloud_delay) + "\n")
 
 
         if self.view.model.strategy != 'HYBRID':

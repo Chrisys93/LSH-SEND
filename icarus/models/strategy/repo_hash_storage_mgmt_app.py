@@ -100,6 +100,14 @@ class HashRepoProcStorApp(Strategy):
 
         self.epoch_miss_count = 0
 
+        self.edge_proc = 0
+
+        self.cloud_proc = 0
+
+        self.reuse_hits = 0
+
+        self.cloud_admit = {}
+
         self.in_count = {}
 
         self.hit_count = {}
@@ -343,6 +351,10 @@ class HashRepoProcStorApp(Strategy):
             if self.hit_count[node]/self.in_count[node] < self.hit_rate:
                 self.controller.update_node_reuse(node, True)
                 self.hit_count[node] += 1
+                self.reuse_hits += 1
+                if type(node) is str and 'src' in node:
+                    self.cloud_admit[flow_id] = True
+                    self.controller.cloud_admission_update(self.cloud_admit)
                 self.view.storage_nodes()[node].deleteAnyMessage(stor_msg['content'])
                 stor_msg['receiveTime'] = time.time()
                 msg['service_type'] = "processed"
@@ -430,8 +442,14 @@ class HashRepoProcStorApp(Strategy):
                 count += 1
         self.epoch_count = 0
         self.controller.simil_miss_update(self.epoch_miss_count, self.epoch_ticks)
+        self.controller.edge_proc_update(self.edge_proc, self.epoch_ticks)
+        self.controller.cloud_proc_update(self.cloud_proc, self.epoch_ticks)
+        self.controller.reuse_hits_update(self.reuse_hits, self.epoch_ticks)
         self.controller.repo_miss_update(self.repo_misses, self.epoch_ticks)
         self.epoch_miss_count = 0
+        self.cloud_proc = 0
+        self.edge_proc = 0
+        self.reuse_hits = 0
         for n in self.view.model.repoStorage:
             self.in_count[n] = 0
             self.hit_count[n] = 0
@@ -466,6 +484,7 @@ class HashRepoProcStorApp(Strategy):
         """
 
         self.epoch_count += 1
+        self.cloud_admit[flow_id] = False
         if self.epoch_count == self.epoch_ticks:
             self.epoch_node_proc_update()
 
@@ -564,6 +583,7 @@ class HashRepoProcStorApp(Strategy):
             if cloud_source == node and status == REQUEST:
 
                 cache_delay = 0
+                self.cloud_proc += 1
                 if type(content) is dict:
                     pc = self.controller.get_processed_message(node, h_spaces, labels, False, content['content'])
                 else:
@@ -628,12 +648,15 @@ class HashRepoProcStorApp(Strategy):
                                                   self.debug)
                 if ret:
                     self.controller.add_proc(node, service['h_space'])
+                    self.cloud_admit[flow_id] = True
+                    self.controller.cloud_admission_update(self.cloud_admit)
 
                     return
                 return
 
             if source == node and status == REQUEST:
                 cache_delay = 0
+                self.edge_proc += 1
                 if type(content) is dict:
                     pc = self.controller.get_processed_message(node, h_spaces, labels, False, content['content'])
                 else:
@@ -1004,6 +1027,11 @@ class HashRepoProcStorApp(Strategy):
                         ret, reason = compSpot.admit_task(service['content'], labels, service['h_space'], curTime,
                                                           flow_id, deadline, receiver, rtt_delay, self.controller,
                                                           self.debug)
+                        if ret:
+                            if self.view.model.storageSize[node] > 0 and self.view.model.storageSize[node] < 1000000000000:
+                                self.edge_proc += 1
+                            if self.view.model.storageSize[node] == float('inf'):
+                                self.cloud_proc += 1
                         if self.debug:
                             print("Done Calling admit_task")
                         if ret is False:

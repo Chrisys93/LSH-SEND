@@ -434,7 +434,7 @@ class NetworkView(object):
                     if len(self.shortest_path(node, n)) < hops:
                         hops = len(self.shortest_path(node, n))
                         res = n
-                if self.has_cache(res) and res:
+                if res and self.has_cache(res):
                     if self.cache_lookup(res, content['content']) or self.local_cache_lookup(res, content['content']):
                         cache = True
                     else:
@@ -1574,6 +1574,18 @@ class NetworkModel(object):
         # calculated as: (similarity misses/epoch*100)/number of request ticks per epoch
         self.last_miss_count = 0
 
+        # Similarity miss counts updated on each epoch change,
+        # calculated as: (similarity misses/epoch*100)/number of request ticks per epoch
+        self.last_edge_proc = 0
+
+        # Similarity miss counts updated on each epoch change,
+        # calculated as: (similarity misses/epoch*100)/number of request ticks per epoch
+        self.last_cloud_proc = 0
+
+        # Similarity miss counts updated on each epoch change,
+        # calculated as: (similarity misses/epoch*100)/number of request ticks per epoch
+        self.last_reuse_hits = 0
+
         # Similarity per repo miss counts, updated on each epoch change,
         # calculated as: (similarity misses/epoch*100)/number of request ticks per epoch for each repo
         self.last_repo_misses = {}
@@ -1616,6 +1628,7 @@ class NetworkModel(object):
         self.epochs_node_reuse = {}
         self.node_h_spaces = {}
         self.all_node_h_spaces = {}
+        self.cloud_admissions = {}
         for node in topology.nodes():
             # TODO: Sort out content association in the case that "contents" aren't objects!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             stack_name, stack_props = fnss.get_stack(topology, node)
@@ -2602,6 +2615,62 @@ class NetworkController(object):
 
         """
         self.model.last_miss_count = miss_count * 100 / epoch_ticks
+
+    def edge_proc_update(self, edge_proc, epoch_ticks):
+        """
+        Update the amount of similarity miss number that has occured on each epoch.
+        This is for the purpose of collecting statistics on the similarity misses,
+        to determine whether this should be studied (this may be more relevant for
+        cases where processing times are much longer than routing and storage "fetch" times)
+
+        miss_count:
+
+        epoch_ticks:
+
+        """
+        self.model.last_edge_proc = edge_proc * 100 / epoch_ticks
+
+    def cloud_proc_update(self, cloud_proc, epoch_ticks):
+        """
+        Update the amount of similarity miss number that has occured on each epoch.
+        This is for the purpose of collecting statistics on the similarity misses,
+        to determine whether this should be studied (this may be more relevant for
+        cases where processing times are much longer than routing and storage "fetch" times)
+
+        miss_count:
+
+        epoch_ticks:
+
+        """
+        self.model.last_cloud_proc = cloud_proc * 100 / epoch_ticks
+
+    def reuse_hits_update(self, reuse_hits, epoch_ticks):
+        """
+        Update the amount of similarity miss number that has occured on each epoch.
+        This is for the purpose of collecting statistics on the similarity misses,
+        to determine whether this should be studied (this may be more relevant for
+        cases where processing times are much longer than routing and storage "fetch" times)
+
+        miss_count:
+
+        epoch_ticks:
+
+        """
+        self.model.last_reuse_hits = reuse_hits * 100 / epoch_ticks
+
+    def cloud_admission_update(self, cloud_admits):
+        """
+        Update the amount of similarity miss number that has occured on each epoch.
+        This is for the purpose of collecting statistics on the similarity misses,
+        to determine whether this should be studied (this may be more relevant for
+        cases where processing times are much longer than routing and storage "fetch" times)
+
+        miss_count:
+
+        epoch_ticks:
+
+        """
+        self.model.cloud_admissions = cloud_admits
 
     def repo_miss_update(self, repo_miss_count, epoch_ticks):
         """

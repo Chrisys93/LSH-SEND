@@ -402,7 +402,7 @@ class RepoStorage(object):
                 if space in h_spaces:
                     j_spaces.append(space)
             if (j_spaces == h_spaces):
-                answer = self.Messages[i]
+                answer = self.processedMessages[i]
         return answer
 
     def deleteMessage(self, MessageId):

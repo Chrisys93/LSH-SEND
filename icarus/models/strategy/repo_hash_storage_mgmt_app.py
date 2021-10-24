@@ -808,7 +808,7 @@ class HashRepoProcStorApp(Strategy):
             elif status == TASK_COMPLETE:
                 self.controller.complete_task(task, curTime)
                 self.controller.sub_proc(node, h_spaces)
-                if node != source:
+                if node != cloud_source:
                     newTask = compSpot.scheduler.schedule(curTime)
                     # schedule the next queued task at this node
                     if newTask is not None:

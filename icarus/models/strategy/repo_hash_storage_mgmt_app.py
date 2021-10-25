@@ -784,7 +784,6 @@ class HashRepoProcStorApp(Strategy):
 
             elif status == TASK_COMPLETE:
                 self.controller.complete_task(task, curTime)
-                self.controller.sub_proc(node, h_spaces)
                 if node != cloud_source:
                     newTask = compSpot.scheduler.schedule(curTime)
                     # schedule the next queued task at this node
@@ -796,6 +795,8 @@ class HashRepoProcStorApp(Strategy):
                 # forward the completed task
                 if task.taskType == Task.TASK_TYPE_VM_START:
                     return
+                if any(h_spaces) in self.view.model.busy_proc[node]:
+                    self.controller.sub_proc(node, h_spaces)
                 path = self.view.shortest_path(node, receiver)
                 path_delay = self.view.path_delay(node, receiver)
                 next_node = path[1]
@@ -1087,7 +1088,7 @@ class HashRepoProcStorApp(Strategy):
             if source == path[0]:
                 self.self_calls[path[0]] += 1
         if self.self_calls[path[0]] >= 3:
-            source = self.view.content_source_cloud(service, service['labels'], service[' h_space'], True)
+            source = self.view.content_source_cloud(service, service['labels'], service['h_space'], True)
             if not source:
                 for n in self.view.model.comp_size:
                     if type(self.view.model.comp_size[n]) is not int and self.view.model.comp_size[path[0]] is not None:

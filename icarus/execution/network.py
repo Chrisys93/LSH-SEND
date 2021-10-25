@@ -391,6 +391,7 @@ class NetworkView(object):
                 sources_k = copy.deepcopy(k)
                 sources_k['content'] = ''
                 hops = 100
+                res = 'src_0'
                 if node in self.content_source(sources_k, sources_k['labels'], h_spaces, True):
                     if self.has_cache(node):
                         if self.cache_lookup(node, k['content']) or self.local_cache_lookup(node, k['content']):
@@ -405,7 +406,7 @@ class NetworkView(object):
                     if len(self.shortest_path(node, n)) < hops:
                         hops = len(self.shortest_path(node, n))
                         res = n
-                if self.has_cache(res):
+                if res is not None and self.has_cache(res):
                     if self.cache_lookup(res, k['content']) or self.local_cache_lookup(res, k['content']):
                         cache = True
                     else:
@@ -419,6 +420,7 @@ class NetworkView(object):
                 sources_content = content
                 sources_content['content'] = ''
                 hops = 100
+                res = 'src_0'
                 if node in self.content_source(sources_content, content['labels'], h_spaces, True):
                     res = node
                     if self.has_cache(node):
@@ -434,7 +436,7 @@ class NetworkView(object):
                     if len(self.shortest_path(node, n)) < hops:
                         hops = len(self.shortest_path(node, n))
                         res = n
-                if self.has_cache(res) and res:
+                if res is not None and self.has_cache(res):
                     if self.cache_lookup(res, content['content']) or self.local_cache_lookup(res, content['content']):
                         cache = True
                     else:
@@ -2185,6 +2187,11 @@ class NetworkController(object):
 
         for h in h_space:
             if h in self.model.all_node_h_spaces[node]:
+                if h in self.model.busy_proc[node]:
+                    self.model.busy_proc[node][h] += 1
+                else:
+                    self.model.busy_proc[node][h] = 1
+            elif type(node) is not int and 'src' in node:
                 if h in self.model.busy_proc[node]:
                     self.model.busy_proc[node][h] += 1
                 else:

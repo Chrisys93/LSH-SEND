@@ -442,9 +442,9 @@ class HashRepoProcStorApp(Strategy):
                 count += 1
         self.epoch_count = 0
         self.controller.simil_miss_update(self.epoch_miss_count, self.epoch_ticks)
-        self.controller.edge_proc_update(self.edge_proc, self.epoch_ticks)
-        self.controller.cloud_proc_update(self.cloud_proc, self.epoch_ticks)
-        self.controller.reuse_hits_update(self.reuse_hits, self.epoch_ticks)
+        self.controller.edge_proc_update(self.edge_proc)
+        self.controller.cloud_proc_update(self.cloud_proc)
+        self.controller.reuse_hits_update(self.reuse_hits)
         self.controller.repo_miss_update(self.repo_misses, self.epoch_ticks)
         self.epoch_miss_count = 0
         self.cloud_proc = 0

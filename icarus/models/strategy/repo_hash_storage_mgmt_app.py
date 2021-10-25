@@ -100,6 +100,14 @@ class HashRepoProcStorApp(Strategy):
 
         self.epoch_miss_count = 0
 
+        self.edge_proc = 0
+
+        self.cloud_proc = 0
+
+        self.reuse_hits = 0
+
+        self.cloud_admit = {}
+
         self.in_count = {}
 
         self.hit_count = {}
@@ -430,6 +438,9 @@ class HashRepoProcStorApp(Strategy):
                 count += 1
         self.epoch_count = 0
         self.controller.simil_miss_update(self.epoch_miss_count, self.epoch_ticks)
+        self.controller.edge_proc_update(self.edge_proc, self.epoch_ticks)
+        self.controller.cloud_proc_update(self.cloud_proc, self.epoch_ticks)
+        self.controller.reuse_hits_update(self.reuse_hits, self.epoch_ticks)
         self.controller.repo_miss_update(self.repo_misses, self.epoch_ticks)
         self.epoch_miss_count = 0
         for n in self.view.model.repoStorage:
@@ -466,6 +477,7 @@ class HashRepoProcStorApp(Strategy):
         """
 
         self.epoch_count += 1
+        self.cloud_admit[flow_id] = False
         if self.epoch_count == self.epoch_ticks:
             self.epoch_node_proc_update()
 
@@ -628,6 +640,8 @@ class HashRepoProcStorApp(Strategy):
                                                   self.debug)
                 if ret:
                     self.controller.add_proc(node, service['h_space'])
+                    self.cloud_admit[flow_id] = True
+                    self.controller.cloud_admission_update(self.cloud_admit)
 
                     return
                 return

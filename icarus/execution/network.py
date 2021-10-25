@@ -1480,10 +1480,8 @@ class NetworkView(object):
 
 class NetworkModel(object):
     """Models the internal state of the network.
-
     This object should never be edited by strategies directly, but only through
     calls to the network controller.
-
     TODO: This is where all the node characteristics are determined, through the "stack" property.
         Look into this, how it is initiated (discovered in cacheplacement, so maybe start with that)
         and develop on that, to associate RepoStorage objects and see how messages could be better
@@ -1497,7 +1495,6 @@ class NetworkModel(object):
         """
 
         """Constructor
-
         Parameters
         ----------
         topology : fnss.Topology
@@ -1576,11 +1573,23 @@ class NetworkModel(object):
         # calculated as: (similarity misses/epoch*100)/number of request ticks per epoch
         self.last_miss_count = 0
 
+        # Similarity miss counts updated on each epoch change,
+        # calculated as: (similarity misses/epoch*100)/number of request ticks per epoch
+        self.last_edge_proc = 0
+
+        # Similarity miss counts updated on each epoch change,
+        # calculated as: (similarity misses/epoch*100)/number of request ticks per epoch
+        self.last_cloud_proc = 0
+
+        # Similarity miss counts updated on each epoch change,
+        # calculated as: (similarity misses/epoch*100)/number of request ticks per epoch
+        self.last_reuse_hits = 0
+
         # Similarity per repo miss counts, updated on each epoch change,
         # calculated as: (similarity misses/epoch*100)/number of request ticks per epoch for each repo
         self.last_repo_misses = {}
 
-        #  A heap with events (see Event class above)
+        #  A heap with events (see Event class above)
         self.eventQ = []
 
         # Dictionary of link types (internal/external)
@@ -1618,6 +1627,7 @@ class NetworkModel(object):
         self.epochs_node_reuse = {}
         self.node_h_spaces = {}
         self.all_node_h_spaces = {}
+        self.cloud_admissions = {}
         for node in topology.nodes():
             # TODO: Sort out content association in the case that "contents" aren't objects!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             stack_name, stack_props = fnss.get_stack(topology, node)
@@ -1644,7 +1654,7 @@ class NetworkModel(object):
                     self.comp_size[node] = stack_props['computation_size']
                 if 'service_size' in stack_props:
                     self.service_size[node] = stack_props['service_size']
-                #  A "leaf" or EDGE node, with some of the information and limited resources
+                #  A "leaf" or EDGE node, with some of the information and limited resources
                 if 'source' and 'router' in extra_types:
                     self.all_node_labels[node] = Counter()
                     self.all_node_h_spaces[node] = Counter()
@@ -1797,10 +1807,10 @@ class NetworkModel(object):
                     self.repoStorage[node] = REPO_POLICY[repo_policy_name](node, self, None, self.storageSize[node], **repo_policy_args)
 
 
-        #  Generate the actual services processing requests
+        #  Generate the actual services processing requests
         self.services = []
         self.n_services = n_services
-        internal_link_delay = 0.001  #  This is the delay from receiver to router
+        internal_link_delay = 0.001  #  This is the delay from receiver to router
 
         service_time_min = 0.50  # used to be 0.10 # used to be 0.001
         service_time_max = 0.70  # used to be 0.10  # used to be 0.1
@@ -1824,7 +1834,7 @@ class NetworkModel(object):
             self.services.append(s)
         # """ #END OF Generating Services
 
-        ### Prepare input for the optimizer
+        ### Prepare input for the optimizer
         if False:
             aFile = open('inputToOptimizer.txt', 'w')
             aFile.write("# 1. ServiceIDs\n")
@@ -1885,7 +1895,7 @@ class NetworkModel(object):
                                     if s.deadline >= (s.service_time + 2 * node_to_delay[egress]):
                                         node_to_services[egress].append(service_indx)
                                     service_indx += 1
-                aFile.write("# 4. Ap,Node,service1,service2, ....]\n")
+                aFile.write("# 4. Ap,Node,service1,service2, ....]\n")
                 for ap in topology.graph['receivers']:
                     node_to_services = ap_node_to_services[ap]
                     node_to_delay = ap_node_to_delay[ap]
@@ -2609,6 +2619,50 @@ class NetworkController(object):
 
         """
         self.model.last_miss_count = miss_count * 100 / epoch_ticks
+
+    def edge_proc_update(self, edge_proc, epoch_ticks):
+        """
+        Update the amount of similarity miss number that has occured on each epoch.
+        This is for the purpose of collecting statistics on the similarity misses,
+        to determine whether this should be studied (this may be more relevant for
+        cases where processing times are much longer than routing and storage "fetch" times)
+        miss_count:
+        epoch_ticks:
+        """
+        self.model.last_edge_proc = edge_proc * 100 / epoch_ticks
+
+    def cloud_proc_update(self, cloud_proc, epoch_ticks):
+        """
+        Update the amount of similarity miss number that has occured on each epoch.
+        This is for the purpose of collecting statistics on the similarity misses,
+        to determine whether this should be studied (this may be more relevant for
+        cases where processing times are much longer than routing and storage "fetch" times)
+        miss_count:
+        epoch_ticks:
+        """
+        self.model.last_cloud_proc = cloud_proc * 100 / epoch_ticks
+
+    def reuse_hits_update(self, reuse_hits, epoch_ticks):
+        """
+        Update the amount of similarity miss number that has occured on each epoch.
+        This is for the purpose of collecting statistics on the similarity misses,
+        to determine whether this should be studied (this may be more relevant for
+        cases where processing times are much longer than routing and storage "fetch" times)
+        miss_count:
+        epoch_ticks:
+        """
+        self.model.last_reuse_hits = reuse_hits * 100 / epoch_ticks
+
+    def cloud_admission_update(self, cloud_admits):
+        """
+        Update the amount of similarity miss number that has occured on each epoch.
+        This is for the purpose of collecting statistics on the similarity misses,
+        to determine whether this should be studied (this may be more relevant for
+        cases where processing times are much longer than routing and storage "fetch" times)
+        miss_count:
+        epoch_ticks:
+        """
+        self.model.cloud_admissions = cloud_admits
 
     def repo_miss_update(self, repo_miss_count, epoch_ticks):
         """

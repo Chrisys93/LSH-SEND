@@ -735,6 +735,9 @@ class RepoStatsLatencyCollector(DataCollector):
         self.deadline_metric_times = {}
         self.cloud_sat_times = {}
         self.instantiations_times = {}
+        self.rtt_delays_edge = {'count': 0}
+        self.rtt_delays_cloud = {'count': 0}
+        self.rtt_delays_overall = {'count': 0}
 
         # Log-specific variables TODO: Maybe set up in the same way that the result output is set up.
         # self.logs_path = self.view.get_logs_path
@@ -848,6 +851,27 @@ class RepoStatsLatencyCollector(DataCollector):
     def end_session(self, success=True, timestamp=0, flow_id=0):
         sat = False
         if flow_id in self.flow_deadline:
+            service = self.flow_service[flow_id]
+            if self.view.model.cloud_admissions[flow_id]:
+                if service['content'] in self.rtt_delays_cloud:
+                    self.rtt_delays_cloud[service['content']] += timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_cloud['count'] += 1
+                else:
+                    self.rtt_delays_cloud[service['content']] = timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_cloud['count'] += 1
+            else:
+                if service['content'] in self.rtt_delays_edge:
+                    self.rtt_delays_edge[service['content']] += timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_edge['count'] += 1
+                else:
+                    self.rtt_delays_edge[service['content']] = timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_edge['count'] += 1
+            if service['content'] in self.rtt_delays_overall:
+                self.rtt_delays_overall[service['content']] += timestamp - self.flow_start[flow_id]
+                self.rtt_delays_overall['count'] += 1
+            else:
+                self.rtt_delays_overall[service['content']] = timestamp - self.flow_start[flow_id]
+                self.rtt_delays_overall['count'] += 1
             if not success:
                 return
             if self.cdf:
@@ -893,7 +917,8 @@ class RepoStatsLatencyCollector(DataCollector):
         elif self.view.model.strategy == 'HYBRIDS_REPO_APP':
             res = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hybrid_repo.txt", 'a')
             repo_usage = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/repo_usage.txt", 'a')
-            repo_proc_vs_stor = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/repo_proc_vs_stor.txt", 'a')
+            repo_proc_vs_stor = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/repo_proc_vs_stor.txt",
+                                     'a')
             repo_overtime = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/repo_overtime.txt", 'a')
             repo_incoming_BW = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/repo_incoming.txt", 'a')
             r_replicas = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/gen_r_replicas.txt", 'a')
@@ -904,7 +929,8 @@ class RepoStatsLatencyCollector(DataCollector):
         elif self.view.model.strategy == 'HYBRIDS_PRO_REPO_APP':
             res = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hybrid_pro_repo.txt", 'a')
             repo_usage = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/pro_usage.txt", 'a')
-            repo_proc_vs_stor = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/pro_proc_vs_stor.txt", 'a')
+            repo_proc_vs_stor = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/pro_proc_vs_stor.txt",
+                                     'a')
             repo_overtime = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/pro_overtime.txt", 'a')
             repo_incoming_BW = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/pro_incoming.txt", 'a')
             r_replicas = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/pro_r_replicas.txt", 'a')
@@ -915,7 +941,8 @@ class RepoStatsLatencyCollector(DataCollector):
         elif self.view.model.strategy == 'HYBRIDS_RE_REPO_APP':
             res = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hybrid_re_repo.txt", 'a')
             repo_usage = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/re_usage.txt", 'a')
-            repo_proc_vs_stor = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/re_proc_vs_stor.txt", 'a')
+            repo_proc_vs_stor = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/re_proc_vs_stor.txt",
+                                     'a')
             repo_overtime = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/re_overtime.txt", 'a')
             repo_incoming_BW = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/re_incoming.txt", 'a')
             r_replicas = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/re_r_replicas.txt", 'a')
@@ -926,7 +953,8 @@ class RepoStatsLatencyCollector(DataCollector):
         elif self.view.model.strategy == 'HYBRIDS_SPEC_REPO_APP':
             res = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hybrid_spec_repo.txt", 'a')
             repo_usage = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/spec_usage.txt", 'a')
-            repo_proc_vs_stor = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/spec_proc_vs_stor.txt", 'a')
+            repo_proc_vs_stor = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/spec_proc_vs_stor.txt",
+                                     'a')
             repo_overtime = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/spec_overtime.txt", 'a')
             repo_incoming_BW = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/spec_incoming.txt", 'a')
             r_replicas = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/spec_r_replicas.txt", 'a')
@@ -937,21 +965,39 @@ class RepoStatsLatencyCollector(DataCollector):
         elif self.view.model.strategy == 'HASH_PROC_REPO_APP':
             res = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_repo.txt", 'a')
             repo_usage = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_usage.txt", 'a')
-            repo_proc_vs_stor = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_proc_vs_stor.txt", 'a')
-            repo_overtime = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_overtime.txt", 'a')
-            repo_incoming_BW = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_incoming.txt", 'a')
+            repo_proc_vs_stor = open(
+                "/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_proc_vs_stor.txt", 'a')
+            repo_overtime = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_overtime.txt",
+                                 'a')
+            repo_incoming_BW = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_incoming.txt",
+                                    'a')
             r_replicas = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_r_replicas.txt", 'a')
             s_replicas = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_s_replicas.txt", 'a')
-            r_labels_dist = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_r_labels.txt", 'a')
-            s_labels_dist = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_s_labels.txt", 'a')
+            r_labels_dist = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_r_labels.txt",
+                                 'a')
+            s_labels_dist = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_s_labels.txt",
+                                 'a')
             overhead = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_overheads.txt", 'a')
-            simil_misses = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_simil_miss.txt", 'a')
-            repo_simil_misses = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_repo_miss.txt", 'a')
+            simil_misses = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_simil_miss.txt",
+                                'a')
+            repo_simil_misses = open(
+                "/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_repo_miss.txt", 'a')
+            cloud_proc = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_cloud_proc.txt", 'a')
+            edge_proc = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_edge_proc.txt", 'a')
+            reuse_hits = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_reuse_hits.txt", 'a')
+            overall_delay_averages = open(
+                "/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_overall_delay_avg.txt", 'a')
+            edge_delay_averages = open(
+                "/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_edge_delay_avg.txt", 'a')
+            cloud_delay_averages = open(
+                "/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_cloud_delay_avg.txt", 'a')
         if self.cdf:
             self.results['CDF'] = cdf(self.latency_data)
         results = Tree({'SATISFACTION': 1.0 * self.n_satisfied / self.sess_count})
 
-        # TODO: Possibly create another file, specifically for tracking repo/service-specific performance!!!!!!!!!!!!!!!
+        # TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #  Possibly create another file, specifically for tracking edge/cloud processing and reuse hit counts!!!!!!!!!!!
+        #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
         per_service_sats = {}
         per_node_r_replicas_requested = {}
@@ -960,7 +1006,7 @@ class RepoStatsLatencyCollector(DataCollector):
         per_label_node_requests = {}
         per_node_storage_used = {}
         per_node_proc_vs_stor_used = {}
-        per_node_overtime= {}
+        per_node_overtime = {}
         incoming_bw = {}
         per_node_simil_misses = {}
         # res.write(str(100*self.n_satisfied/self.sess_count) + " " + str(self.n_satisfied) + " " + str(self.sess_count) + ": \n")
@@ -979,9 +1025,13 @@ class RepoStatsLatencyCollector(DataCollector):
                     msg = self.view.storage_nodes()[node].hasMessage(content, [])
                     break
             if msg['content'] in self.view.model.replication_overheads:
-                self.view.model.replication_overheads[msg['content']] = self.view.model.replication_overheads[msg['content']] + self.view.model.replication_hops[msg['content']] * msg['msg_size']
+                self.view.model.replication_overheads[msg['content']] = self.view.model.replication_overheads[
+                                                                            msg['content']] + \
+                                                                        self.view.model.replication_hops[
+                                                                            msg['content']] * msg['msg_size']
             else:
-                self.view.model.replication_overheads[msg['content']] = self.view.model.replication_hops[msg['content']] * msg['msg_size']
+                self.view.model.replication_overheads[msg['content']] = self.view.model.replication_hops[
+                                                                            msg['content']] * msg['msg_size']
             overhead.write(str(self.view.replication_overhead(content)) + ", ")
             self.view.model.replication_hops[msg['content']] = 1
         overhead.write("\n")
@@ -989,11 +1039,48 @@ class RepoStatsLatencyCollector(DataCollector):
         if self.view.model.strategy == 'HASH_PROC_REPO_APP':
             simil_misses.write(str(self.view.model.last_miss_count))
             simil_misses.write("\n")
+            cloud_proc.write(str(self.view.model.last_cloud_proc))
+            cloud_proc.write("\n")
+            edge_proc.write(str(self.view.model.last_edge_proc))
+            edge_proc.write("\n")
+            reuse_hits.write(str(self.view.model.last_reuse_hits))
+            reuse_hits.write("\n")
             for node in self.view.model.storageSize:
                 per_node_simil_misses[node] = self.view.model.last_repo_misses[node]
                 repo_simil_misses.write(str(node) + ':' + str(per_node_simil_misses[node]) + ", ")
             repo_simil_misses.write("\n")
 
+            total_delays = 0
+            for service in self.rtt_delays_overall:
+                if service != 'count':
+                    total_delays += self.rtt_delays_overall[service]
+            if self.rtt_delays_overall['count']:
+                avg_overall_delay = total_delays / self.rtt_delays_overall['count']
+            else:
+                avg_overall_delay = 0
+            overall_delay_averages.write(str(avg_overall_delay) + "\n")
+            repo_simil_misses.write("\n")
+
+            total_delays = 0
+            for service in self.rtt_delays_edge:
+                if service != 'count':
+                    total_delays += self.rtt_delays_edge[service]
+            if self.rtt_delays_edge['count']:
+                avg_edge_delay = total_delays / self.rtt_delays_edge['count']
+            else:
+                avg_cloud_delay = 0
+            edge_delay_averages.write(str(avg_edge_delay) + "\n")
+            repo_simil_misses.write("\n")
+
+            total_delays = 0
+            for service in self.rtt_delays_cloud:
+                if service != 'count':
+                    total_delays += self.rtt_delays_cloud[service]
+            if self.rtt_delays_cloud['count']:
+                avg_cloud_delay = total_delays / self.rtt_delays_cloud['count']
+            else:
+                avg_cloud_delay = 0
+            cloud_delay_averages.write(str(avg_cloud_delay) + "\n")
 
         if self.view.model.strategy != 'HYBRID':
             for node in self.view.model.storageSize:
@@ -1014,25 +1101,23 @@ class RepoStatsLatencyCollector(DataCollector):
 
             for node in self.view.model.storageSize:
                 if self.view.storage_nodes()[node].getMessagesSize():
-                    per_node_proc_vs_stor_used[node] = 100 * self.view.storage_nodes()[node].getProcessedMessagesSize() / \
+                    per_node_proc_vs_stor_used[node] = 100 * self.view.storage_nodes()[
+                        node].getProcessedMessagesSize() / \
                                                        self.view.storage_nodes()[node].getMessagesSize()
                 else:
                     per_node_proc_vs_stor_used[node] = 0
                 repo_proc_vs_stor.write(str(per_node_proc_vs_stor_used[node]) + ", ")
             repo_proc_vs_stor.write("\n")
 
-
             for node in self.view.model.storageSize:
                 per_node_overtime[node] = self.view.storage_nodes()[node].getNrofOvertimeMessages()
                 repo_overtime.write(str(per_node_overtime[node]) + ", ")
             repo_overtime.write("\n")
 
-
             for node in self.view.model.storageSize:
                 incoming_bw[node] = self.view.storage_nodes()[node].getOverallMeanIncomingSpeed()
                 repo_incoming_BW.write(str(incoming_bw[node]) + ", ")
             repo_incoming_BW.write("\n")
-
 
             # TODO: Modify the following, to include ALL NODES, no matter what!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1062,13 +1147,13 @@ class RepoStatsLatencyCollector(DataCollector):
         results['CLOUD_SAT_TIMES'] = self.cloud_sat_times
         results['INSTANTIATION_OVERHEAD'] = self.instantiations_times
 
-        print ("Printing Sat. rate times:")
+        print("Printing Sat. rate times:")
         for key in sorted(self.satrate_times):
-            print (repr(key) + " " + repr(self.satrate_times[key]))
+            print(repr(key) + " " + repr(self.satrate_times[key]))
 
-        print ("Printing Idle times:")
+        print("Printing Idle times:")
         for key in sorted(self.idle_times):
-            print (repr(key) + " " + repr(self.idle_times[key]))
+            print(repr(key) + " " + repr(self.idle_times[key]))
         # results['VMS_PER_SERVICE'] = self.vms_per_service
         res.close()
 

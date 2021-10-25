@@ -365,7 +365,7 @@ class HashRepoProcStorApp(Strategy):
                     self.controller.add_request_h_spaces_to_storage(node, msg, True)
                 new_status = True
 
-        elif self.view.get_node_h_spaces(node) is not None and self.view.hasStorageCapability(node) and not new_status \
+        elif self.view.get_node_h_spaces(node) and self.view.hasStorageCapability(node) and not new_status \
                 and ('satisfied' not in msg or 'Shelf' not in msg) and \
                 all(elem in self.view.get_node_h_spaces(node) for elem in msg['h_space']):
 

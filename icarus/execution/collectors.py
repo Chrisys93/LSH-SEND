@@ -1027,7 +1027,10 @@ class RepoStatsLatencyCollector(DataCollector):
             reuse_hits.write(str(self.view.model.last_reuse_hits))
             reuse_hits.write("\n")
             for node in self.view.model.storageSize:
-                per_node_simil_misses[node] = self.view.model.last_repo_misses[node]
+                if node in self.view.model.last_repo_misses:
+                    per_node_simil_misses[node] = self.view.model.last_repo_misses[node]
+                else:
+                    per_node_simil_misses[node] = 0
                 repo_simil_misses.write(str(node) + ':' + str(per_node_simil_misses[node]) + ", ")
             repo_simil_misses.write("\n")
 

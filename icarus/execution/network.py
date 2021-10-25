@@ -419,6 +419,7 @@ class NetworkView(object):
                 sources_content = content
                 sources_content['content'] = ''
                 hops = 100
+                res = 'src_0'
                 if node in self.content_source(sources_content, content['labels'], h_spaces, True):
                     res = node
                     if self.has_cache(node):
@@ -2616,7 +2617,7 @@ class NetworkController(object):
         """
         self.model.last_miss_count = miss_count * 100 / epoch_ticks
 
-    def edge_proc_update(self, edge_proc, epoch_ticks):
+    def edge_proc_update(self, edge_proc):
         """
         Update the amount of similarity miss number that has occured on each epoch.
         This is for the purpose of collecting statistics on the similarity misses,
@@ -2628,9 +2629,9 @@ class NetworkController(object):
         epoch_ticks:
 
         """
-        self.model.last_edge_proc = edge_proc * 100 / epoch_ticks
+        self.model.last_edge_proc = edge_proc
 
-    def cloud_proc_update(self, cloud_proc, epoch_ticks):
+    def cloud_proc_update(self, cloud_proc):
         """
         Update the amount of similarity miss number that has occured on each epoch.
         This is for the purpose of collecting statistics on the similarity misses,
@@ -2642,9 +2643,9 @@ class NetworkController(object):
         epoch_ticks:
 
         """
-        self.model.last_cloud_proc = cloud_proc * 100 / epoch_ticks
+        self.model.last_cloud_proc = cloud_proc
 
-    def reuse_hits_update(self, reuse_hits, epoch_ticks):
+    def reuse_hits_update(self, reuse_hits):
         """
         Update the amount of similarity miss number that has occured on each epoch.
         This is for the purpose of collecting statistics on the similarity misses,
@@ -2656,7 +2657,7 @@ class NetworkController(object):
         epoch_ticks:
 
         """
-        self.model.last_reuse_hits = reuse_hits * 100 / epoch_ticks
+        self.model.last_reuse_hits = reuse_hits
 
     def cloud_admission_update(self, cloud_admits):
         """

@@ -1829,7 +1829,7 @@ class NetworkModel(object):
         for service in range(0, n_services):
             service_time = random.uniform(service_time_min, service_time_max)
             # service_time = 2*random.uniform(service_time_min, service_time_max)
-            deadline = random.uniform(delay_min, delay_max) + 2 * internal_link_delay
+            deadline = random.uniform(delay_min, delay_max) + internal_link_delay
             # deadline = service_time + 1.5*(random.uniform(delay_min, delay_max) + 2*internal_link_delay)
             s = Service(service_time, deadline)
             # print ("Service " + str(service) + " has a deadline of " + str(deadline))

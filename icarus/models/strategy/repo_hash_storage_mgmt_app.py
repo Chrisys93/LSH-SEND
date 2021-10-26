@@ -713,7 +713,9 @@ class HashRepoProcStorApp(Strategy):
                         self.controller.add_proc(node, service['h_space'])
 
                     if ret == False:
-
+                        # TODO: Add TWO possibilities (if-else):
+                        #  - 1. request is rejected because there isn't enough space, then re-initiate REQUEST event
+                        #  - 2. deadline has passed, then send to cloud
 
                         if type(service) is dict and self.view.hasStorageCapability(node) and not self.view.storage_nodes()[node].hasMessage(
                                     service['content'], service['labels']):

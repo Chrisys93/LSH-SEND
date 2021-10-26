@@ -2662,7 +2662,7 @@ class NetworkController(object):
         """
         self.model.last_reuse_hits = reuse_hits
 
-    def cloud_admission_update(self, cloud_admits):
+    def cloud_admission_update(self, ans, flow_id):
         """
         Update the amount of similarity miss number that has occured on each epoch.
         This is for the purpose of collecting statistics on the similarity misses,
@@ -2671,7 +2671,7 @@ class NetworkController(object):
         miss_count:
         epoch_ticks:
         """
-        self.model.cloud_admissions = cloud_admits
+        self.model.cloud_admissions[flow_id] = ans
 
     def repo_miss_update(self, repo_miss_count, epoch_ticks):
         """

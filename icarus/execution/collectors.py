@@ -1052,7 +1052,7 @@ class RepoStatsLatencyCollector(DataCollector):
             if self.rtt_delays_edge['count']:
                 avg_edge_delay = total_delays/self.rtt_delays_edge['count']
             else:
-                avg_cloud_delay = 0
+                avg_edge_delay = 0
             edge_delay_averages.write(str(avg_edge_delay) + "\n")
             repo_simil_misses.write("\n")
 

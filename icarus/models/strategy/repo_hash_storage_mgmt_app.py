@@ -484,7 +484,9 @@ class HashRepoProcStorApp(Strategy):
         """
 
         self.epoch_count += 1
-        self.cloud_admit[flow_id] = False
+        if status == REQUEST and flow_id not in self.cloud_admit:
+            self.cloud_admit[flow_id] = False
+            self.controller.cloud_admission_update(self.cloud_admit[flow_id], flow_id)
         if self.epoch_count == self.epoch_ticks:
             self.epoch_node_proc_update()
 
@@ -649,7 +651,7 @@ class HashRepoProcStorApp(Strategy):
                 if ret:
                     self.controller.add_proc(node, service['h_space'])
                     self.cloud_admit[flow_id] = True
-                    self.controller.cloud_admission_update(self.cloud_admit)
+                    self.controller.cloud_admission_update(self.cloud_admit[flow_id], flow_id)
 
                     return
                 return

@@ -285,7 +285,7 @@ def topology_edge_tree(k, h, delay=0.020, **kwargs):
     n_sources = len(root)
     sources = ['src_%d' % i for i in range(n_sources)]
     for i in range(n_sources):
-        topology.add_edge(sources[i], root[0], delay=3 * delay, type='internal')
+        topology.add_edge(sources[i], root[0], delay=50 * delay, type='internal')
 
     print("The number of sources: " + repr(n_sources))
     print("The number of receivers: " + repr(n_receivers))
@@ -398,7 +398,7 @@ def topology_repo_tree(k, h, delay=0.020, **kwargs):
     n_sources = len(root)
     sources = ['src_%d' % i for i in range(n_sources)]
     for i in range(n_sources):
-        topology.add_edge(sources[i], root[0], delay=50 * delay, type='internal')  # delay was 3*, increased 50*, to 1s
+        topology.add_edge(sources[i], root[0], delay=3 * delay, type='internal')  # delay was 3*, increased 50*, to 1s
 
     print("The number of sources: " + repr(n_sources))
     print("The number of receivers: " + repr(n_receivers))

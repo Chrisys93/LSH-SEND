@@ -394,8 +394,6 @@ class RepoStorage(object):
                     j_labels.append(label)
             if (j_labels == labels):
                 answer = self.processedMessages[i]
-        if answer:
-            return answer
         for i in range(0, len(self.processedMessages)):
             j_spaces = []
             for space in self.processedMessages[i]['h_space']:
@@ -410,6 +408,9 @@ class RepoStorage(object):
             if (self.Messages[i]["content"] == MessageId):
                 self.Size -= self.Messages[i]['msg_size']
                 self.Messages.remove(i)
+                for i in range(0, len(self.processedMessages)-1):
+                    if self.processedMessages[i]['content'] == MessageId:
+                        self.processedMessages.remove(i)
                 return True
         return False
 

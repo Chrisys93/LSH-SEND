@@ -68,7 +68,7 @@ N_CONTENTS = 150
 N_SERVICES = N_CONTENTS
 
 # Number of requests per second (over the whole network)
-NETWORK_REQUEST_RATE = 100.0
+NETWORK_REQUEST_RATE = 1000.0
 
 # Number of cores for each node in the experiment
 NUM_CORES = 50
@@ -124,7 +124,7 @@ SCHED_POLICY = 'EDF'
 FRESHNESS_PER = 0.78
 SHELF_LIFE = 30
 MSG_SIZE = 1000000
-SOURCE_WEIGHTS = {'src_0': 0.2, 7: 0.1, 8: 0.1, 10: 0.2, 11: 0.2, 13: 0.1, 14: 0.1}
+SOURCE_WEIGHTS = {1: 0.2, 3: 0.1, 5: 0.1, 7: 0.2, 9: 0.2, 13: 0.1, 14: 0.1}
 SERVICE_WEIGHTS = {"proc": 0.7, "non-proc": 0.3}
 TYPES_WEIGHTS = None
 TOPICS_WEIGHTS = {"smartHome": 1}
@@ -194,7 +194,7 @@ default['cache_placement']['network_cache'] = default['computation_placement']['
 default['computation_placement']['computation_budget'] = (NUM_NODES)*NUM_CORES  # NUM_CORES for each node
 #default['content_placement']['name'] = 'WEIGHTED_REPO'
 
-default['content_placement'] = {"name":             'WEIGHTED_REPO_HASH',
+default['content_placement'] = {"name":             'WEIGHTED_BUCKET_REPO_HASH',
                                 "topics_weights" :  TOPICS_WEIGHTS,
                                 "types_weights" :   TYPES_WEIGHTS,
                                 "space_weights" :   H_SPACE_WEIGHTS,

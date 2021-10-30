@@ -346,20 +346,7 @@ class NetworkView(object):
             The node persistently storing the given content or None if the
             source is unavailable
         """
-
-        if type(k) is dict:
-            if L_H:
-                for node in self.h_space_sources(h_spaces):
-                    if type(node) != int:
-                        if "src" in node:
-                            return node
-            else:
-                for node in self.labels_sources(labels):
-                    if type(node) != int:
-                        if "src" in node:
-                            return node
-
-        for node in self.model.source_node:
+        for node in self.model.storageSize:
             if type(node) != int:
                 if "src" in node:
                     return node
@@ -405,7 +392,7 @@ class NetworkView(object):
                     if len(self.shortest_path(node, n)) < hops:
                         hops = len(self.shortest_path(node, n))
                         res = n
-                if self.has_cache(res):
+                if res and self.has_cache(res):
                     if self.cache_lookup(res, k['content']) or self.local_cache_lookup(res, k['content']):
                         cache = True
                     else:
@@ -1829,7 +1816,7 @@ class NetworkModel(object):
         for service in range(0, n_services):
             service_time = random.uniform(service_time_min, service_time_max)
             # service_time = 2*random.uniform(service_time_min, service_time_max)
-            deadline = random.uniform(delay_min, delay_max) + internal_link_delay
+            deadline = random.uniform(delay_min, delay_max)
             # deadline = service_time + 1.5*(random.uniform(delay_min, delay_max) + 2*internal_link_delay)
             s = Service(service_time, deadline)
             # print ("Service " + str(service) + " has a deadline of " + str(deadline))

@@ -831,22 +831,25 @@ class NetworkView(object):
         max_hash = float('inf')
 
         while len(nodes) < list_len:
+            max_node_proc = 0
             for n in self.model.busy_proc:
-                if n in nodes:
-                    continue
                 node_proc = 0
                 for h in self.model.busy_proc[n]:
                     node_proc += self.model.busy_proc[n][h]
-                    if node_proc >= max_node_proc:
-                        max_node_proc = node_proc
-                        max_node = n
+                if node_proc >= max_node_proc and n != 'src_0' and n not in nodes:
+                    max_node_proc = node_proc
+                    max_node = n
             nodes.append(max_node)
         for n in nodes:
-            for h in self.model.busy_proc[n]:
-                proc = self.model.busy_proc[n][h]
-                if proc >= max_proc:
-                    max_proc = proc
-                    max_hash = h
+            max_proc = 0
+            if self.model.busy_proc[n]:
+                for h in self.model.busy_proc[n]:
+                    proc = self.model.busy_proc[n][h]
+                    if proc >= max_proc and h not in hashes:
+                        max_proc = proc
+                        max_hash = h
+            else:
+                max_hash = None
             hashes.append(max_hash)
 
         return nodes, hashes
@@ -870,6 +873,7 @@ class NetworkView(object):
         node_proc = 0
 
         while len(nodes) < list_len:
+            min_node_proc = float('inf')
             for n in self.model.busy_proc:
                 node_proc = 0
                 for h in self.model.busy_proc[n]:
@@ -880,12 +884,12 @@ class NetworkView(object):
             nodes.append(min_node)
         min_hash = None
         for n in nodes:
-            proc = 0
+            min_proc = float('inf')
             for h in self.model.busy_proc[n]:
                 proc = self.model.busy_proc[n][h]
-            if proc <= min_proc and h not in hashes:
-                min_proc = proc
-                min_hash = h
+                if proc <= min_proc and h not in hashes:
+                    min_proc = proc
+                    min_hash = h
             hashes.append(min_hash)
 
         return nodes, hashes
@@ -2160,20 +2164,23 @@ class NetworkController(object):
         if h_l:
             self.model.all_node_h_spaces[high_proc].update([h_l])
         del self.model.all_node_h_spaces[low_proc][h_l]
-        self.model.all_node_h_spaces[low_proc].update([h_h])
+        if h_h:
+            self.model.all_node_h_spaces[low_proc].update([h_h])
         del self.model.all_node_h_spaces[high_proc][h_h]
 
         if h_l:
             self.model.node_h_spaces[high_proc].update([h_l])
         del self.model.node_h_spaces[low_proc][h_l]
-        self.model.node_h_spaces[low_proc].update([h_h])
+        if h_h:
+            self.model.node_h_spaces[low_proc].update([h_h])
         del self.model.node_h_spaces[high_proc][h_h]
 
         if h_l:
             self.model.h_space_sources[h_l].update({high_proc: self.model.all_node_h_spaces[high_proc][h_l]})
-        del self.model.h_space_sources[h_l][low_proc]
-        self.model.h_space_sources[h_h].update({low_proc: self.model.all_node_h_spaces[low_proc][h_h]})
-        del self.model.h_space_sources[h_h][high_proc]
+            del self.model.h_space_sources[h_l][low_proc]
+        if h_h:
+            self.model.h_space_sources[h_h].update({low_proc: self.model.all_node_h_spaces[low_proc][h_h]})
+            del self.model.h_space_sources[h_h][high_proc]
 
     def add_proc(self, node, h_space):
         """

@@ -1020,9 +1020,9 @@ class RepoStatsLatencyCollector(DataCollector):
         if self.view.model.strategy == 'HASH_PROC_REPO_APP':
             simil_misses.write(str(self.view.model.last_miss_count))
             simil_misses.write("\n")
-            cloud_proc.write(str(self.view.model.last_cloud_proc))
+            cloud_proc.write(str(self.rtt_delays_cloud['count']))  # view.model.last_cloud_proc))
             cloud_proc.write("\n")
-            edge_proc.write(str(self.view.model.last_edge_proc))
+            edge_proc.write(str(self.rtt_delays_edge['count']))  # view.model.last_edge_proc))
             edge_proc.write("\n")
             reuse_hits.write(str(self.view.model.last_reuse_hits))
             reuse_hits.write("\n")

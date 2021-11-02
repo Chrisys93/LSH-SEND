@@ -307,7 +307,6 @@ class HashRepoProcStorApp(Strategy):
     # @profile
     def handle(self, curTime, receiver, msg, node, log, feedback, flow_id, rtt_delay, deadline, status):
         """
-
         :param curTime:
         :param receiver:
         :param msg:
@@ -316,7 +315,6 @@ class HashRepoProcStorApp(Strategy):
         :param deadline:
         :param rtt_delay:
         :return:
-
         TODO: Need to implement the main Match-(LSH-Simil-)Store mechanism in here, also
             implementing the parameter updates!
             For each update, the HASH needs to be checked FIRST (this time, WITH the HASH SPACE),
@@ -337,44 +335,46 @@ class HashRepoProcStorApp(Strategy):
         # TODO: First do storage hash space matching:
         # and then (in the same checks)
         # FIXME: Add data to storage:
-        # if self.view.hasStorageCapability(node) and all(elem in self.view.get_node_h_spaces(node) for elem in msg['h_space']) \
-        #         and (self.last_flow_id != flow_id or self.controller.get_processed_message(node, msg['h_space'], [], True, msg['content'])):
-        #     self.last_flow_id = flow_id
-        #     self.in_count[node] += 1
-        #     stor_msg = self.controller.get_processed_message(node, msg['h_space'], [], True, msg['content'])
-        #
-        # if self.view.get_node_h_spaces(node) and self.view.hasStorageCapability(node) and \
-        #         all(elem in self.view.get_node_h_spaces(node) for elem in msg['h_space']) and status == REQUEST and \
-        #         (not self.in_count[node] or self.hit_count[node]/self.in_count[node] < self.hit_rate) and status != RESPONSE and stor_msg is not None:
-        #
-        #     # TODO: Here is where the reuse happens, basically, and we only care to basically add the reuse delay to the
-        #     #  request (if request) execution/RTT and return the SATISFIED request.
-        #
-        #     if self.hit_count[node]/self.in_count[node] < self.hit_rate and type(node) is not str:
-        #         self.controller.update_node_reuse(node, True)
-        #         self.hit_count[node] += 1
-        #         self.reuse_hits += 1
-        #         # if type(node) is str and 'src' in node:
-        #         #     self.controller.cloud_admission_update(True, flow_id)
-        #         self.view.storage_nodes()[node].deleteAnyMessage(stor_msg['content'])
-        #         stor_msg['receiveTime'] = time.time()
-        #         msg['service_type'] = "processed"
-        #         self.controller.add_message_to_storage(node, stor_msg)
-        #         if node in self.view.labels_requests(msg['labels']):
-        #             self.controller.add_request_labels_to_storage(node, msg, True)
-        #         if node in self.view.h_space_requests(msg['h_space']):
-        #             self.controller.add_request_h_spaces_to_storage(node, msg, True)
-        #         new_status = True
-        #
-        # elif self.view.get_node_h_spaces(node) and self.view.hasStorageCapability(node) and not new_status \
-        #         and ('satisfied' not in msg or 'Shelf' not in msg) and \
-        #         all(elem in self.view.get_node_h_spaces(node) for elem in msg['h_space']):
-        #
-        #     self.controller.add_replication_hops(msg)
-        #     self.controller.add_request_h_spaces_to_node(node, msg)
-        #
-        #     self.epoch_miss_count += 1
-        #     self.repo_misses[node] += 1
+        if self.view.hasStorageCapability(node) and all(elem in self.view.get_node_h_spaces(node) for elem in msg['h_space']) \
+                and (self.last_flow_id != flow_id or self.controller.get_processed_message(node, msg['h_space'], [], True, msg['content'])):
+            self.last_flow_id = flow_id
+            self.in_count[node] += 1
+            stor_msg = self.controller.get_processed_message(node, msg['h_space'], [], True, msg['content'])
+
+        if self.view.get_node_h_spaces(node) and self.view.hasStorageCapability(node) and \
+                all(elem in self.view.get_node_h_spaces(node) for elem in msg['h_space']) and status == REQUEST and \
+                self.in_count[node] and self.hit_count[node]/self.in_count[node] < self.hit_rate and status != RESPONSE \
+                and stor_msg is not None:
+
+            # TODO: Here is where the reuse happens, basically, and we only care to basically add the reuse delay to the
+            #  request (if request) execution/RTT and return the SATISFIED request.
+
+            if self.hit_count[node]/self.in_count[node] < self.hit_rate and type(node) is not str:
+                self.controller.update_node_reuse(node, True)
+                self.hit_count[node] += 1
+                self.reuse_hits += 1
+                self.controller.reuse_hits_update(self.reuse_hits)
+                # if type(node) is str and 'src' in node:
+                #     self.controller.cloud_admission_update(True, flow_id)
+                self.view.storage_nodes()[node].deleteAnyMessage(stor_msg['content'])
+                stor_msg['receiveTime'] = time.time()
+                msg['service_type'] = "processed"
+                self.controller.add_message_to_storage(node, stor_msg)
+                if node in self.view.labels_requests(msg['labels']):
+                    self.controller.add_request_labels_to_storage(node, msg, True)
+                if node in self.view.h_space_requests(msg['h_space']):
+                    self.controller.add_request_h_spaces_to_storage(node, msg, True)
+                new_status = True
+
+        elif self.view.get_node_h_spaces(node) and self.view.hasStorageCapability(node) and not new_status \
+                and ('satisfied' not in msg or 'Shelf' not in msg) and \
+                all(elem in self.view.get_node_h_spaces(node) for elem in msg['h_space']):
+
+            self.controller.add_replication_hops(msg)
+            self.controller.add_request_h_spaces_to_node(node, msg)
+
+            self.epoch_miss_count += 1
+            self.repo_misses[node] += 1
 
         if status == STORE and (msg['service_type'] == 'non-proc' or msg['service_type'] == 'processed'):
 
@@ -427,7 +427,6 @@ class HashRepoProcStorApp(Strategy):
         """
         This method updates the repo-associated hash spaces based on the reuse performance of each repo (and potentially
         ranking hash spaces based on the reuse quotes they need.
-
         max_count: integer (optional)
             Maximum amount of moves between higher and lower CPU-usage nodes
         """
@@ -448,9 +447,9 @@ class HashRepoProcStorApp(Strategy):
         self.controller.reuse_hits_update(self.reuse_hits)
         self.controller.repo_miss_update(self.repo_misses, self.epoch_ticks)
         self.epoch_miss_count = 0
-        self.cloud_proc = 0
-        self.edge_proc = 0
-        self.reuse_hits = 0
+        # self.cloud_proc = 0
+        # self.edge_proc = 0
+        # self.reuse_hits = 0
         for n in self.view.model.repoStorage:
             self.in_count[n] = 0
             self.hit_count[n] = 0
@@ -478,7 +477,6 @@ class HashRepoProcStorApp(Strategy):
     *  tags
     * The other tags should be deleted AS THE MESSAGES ARE PROCESSED / COMPRESSED / DELETEDnot
     *
-
     TODO: Need to check for the number of epoch ticks for each iteration and hash space updates (calling the new epoch
         update method, for calculating WHERE to put the redistributed hash spaces), and increase ticks (the method still
         needs to be defined).
@@ -519,10 +517,8 @@ class HashRepoProcStorApp(Strategy):
                 deadline : deadline for the request 
                 flow_id : Id of the flow that the request/response is part of
                 node : the current node at which the request/response arrived
-
                 TODO: Maybe could even implement the old "application" storage
                     space and message services management in here, as well!!!!
-
                 """
         # self.debug = False
         # if node == 12:
@@ -588,61 +584,6 @@ class HashRepoProcStorApp(Strategy):
 
                 cache_delay = 0
                 self.cloud_proc += 1
-                if type(content) is dict:
-                    pc = self.controller.get_processed_message(node, h_spaces, labels, False, content['content'])
-                else:
-                    pc = self.controller.get_processed_message(node, h_spaces, labels, False, content)
-                # if not in_cache and self.view.has_cache(node) and pc and content['service_type'] == 'processed':
-                #     if self.controller.put_content(source, content['content']):
-                #         cache_delay = 0.005
-                #     else:
-                #         self.controller.put_content_local_cache(source)
-                #         cache_delay = 0.005
-                #     if type(pc) != dict:
-                #         source, in_cache = self.view.closest_source(node, service, h_spaces, True)
-                #         pc = self.view.model.repoStorage[source].hasMessage(content['content'], labels, h_spaces)
-                #         if type(pc) != dict:
-                #             for n in self.view.content_source(content, content['labels'], content['h_space'], True):
-                #                 if n == source:
-                #                     pc = self.model.contents[n][content['content']]
-                #     path = self.view.shortest_path(node, receiver)
-                #     next_node = path[1]
-                #     delay = self.view.link_delay(node, next_node)
-                #     path_del = self.view.path_delay(node, receiver)
-                #     self.controller.add_event(curTime + cache_delay + delay, receiver, service, labels, h_spaces,
-                #                               next_node, flow_id, deadline, rtt_delay, RESPONSE)
-                #     if path_del + curTime > deadline:
-                #         if type(content) is dict:
-                #             compSpot.missed_requests[content['content']] += 1
-                #         else:
-                #             compSpot.missed_requests[content] += 1
-                #     return
-                # elif in_cache:
-                #     pc = self.controller.get_processed_message(node, h_spaces, labels, False, content['content'])
-                #     if type(pc) != dict:
-                #         source, in_cache = self.view.closest_source(node, service, h_spaces, True)
-                #         pc = self.view.model.repoStorage[source].hasMessage(content['content'], labels)
-                #         if type(pc) != dict:
-                #             for n in self.view.content_source(content, content['labels'], content['h_space'], True):
-                #                 if n == source:
-                #                     pc = self.model.contents[n][content['content']]
-                #     if pc and pc['service_type'] == 'processed':
-                #         path = self.view.shortest_path(node, receiver)
-                #         next_node = path[1]
-                #         delay = self.view.link_delay(node, next_node)
-                #         path_del = self.view.path_delay(node, receiver)
-                #         self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces, next_node,
-                #                                   flow_id, deadline, rtt_delay, RESPONSE)
-                #         if path_del + curTime > deadline:
-                #             if type(content) is dict:
-                #                 compSpot.missed_requests[content['content']] += 1
-                #             else:
-                #                 compSpot.missed_requests[content] += 1
-                #         return
-                # for n in range(0, 3):
-                #     self.controller.add_replication_hops(content)
-                # self.controller.replication_overhead_update(content)
-                # self.controller.remove_replication_hops(service)
                 # TODO: Here and in any other relevant place, we need to track the CPU usage!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 #  (we also need to track it live, within the compspots)
 
@@ -658,58 +599,11 @@ class HashRepoProcStorApp(Strategy):
                 return
 
             if source == node and status == REQUEST:
-                cache_delay = 0
-                if type(content) is dict:
-                    pc = self.controller.get_processed_message(node, h_spaces, labels, False, content['content'])
-                else:
-                    pc = self.controller.get_processed_message(node, h_spaces, labels, False, content)
-                # if not in_cache and self.view.has_cache(node) and pc and pc['service_type'] == 'processed':
-                #     if self.controller.put_content(source, content['content']):
-                #         cache_delay = 0.005
-                #     else:
-                #         self.controller.put_content_local_cache(source)
-                #         cache_delay = 0.005
-                #     self.reuse_hits += 1
-                #     path = self.view.shortest_path(node, receiver)
-                #     next_node = path[1]
-                #     delay = self.view.link_delay(node, next_node)
-                #     path_del = self.view.path_delay(node, receiver)
-                #     self.controller.add_event(curTime + cache_delay + delay, receiver, service, labels, h_spaces,
-                #                               next_node, flow_id, deadline, rtt_delay, RESPONSE)
-                #     if path_del + curTime > deadline:
-                #         if type(content) is dict:
-                #             compSpot.missed_requests[content['content']] += 1
-                #         else:
-                #             compSpot.missed_requests[content] += 1
-                #     return
-                # elif in_cache:
-                #     pc = self.controller.get_processed_message(node, h_spaces, labels, False, content['content'])
-                #     if type(pc) != dict:
-                #         new_source, in_cache = self.view.closest_source(node, service, h_spaces, True)
-                #         pc = self.view.model.repoStorage[new_source].hasMessage(content['content'], labels)
-                #         if type(pc) != dict:
-                #             for n in self.view.content_source(content, content['labels'], content['h_space'], True):
-                #                 if n == new_source:
-                #                     pc = self.model.contents[n][content['content']]
-                #     if pc and pc['service_type'] == 'processed':
-                #         self.reuse_hits += 1
-                #         path = self.view.shortest_path(node, receiver)
-                #         next_node = path[1]
-                #         delay = self.view.link_delay(node, next_node)
-                #         path_del = self.view.path_delay(node, receiver)
-                #         self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces, next_node,
-                #                                   flow_id, deadline, rtt_delay, RESPONSE)
-                #         if path_del + curTime > deadline:
-                #             if type(content) is dict:
-                #                 compSpot.missed_requests[content['content']] += 1
-                #             else:
-                #                 compSpot.missed_requests[content] += 1
-                #         return
                 if compSpot is not None and self.view.has_service(node, service) and service["service_type"] is "proc" \
                         and all(elem in self.view.get_node_h_spaces(node) for elem in service['h_space']):
                     self.controller.update_node_reuse(node, False)
                     ret, reason = compSpot.admit_task(service['content'], service['labels'], service['h_space'],
-                                                      curTime, flow_id, deadline, receiver, rtt_delay + cache_delay,
+                                                      curTime, flow_id, deadline, receiver, rtt_delay,
                                                       self.controller, self.debug)
                     if ret:
                         self.controller.add_proc(node, service['h_space'])
@@ -771,7 +665,7 @@ class HashRepoProcStorApp(Strategy):
                     return
                 return
 
-            #  Request at the receiver
+            #  Request at the receiver
             if receiver == node and status == REQUEST:
 
                 self.controller.start_session(curTime, receiver, service, labels, h_spaces, log, flow_id, deadline)
@@ -999,46 +893,46 @@ class HashRepoProcStorApp(Strategy):
                             pc = self.controller.get_processed_message(node, h_spaces, labels, False, content['content'])
                         else:
                             pc = self.controller.get_processed_message(node, h_spaces, labels, False, content)
-                        # if not in_cache and self.view.has_cache(node) and pc and pc['service_type'] == 'processed':
-                        #     if self.controller.put_content(source, content['content']):
-                        #         cache_delay = 0.005
-                        #     else:
-                        #         self.controller.put_content_local_cache(source)
-                        #         cache_delay = 0.005
-                        #     path = self.view.shortest_path(node, receiver)
-                        #     next_node = path[1]
-                        #     delay = self.view.link_delay(node, next_node)
-                        #     path_del = self.view.path_delay(node, receiver)
-                        #     self.controller.add_event(curTime + cache_delay + delay, receiver, service, labels,
-                        #                               h_spaces, next_node, flow_id, deadline, rtt_delay, RESPONSE)
-                        #     if path_del + curTime > deadline:
-                        #         if type(content) is dict:
-                        #             compSpot.missed_requests[content['content']] += 1
-                        #         else:
-                        #             compSpot.missed_requests[content] += 1
-                        #     return
-                        # elif in_cache:
-                        #     pc = self.controller.get_processed_message(node, h_spaces, labels, False, content['content'])
-                        #     if type(pc) != dict:
-                        #         source, in_cache = self.view.closest_source(node, service, h_spaces, True)
-                        #         pc = self.view.model.repoStorage[source].hasMessage(content['content'], labels)
-                        #         if type(pc) != dict:
-                        #             for n in self.view.content_source(content, content['labels'], content['h_space'], True):
-                        #                 if n == source:
-                        #                     pc = self.model.contents[n][content['content']]
-                        #     if pc and pc['service_type'] == 'processed':
-                        #         path = self.view.shortest_path(node, receiver)
-                        #         next_node = path[1]
-                        #         delay = self.view.link_delay(node, next_node)
-                        #         path_del = self.view.path_delay(node, receiver)
-                        #         self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces,
-                        #                                   next_node, flow_id, deadline, rtt_delay, RESPONSE)
-                        #         if path_del + curTime > deadline:
-                        #             if type(content) is dict:
-                        #                 compSpot.missed_requests[content['content']] += 1
-                        #             else:
-                        #                 compSpot.missed_requests[content] += 1
-                        #         return
+                        if not in_cache and self.view.has_cache(node) and pc and pc['service_type'] == 'processed':
+                            if self.controller.put_content(source, content['content']):
+                                cache_delay = 0.005
+                            else:
+                                self.controller.put_content_local_cache(source)
+                                cache_delay = 0.005
+                            path = self.view.shortest_path(node, receiver)
+                            next_node = path[1]
+                            delay = self.view.link_delay(node, next_node)
+                            path_del = self.view.path_delay(node, receiver)
+                            self.controller.add_event(curTime + cache_delay + delay, receiver, service, labels,
+                                                      h_spaces, next_node, flow_id, deadline, rtt_delay, RESPONSE)
+                            if path_del + curTime > deadline:
+                                if type(content) is dict:
+                                    compSpot.missed_requests[content['content']] += 1
+                                else:
+                                    compSpot.missed_requests[content] += 1
+                            return
+                        elif in_cache:
+                            pc = self.controller.get_processed_message(node, h_spaces, labels, False, content['content'])
+                            if type(pc) != dict:
+                                source, in_cache = self.view.closest_source(node, service, h_spaces, True)
+                                pc = self.view.model.repoStorage[source].hasMessage(content['content'], labels)
+                                if type(pc) != dict:
+                                    for n in self.view.content_source(content, content['labels'], content['h_space'], True):
+                                        if n == source:
+                                            pc = self.model.contents[n][content['content']]
+                            if pc and pc['service_type'] == 'processed':
+                                path = self.view.shortest_path(node, receiver)
+                                next_node = path[1]
+                                delay = self.view.link_delay(node, next_node)
+                                path_del = self.view.path_delay(node, receiver)
+                                self.controller.add_event(curTime + delay, receiver, service, labels, h_spaces,
+                                                          next_node, flow_id, deadline, rtt_delay, RESPONSE)
+                                if path_del + curTime > deadline:
+                                    if type(content) is dict:
+                                        compSpot.missed_requests[content['content']] += 1
+                                    else:
+                                        compSpot.missed_requests[content] += 1
+                                return
                         if self.debug:
                             print("Calling admit_task")
                         self.controller.update_node_reuse(node, False)
@@ -1236,7 +1130,6 @@ class HashRepoProcStorApp(Strategy):
             * if there are satisfied non-processing messages to be uploaded.
             *
             * OK, so main problem
-
             *At the moment, the mechanism is fine, but because of it, the perceived "processing performance" 
             * is degraded, due to the fact that some messages processed in time may not be shown in the
             *"fresh" OR "stale" message counts. 
@@ -1418,10 +1311,8 @@ class HashRepoProcStorApp(Strategy):
             for i in range(0, 50) and self.cloudBW < self.cloud_lim and self.cloudEmptyLoop:
 
                 """
-
                 * Oldest processed	message is depleted(as a FIFO type of storage,
                 * and a	message for processing is processed
-
                 """
                 # TODO: NEED TO add COMPRESSED PROCESSED messages to storage AFTER normal servicing
                 if (not self.view.model.repoStorage[node].isProcessedEmpty):
@@ -1696,7 +1587,6 @@ class HashRepoProcStorApp(Strategy):
                         # temp['satisfied'] =  False)
                         if (storTime == temp['shelfLife']) 
                         temp['overtime'] =  False)
-
                         elif (storTime > temp['shelfLife']) 
                         temp['overtime'] =  True)
                      """
@@ -1869,6 +1759,3 @@ class HashRepoProcStorApp(Strategy):
 
     def getCloudLim(self):
         return self.cloud_lim
-
-
-

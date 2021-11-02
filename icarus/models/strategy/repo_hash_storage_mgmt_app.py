@@ -335,46 +335,46 @@ class HashRepoProcStorApp(Strategy):
         # TODO: First do storage hash space matching:
         # and then (in the same checks)
         # FIXME: Add data to storage:
-        if self.view.hasStorageCapability(node) and all(elem in self.view.get_node_h_spaces(node) for elem in msg['h_space']) \
-                and (self.last_flow_id != flow_id or self.controller.get_processed_message(node, msg['h_space'], [], True, msg['content'])):
-            self.last_flow_id = flow_id
-            self.in_count[node] += 1
-            stor_msg = self.controller.get_processed_message(node, msg['h_space'], [], True, msg['content'])
-
-        if self.view.get_node_h_spaces(node) and self.view.hasStorageCapability(node) and \
-                all(elem in self.view.get_node_h_spaces(node) for elem in msg['h_space']) and status == REQUEST and \
-                self.in_count[node] and self.hit_count[node]/self.in_count[node] < self.hit_rate and status != RESPONSE \
-                and stor_msg is not None:
-
-            # TODO: Here is where the reuse happens, basically, and we only care to basically add the reuse delay to the
-            #  request (if request) execution/RTT and return the SATISFIED request.
-
-            if self.hit_count[node]/self.in_count[node] < self.hit_rate and type(node) is not str:
-                self.controller.update_node_reuse(node, True)
-                self.hit_count[node] += 1
-                self.reuse_hits += 1
-                self.controller.reuse_hits_update(self.reuse_hits)
-                # if type(node) is str and 'src' in node:
-                #     self.controller.cloud_admission_update(True, flow_id)
-                self.view.storage_nodes()[node].deleteAnyMessage(stor_msg['content'])
-                stor_msg['receiveTime'] = time.time()
-                msg['service_type'] = "processed"
-                self.controller.add_message_to_storage(node, stor_msg)
-                if node in self.view.labels_requests(msg['labels']):
-                    self.controller.add_request_labels_to_storage(node, msg, True)
-                if node in self.view.h_space_requests(msg['h_space']):
-                    self.controller.add_request_h_spaces_to_storage(node, msg, True)
-                new_status = True
-
-        elif self.view.get_node_h_spaces(node) and self.view.hasStorageCapability(node) and not new_status \
-                and ('satisfied' not in msg or 'Shelf' not in msg) and \
-                all(elem in self.view.get_node_h_spaces(node) for elem in msg['h_space']):
-
-            self.controller.add_replication_hops(msg)
-            self.controller.add_request_h_spaces_to_node(node, msg)
-
-            self.epoch_miss_count += 1
-            self.repo_misses[node] += 1
+        # if self.view.hasStorageCapability(node) and all(elem in self.view.get_node_h_spaces(node) for elem in msg['h_space']) \
+        #         and (self.last_flow_id != flow_id or self.controller.get_processed_message(node, msg['h_space'], [], True, msg['content'])):
+        #     self.last_flow_id = flow_id
+        #     self.in_count[node] += 1
+        #     stor_msg = self.controller.get_processed_message(node, msg['h_space'], [], True, msg['content'])
+        #
+        # if self.view.get_node_h_spaces(node) and self.view.hasStorageCapability(node) and \
+        #         all(elem in self.view.get_node_h_spaces(node) for elem in msg['h_space']) and status == REQUEST and \
+        #         self.in_count[node] and self.hit_count[node]/self.in_count[node] < self.hit_rate and status != RESPONSE \
+        #         and stor_msg is not None:
+        #
+        #     # TODO: Here is where the reuse happens, basically, and we only care to basically add the reuse delay to the
+        #     #  request (if request) execution/RTT and return the SATISFIED request.
+        #
+        #     if self.hit_count[node]/self.in_count[node] < self.hit_rate and type(node) is not str:
+        #         self.controller.update_node_reuse(node, True)
+        #         self.hit_count[node] += 1
+        #         self.reuse_hits += 1
+        #         self.controller.reuse_hits_update(self.reuse_hits)
+        #         # if type(node) is str and 'src' in node:
+        #         #     self.controller.cloud_admission_update(True, flow_id)
+        #         self.view.storage_nodes()[node].deleteAnyMessage(stor_msg['content'])
+        #         stor_msg['receiveTime'] = time.time()
+        #         msg['service_type'] = "processed"
+        #         self.controller.add_message_to_storage(node, stor_msg)
+        #         if node in self.view.labels_requests(msg['labels']):
+        #             self.controller.add_request_labels_to_storage(node, msg, True)
+        #         if node in self.view.h_space_requests(msg['h_space']):
+        #             self.controller.add_request_h_spaces_to_storage(node, msg, True)
+        #         new_status = True
+        #
+        # elif self.view.get_node_h_spaces(node) and self.view.hasStorageCapability(node) and not new_status \
+        #         and ('satisfied' not in msg or 'Shelf' not in msg) and \
+        #         all(elem in self.view.get_node_h_spaces(node) for elem in msg['h_space']):
+        #
+        #     self.controller.add_replication_hops(msg)
+        #     self.controller.add_request_h_spaces_to_node(node, msg)
+        #
+        #     self.epoch_miss_count += 1
+        #     self.repo_misses[node] += 1
 
         if status == STORE and (msg['service_type'] == 'non-proc' or msg['service_type'] == 'processed'):
 

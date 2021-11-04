@@ -61,12 +61,16 @@ def exec_experiment(topology, workload, netconf, strategy, cache_policy, repo_po
     warmup_strategy_inst = STRATEGY[warmup_strategy_name](view, controller, **warmup_strategy_args)
 
     n = 0
+    last_time = 0
+    flow_ids_in = 0
     for time, event in workload:
-        #continue
+        # continue
         strategy_inst.process_event(time, **event)
-        if n % 1000 == 0 and n:
+        if time - last_time >= 0.5:
             collector.results()
-        if event['status'] == 0:
+            last_time = time
+        if event['status'] == 0 and event['flow_id'] > flow_ids_in:
+            flow_ids_in = event['flow_id']
             n += 1
 
     return collector.results()

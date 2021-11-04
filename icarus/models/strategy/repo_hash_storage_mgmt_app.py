@@ -699,9 +699,10 @@ class HashRepoProcStorApp(Strategy):
                     next_node = path[1]
                     delay = self.view.link_delay(node, next_node)
                     # TODO: Need to add fetch delay to the response in this case.
-                    fetch_del = 0.02
+                    fetch_del = 0.005
+                    LSH_simil_del = 0.01
                     path_del = self.view.path_delay(node, receiver)
-                    self.controller.add_event(curTime + fetch_del + delay, receiver, service, labels, h_spaces,
+                    self.controller.add_event(curTime + fetch_del + LSH_simil_del + delay, receiver, service, labels, h_spaces,
                                               next_node, flow_id, deadline, rtt_delay, RESPONSE)
                     if path_del + fetch_del + curTime > deadline:
                         if type(content) is dict:

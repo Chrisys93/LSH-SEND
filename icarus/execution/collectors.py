@@ -735,9 +735,12 @@ class RepoStatsLatencyCollector(DataCollector):
         self.deadline_metric_times = {}
         self.cloud_sat_times = {}
         self.instantiations_times = {}
+        self.rtt_delays_reuse = {'count': 0}
         self.rtt_delays_edge = {'count': 0}
         self.rtt_delays_cloud = {'count': 0}
         self.rtt_delays_overall = {'count': 0}
+        self.res_call_flow_no = 0
+        self.latest_end_session = 0
 
         # Log-specific variables TODO: Maybe set up in the same way that the result output is set up.
         # self.logs_path = self.view.get_logs_path
@@ -849,6 +852,7 @@ class RepoStatsLatencyCollector(DataCollector):
 
     @inheritdoc(DataCollector)
     def end_session(self, success=True, timestamp=0, flow_id=0):
+        self.latest_end_session = flow_id
         sat = False
         if flow_id in self.flow_deadline:
             service = self.flow_service[flow_id]
@@ -859,6 +863,13 @@ class RepoStatsLatencyCollector(DataCollector):
                 else:
                     self.rtt_delays_cloud[service['content']] = timestamp - self.flow_start[flow_id]
                     self.rtt_delays_cloud['count'] += 1
+            elif service['service_type'] is 'reused':
+                if service['content'] in self.rtt_delays_reuse:
+                    self.rtt_delays_reuse[service['content']] += timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_reuse['count'] += 1
+                else:
+                    self.rtt_delays_reuse[service['content']] = timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_reuse['count'] += 1
             else:
                 if service['content'] in self.rtt_delays_edge:
                     self.rtt_delays_edge[service['content']] += timestamp - self.flow_start[flow_id]
@@ -909,6 +920,8 @@ class RepoStatsLatencyCollector(DataCollector):
     @inheritdoc(DataCollector)
     def results(self):
         # TODO: Maybe revise the below and make it even more customisable
+
+        self.res_call_flow_no = self.latest_end_session
 
         if self.view.model.strategy == 'HYBRID':
             res = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hybrid.txt", 'a')
@@ -974,6 +987,7 @@ class RepoStatsLatencyCollector(DataCollector):
             edge_proc = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_edge_proc.txt", 'a')
             reuse_hits = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_reuse_hits.txt", 'a')
             overall_delay_averages = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_overall_delay_avg.txt", 'a')
+            reuse_delay_averages = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_reuse_delay_avg.txt", 'a')
             edge_delay_averages = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_edge_delay_avg.txt", 'a')
             cloud_delay_averages = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_cloud_delay_avg.txt", 'a')
         if self.cdf:
@@ -1043,7 +1057,16 @@ class RepoStatsLatencyCollector(DataCollector):
             else:
                 avg_overall_delay = 0
             overall_delay_averages.write(str(avg_overall_delay) + "\n")
-            repo_simil_misses.write("\n")
+
+            total_delays = 0
+            for service in self.rtt_delays_reuse:
+                if service != 'count':
+                    total_delays += self.rtt_delays_reuse[service]
+            if self.rtt_delays_reuse['count']:
+                avg_reuse_delay = total_delays/self.rtt_delays_reuse['count']
+            else:
+                avg_reuse_delay = 0
+            reuse_delay_averages.write(str(avg_reuse_delay) + "\n")
 
             total_delays = 0
             for service in self.rtt_delays_edge:
@@ -1054,7 +1077,6 @@ class RepoStatsLatencyCollector(DataCollector):
             else:
                 avg_edge_delay = 0
             edge_delay_averages.write(str(avg_edge_delay) + "\n")
-            repo_simil_misses.write("\n")
 
             total_delays = 0
             for service in self.rtt_delays_cloud:
@@ -1143,6 +1165,8 @@ class RepoStatsLatencyCollector(DataCollector):
             print (repr(key) + " " + repr(self.idle_times[key]))
         # results['VMS_PER_SERVICE'] = self.vms_per_service
         res.close()
+
+        self.last_res_call_flow_no = self.res_call_flow_no
 
         return results
 

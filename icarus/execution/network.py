@@ -2604,7 +2604,7 @@ class NetworkController(object):
         """
         self.model.last_miss_count = miss_count * 100 / epoch_ticks
 
-    def edge_proc_update(self, edge_proc):
+    def edge_proc_update(self, edge_proc, epoch_ticks=0):
         """
         Update the amount of similarity miss number that has occured on each epoch.
         This is for the purpose of collecting statistics on the similarity misses,
@@ -2616,9 +2616,12 @@ class NetworkController(object):
         epoch_ticks:
 
         """
-        self.model.last_edge_proc = edge_proc
+        if epoch_ticks:
+            self.model.last_edge_proc = edge_proc*100/epoch_ticks
+        else:
+            self.model.last_edge_proc = edge_proc
 
-    def cloud_proc_update(self, cloud_proc):
+    def cloud_proc_update(self, cloud_proc, epoch_ticks=0):
         """
         Update the amount of similarity miss number that has occured on each epoch.
         This is for the purpose of collecting statistics on the similarity misses,
@@ -2630,9 +2633,12 @@ class NetworkController(object):
         epoch_ticks:
 
         """
-        self.model.last_cloud_proc = cloud_proc
+        if epoch_ticks:
+            self.model.last_cloud_proc = cloud_proc*100/epoch_ticks
+        else:
+            self.model.last_cloud_proc = cloud_proc
 
-    def reuse_hits_update(self, reuse_hits):
+    def reuse_hits_update(self, reuse_hits, epoch_ticks=0):
         """
         Update the amount of similarity miss number that has occured on each epoch.
         This is for the purpose of collecting statistics on the similarity misses,
@@ -2644,7 +2650,10 @@ class NetworkController(object):
         epoch_ticks:
 
         """
-        self.model.last_reuse_hits = reuse_hits
+        if epoch_ticks:
+            self.model.last_reuse_hits = reuse_hits*100/epoch_ticks
+        else:
+            self.model.last_reuse_hits = reuse_hits
 
     def cloud_admission_update(self, ans, flow_id):
         """

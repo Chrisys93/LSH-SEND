@@ -70,7 +70,7 @@ N_SERVICES = N_CONTENTS
 # Number of requests per second (over the whole network)
 NETWORK_REQUEST_RATE = 1000.0
 
-# Number of cores for each node in the experiment
+# Number of cores for each node in the experiment
 NUM_CORES = 50
 
 # Number of content requests generated to prepopulate the caches
@@ -82,7 +82,7 @@ N_WARMUP_REQUESTS = 0 #30000
 #N_MEASURED_REQUESTS = 1000 #60*30000 #100000
 
 SECS = 60 #do not change
-MINS = 5.5 #5.5
+MINS = 2 #5.5
 N_MEASURED_REQUESTS = NETWORK_REQUEST_RATE*SECS*MINS
 
 # List of all implemented topologies
@@ -103,7 +103,7 @@ WORKLOAD = 'STATIONARY_HASH_LABEL_REQS'
 # List of caching and routing strategies
 # The code is located in ./icarus/models/strategy.py
 STRATEGIES = ['HASH_PROC_REPO_APP']
-EPOCH_TICKS = 500
+EPOCH_TICKS = float('inf')
 HIT_RATE = 0.6
 #STRATEGIES = ['COORDINATED']  # service-based routing
 

@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
 """Performance metrics loggers
-
 This module contains all data collectors that record events while simulations
 are being executed and compute performance metrics.
-
 Currently implemented data collectors allow users to measure cache hit ratio,
 latency, path stretch and link load.
-
 To create a new data collector, it is sufficient to create a new class
 inheriting from the `DataCollector` class and override all required methods.
-
 TODO: Create collectors for the different feedback mechanisms, which can then
     be accessed internally (within the simulation, dynamically, by the routing
     and storage strategies, to place contents in the appropriate repos.
@@ -47,7 +43,6 @@ class DataCollector(object):
 
     def __init__(self, view, **params):
         """Constructor
-
         Parameters
         ----------
         view : NetworkView
@@ -59,10 +54,8 @@ class DataCollector(object):
 
     def start_session(self, timestamp, receiver, content, labels, h_spaces, flow_id=0, deadline=0):
         """Notifies the collector that a new network session started.
-
         A session refers to the retrieval of a content from a receiver, from
         the issuing of a content request to the delivery of the content.
-
         Parameters
         ----------
         timestamp : int
@@ -81,7 +74,6 @@ class DataCollector(object):
     def cache_hit(self, node):
         """Reports that the requested content has been served by the cache at
         node *node*.
-
         Parameters
         ----------
         node : any hashable type
@@ -92,7 +84,6 @@ class DataCollector(object):
     def cache_miss(self, node):
         """Reports that the cache at node *node* has been looked up for
         requested content but there was a cache miss.
-
         Parameters
         ----------
         node : any hashable type
@@ -103,7 +94,6 @@ class DataCollector(object):
     def storage_hit(self, node):
         """Reports that the requested content has been served by the repo storage at
         node *node*.
-
         Parameters
         ----------
         node : any hashable type
@@ -114,7 +104,6 @@ class DataCollector(object):
     def storage_miss(self, node):
         """Reports that the repo storage at node *node* has been looked up for
         requested content but there was a repo storage miss.
-
         Parameters
         ----------
         node : any hashable type
@@ -125,7 +114,6 @@ class DataCollector(object):
     def server_hit(self, node):
         """Reports that the requested content has been served by the server at
         node *node*.
-
         Parameters
         ----------
         node : any hashable type
@@ -154,7 +142,6 @@ class DataCollector(object):
 
     def request_hop(self, u, v, main_path=True):
         """Reports that a request has traversed the link *(u, v)*
-
         Parameters
         ----------
         u : any hashable type
@@ -170,7 +157,6 @@ class DataCollector(object):
 
     def content_hop(self, u, v, main_path=True):
         """Reports that a content has traversed the link *(u, v)*
-
         Parameters
         ----------
         u : any hashable type
@@ -189,7 +175,6 @@ class DataCollector(object):
         """Reports that the session is closed, i.e. the content has been
         successfully delivered to the receiver or a failure blocked the
         execution of the request
-
         Parameters
         ----------
         success : bool, optional
@@ -199,7 +184,6 @@ class DataCollector(object):
 
     def results(self):
         """Returns the aggregated results measured by the collector.
-
         Returns
         -------
         results : dict
@@ -215,7 +199,6 @@ class DataCollector(object):
 class CollectorProxy(DataCollector):
     """This class acts as a proxy for all concrete collectors towards the
     network controller.
-
     An instance of this class registers itself with the network controller and
     it receives notifications for all events. This class is responsible for
     dispatching events of interests to concrete collectors.
@@ -226,7 +209,6 @@ class CollectorProxy(DataCollector):
 
     def __init__(self, view, collectors):
         """Constructor
-
         Parameters
         ----------
         view : NetworkView
@@ -300,7 +282,6 @@ class LinkLoadCollector(DataCollector):
 
     def __init__(self, view, req_size=150, content_size=1500):
         """Constructor
-
         Parameters
         ----------
         view : NetworkView
@@ -366,7 +347,6 @@ class LatencyCollector(DataCollector):
 
     def __init__(self, view, cdf=False):
         """Constructor
-
         Parameters
         ----------
         view : NetworkView
@@ -444,7 +424,7 @@ class LatencyCollector(DataCollector):
         self.n_instantiations_interval = 0
 
         total_idle_time = 0.0
-        total_cores = 0  #  total number of cores in the network
+        total_cores = 0  #  total number of cores in the network
         for node, cs in self.css.items():
             if cs.is_cloud:
                 continue
@@ -691,7 +671,6 @@ class RepoStatsLatencyCollector(DataCollector):
 
     def __init__(self, view, logs_path='', sampling_interval=500, cdf=False):
         """Constructor
-
         Parameters
         ----------
         view : NetworkView
@@ -735,9 +714,12 @@ class RepoStatsLatencyCollector(DataCollector):
         self.deadline_metric_times = {}
         self.cloud_sat_times = {}
         self.instantiations_times = {}
+        self.rtt_delays_reuse = {'count': 0}
         self.rtt_delays_edge = {'count': 0}
         self.rtt_delays_cloud = {'count': 0}
         self.rtt_delays_overall = {'count': 0}
+        self.res_call_flow_no = 0
+        self.latest_end_session = 0
 
         # Log-specific variables TODO: Maybe set up in the same way that the result output is set up.
         # self.logs_path = self.view.get_logs_path
@@ -774,7 +756,7 @@ class RepoStatsLatencyCollector(DataCollector):
         self.n_instantiations_interval = 0
 
         total_idle_time = 0.0
-        total_cores = 0  #  total number of cores in the network
+        total_cores = 0  #  total number of cores in the network
         for node, cs in self.css.items():
             if cs.is_cloud:
                 continue
@@ -849,6 +831,7 @@ class RepoStatsLatencyCollector(DataCollector):
 
     @inheritdoc(DataCollector)
     def end_session(self, success=True, timestamp=0, flow_id=0):
+        self.latest_end_session = flow_id
         sat = False
         if flow_id in self.flow_deadline:
             service = self.flow_service[flow_id]
@@ -859,6 +842,13 @@ class RepoStatsLatencyCollector(DataCollector):
                 else:
                     self.rtt_delays_cloud[service['content']] = timestamp - self.flow_start[flow_id]
                     self.rtt_delays_cloud['count'] += 1
+            elif service['service_type'] is 'reused':
+                if service['content'] in self.rtt_delays_reuse:
+                    self.rtt_delays_reuse[service['content']] += timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_reuse['count'] += 1
+                else:
+                    self.rtt_delays_reuse[service['content']] = timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_reuse['count'] += 1
             else:
                 if service['content'] in self.rtt_delays_edge:
                     self.rtt_delays_edge[service['content']] += timestamp - self.flow_start[flow_id]
@@ -909,6 +899,8 @@ class RepoStatsLatencyCollector(DataCollector):
     @inheritdoc(DataCollector)
     def results(self):
         # TODO: Maybe revise the below and make it even more customisable
+
+        self.res_call_flow_no = self.latest_end_session
 
         if self.view.model.strategy == 'HYBRID':
             res = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hybrid.txt", 'a')
@@ -973,7 +965,9 @@ class RepoStatsLatencyCollector(DataCollector):
             cloud_proc = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_cloud_proc.txt", 'a')
             edge_proc = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_edge_proc.txt", 'a')
             reuse_hits = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_reuse_hits.txt", 'a')
+            in_flight = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_in_flight.txt", 'a')
             overall_delay_averages = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_overall_delay_avg.txt", 'a')
+            reuse_delay_averages = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_reuse_delay_avg.txt", 'a')
             edge_delay_averages = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_edge_delay_avg.txt", 'a')
             cloud_delay_averages = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_cloud_delay_avg.txt", 'a')
         if self.cdf:
@@ -1020,12 +1014,14 @@ class RepoStatsLatencyCollector(DataCollector):
         if self.view.model.strategy == 'HASH_PROC_REPO_APP':
             simil_misses.write(str(self.view.model.last_miss_count))
             simil_misses.write("\n")
-            cloud_proc.write(str(self.rtt_delays_cloud['count']))  # view.model.last_cloud_proc))
+            cloud_proc.write(str(self.view.model.last_cloud_proc))
             cloud_proc.write("\n")
-            edge_proc.write(str(self.rtt_delays_edge['count']))  # view.model.last_edge_proc))
+            edge_proc.write(str(self.view.model.last_edge_proc))
             edge_proc.write("\n")
             reuse_hits.write(str(self.view.model.last_reuse_hits))
             reuse_hits.write("\n")
+            in_flight.write(str(len(self.flow_start)))
+            in_flight.write("\n")
             for node in self.view.model.storageSize:
                 if node in self.view.model.last_repo_misses:
                     per_node_simil_misses[node] = self.view.model.last_repo_misses[node]
@@ -1043,7 +1039,16 @@ class RepoStatsLatencyCollector(DataCollector):
             else:
                 avg_overall_delay = 0
             overall_delay_averages.write(str(avg_overall_delay) + "\n")
-            repo_simil_misses.write("\n")
+
+            total_delays = 0
+            for service in self.rtt_delays_reuse:
+                if service != 'count':
+                    total_delays += self.rtt_delays_reuse[service]
+            if self.rtt_delays_reuse['count']:
+                avg_reuse_delay = total_delays/self.rtt_delays_reuse['count']
+            else:
+                avg_reuse_delay = 0
+            reuse_delay_averages.write(str(avg_reuse_delay) + "\n")
 
             total_delays = 0
             for service in self.rtt_delays_edge:
@@ -1054,7 +1059,6 @@ class RepoStatsLatencyCollector(DataCollector):
             else:
                 avg_edge_delay = 0
             edge_delay_averages.write(str(avg_edge_delay) + "\n")
-            repo_simil_misses.write("\n")
 
             total_delays = 0
             for service in self.rtt_delays_cloud:
@@ -1144,6 +1148,8 @@ class RepoStatsLatencyCollector(DataCollector):
         # results['VMS_PER_SERVICE'] = self.vms_per_service
         res.close()
 
+        self.last_res_call_flow_no = self.res_call_flow_no
+
         return results
 
 
@@ -1155,7 +1161,6 @@ class CacheHitRatioCollector(DataCollector):
 
     def __init__(self, view, off_path_hits=False, per_node=True, content_hits=False):
         """Constructor
-
         Parameters
         ----------
         view : NetworkView
@@ -1242,7 +1247,6 @@ class PathStretchCollector(DataCollector):
 
     def __init__(self, view, cdf=False):
         """Constructor
-
         Parameters
         ----------
         view : NetworkView
@@ -1314,7 +1318,6 @@ class DummyCollector(DataCollector):
 
     def __init__(self, view):
         """Constructor
-
         Parameters
         ----------
         view : NetworkView
@@ -1356,7 +1359,6 @@ class DummyCollector(DataCollector):
 
     def session_summary(self):
         """Return a summary of latest session
-
         Returns
         -------
         session : dict

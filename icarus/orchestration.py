@@ -281,6 +281,9 @@ def run_scenario(settings, params, curr_exp, n_exp):
         elif "DATA" in workload_name and "REPO" in contpl_name:
             CONTENT_PLACEMENT[contpl_name](topology, workload.data, workload.freshness_pers,
                                            workload.stor_shelf, workload.sizes, **contpl_spec)
+
+        # TODO: Add hash case, where the hash spaces are inherited from workload, as well!
+
         else:
             CONTENT_PLACEMENT[contpl_name](topology, workload.contents, **contpl_spec)
 

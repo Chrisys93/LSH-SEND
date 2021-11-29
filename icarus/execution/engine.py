@@ -72,6 +72,17 @@ def exec_experiment(topology, workload, netconf, strategy, cache_policy, repo_po
         if event['status'] == 0 and event['flow_id'] > flow_ids_in:
             flow_ids_in = event['flow_id']
             n += 1
+    if flow_ids_in >= workload.n_measured:
+        for event in workload.model.eventQ:
+            #continue
+            strategy_inst.process_event(event['time'] , **event)
+            if event['time'] - last_time >= 0.5:
+                collector.results()
+                last_time = event['time']
+            if event['status'] == 0 and event['flow_id'] > flow_ids_in:
+                flow_ids_in = event['flow_id']
+                n += 1
+
 
     return collector.results()
 

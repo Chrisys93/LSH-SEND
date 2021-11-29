@@ -39,6 +39,7 @@ __all__ = [
     'YCSBWorkload',
     'StationaryRepoWorkload',
     'StationaryHashRepoWorkload',
+    'StationaryDatasetHashRepoWorkload',
     'BurstyRepoWorkload',
     'TraceDrivenRepoWorkload',
     'BurstyTraceRepoWorkload',
@@ -961,17 +962,30 @@ class StationaryHashRepoWorkload(object):
         # aFile = open('workload.txt', 'w')
         # aFile.write("# Time\tNodeID\tserviceID\n")
         eventObj = self.model.eventQ[0] if len(self.model.eventQ) > 0 else None
+        # TODO: THIS IS WHAT NEEDS TO BE CHANGED, in order to get ALL THE REQUESTS ACCOUNTED FOR AT THEIR DESTINATIONS!!
         while req_counter < self.n_warmup + self.n_measured or len(self.model.eventQ) > 0:
+            # Timing for new message production (in receiver) is generated
             t_event += (random.expovariate(self.rate))
             eventObj = self.model.eventQ[0] if len(self.model.eventQ) > 0 else None
+            # If there is another message (or rather event relating to another message) in the queue of events within
+            # the simulation, they will be tackled by the workload handler first.
             while eventObj is not None and eventObj.time < t_event:
+                # Some of the main reasons that this one is not consistent might be because of the rest of the code used
+                # for generating new messages.
                 heapq.heappop(self.model.eventQ)
                 log = (req_counter >= self.n_warmup)
-                event = {'receiver': eventObj.receiver, 'content': eventObj.service, 'labels': eventObj.labels,
-                         'h_spaces': eventObj.h_spaces, 'log': log, 'node': eventObj.node, 'flow_id': eventObj.flow_id,
-                         'deadline': eventObj.deadline, 'rtt_delay': eventObj.rtt_delay, 'status': eventObj.status,
-                         'task': eventObj.task}
+                if type(eventObj.service) is dict:
+                    event = {'receiver': eventObj.receiver, 'content': eventObj.service, 'labels': eventObj.labels,
+                             'h_spaces': eventObj.service['h_space'], 'log': log, 'node': eventObj.node, 'flow_id': eventObj.flow_id,
+                             'deadline': eventObj.deadline, 'rtt_delay': eventObj.rtt_delay, 'status': eventObj.status,
+                             'task': eventObj.task}
 
+                else:
+                    event = {'receiver': eventObj.receiver, 'content': eventObj.service, 'labels': eventObj.labels,
+                             'h_spaces': eventObj.h_spaces, 'log': log, 'node': eventObj.node, 'flow_id': eventObj.flow_id,
+                             'deadline': eventObj.deadline, 'rtt_delay': eventObj.rtt_delay, 'status': eventObj.status,
+                             'task': eventObj.task}
+                # TODO: BACKTRACK THROUGH h_spaces and eventObj>event>below event initiation, FIRST ABOVE AND THEN BELOW!!!!!
                 yield (eventObj.time, event)
                 eventObj = self.model.eventQ[0] if len(self.model.eventQ) > 0 else None
 
@@ -1052,6 +1066,280 @@ class StationaryHashRepoWorkload(object):
                 datum.update(service_type="proc")
                 datum.update(labels=labels)
                 datum.update(h_space=h_spaces)
+                datum.update(freshness_per=self.freshness_pers)
+                self.data[index] = datum
+                self.model.node_labels[node] = dict()
+                for c in self.data:
+                    if all(label in labels for label in self.data[c]['labels']):
+                        index = self.data[c]['content']
+                deadline = self.model.services[index].deadline + t_event
+                if node not in self.model.request_labels:
+                    self.model.request_labels[node] = Counter()
+                self.model.request_labels[node].update(labels)
+                for label in labels:
+                    if label not in self.model.request_labels_nodes:
+                        self.model.request_labels_nodes[label] = Counter()
+                    self.model.request_labels_nodes[label].update([node])
+                event = {'receiver': receiver, 'content': datum, 'labels': labels, 'h_spaces': datum['h_space'], 'log': log,
+                         'node': node, 'flow_id': flow_id, 'rtt_delay': 0, 'deadline': deadline, 'status': REQUEST}
+            else:
+                index = int(self.zipf.rv())
+                datum = self.data[index]
+                datum.update(service_type="proc")
+                datum.update(h_space=h_spaces)
+                self.data[index] = datum
+                deadline = self.model.services[content].deadline + t_event
+                # FIXME: It might be the case that the events are both generated AND re-iterated at the same time!!!!!!!
+                event = {'receiver': receiver, 'content': datum, 'labels': [], 'h_spaces': datum['h_space'], 'log': log,
+                         'node': node, 'flow_id': flow_id, 'rtt_delay': 0, 'deadline': deadline, 'status': REQUEST}
+
+            # NOTE: STOPPED HERE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+            neighbors = self.topology.neighbors(receiver)
+            #s = str(t_event) + "\t" + str(neighbors[0]) + "\t" + str(content) + "\n"
+            # aFile.write(s)
+            yield (t_event, event)
+            req_counter += 1
+
+        print("End of iteration: len(eventObj): " + repr(len(self.model.eventQ)))
+        # aFile.close()
+        raise StopIteration()\
+
+
+@register_workload('STATIONARY_DATASET_HASH_LABEL_REQS')
+class StationaryDatasetHashRepoWorkload(object):
+    """This function generates events on the fly, i.e. instead of creating an
+    event schedule to be kept in memory, returns an iterator that generates
+    events when needed.
+
+    This is useful for running large schedules of events where RAM is limited
+    as its memory impact is considerably lower.
+
+    These requests are Poisson-distributed while content popularity is
+    Zipf-distributed
+
+    All requests are mapped to receivers uniformly unless a positive *beta*
+    parameter is specified.
+
+    If a *beta* parameter is specified, then receivers issue requests at
+    different rates. The algorithm used to determine the requests rates for
+    each receiver is the following:
+     * All receiver are sorted in decreasing order of degree of the PoP they
+       are attached to. This assumes that all receivers have degree = 1 and are
+       attached to a node with degree > 1
+     * Rates are then assigned following a Zipf distribution of coefficient
+       beta where nodes with higher-degree PoPs have a higher request rate
+
+    Parameters
+    ----------
+    topology : fnss.Topology
+        The topology to which the workload refers
+    n_contents : int
+        The number of content object
+    alpha : float
+        The Zipf alpha parameter
+    beta : float, optional
+        Parameter indicating
+    rate : float, optional
+        The mean rate of requests per second
+    n_warmup : int, optional
+        The number of warmup requests (i.e. requests executed to fill cache but
+        not logged)
+    n_measured : int, optional
+        The number of logged requests after the warmup
+
+    Returns
+    -------
+    events : iterator
+        Iterator of events. Each event is a 2-tuple where the first element is
+        the timestamp at which the event occurs and the second element is a
+        dictionary of event attributes.
+    """
+
+    def __init__(self, topology, content_hashes_file, n_contents, alpha, beta=0,
+                 label_ex=False, alpha_labels=0, rate=1.0,
+                 n_warmup=10 ** 5, n_measured=4 * 10 ** 5, seed=0,
+                 n_services=10, topics=None, max_labels=1,
+                 freshness_pers=0, shelf_lives=0, msg_sizes=1000000, **kwargs):
+        types = []
+        if alpha < 0:
+            raise ValueError('alpha must be positive')
+
+        if alpha_labels < 0:
+            raise ValueError('alpha_labels must be positive')
+
+        if beta < 0:
+            raise ValueError('beta must be positive')
+        self.receivers = [v for v in topology.nodes()
+                          if topology.node[v]['stack'][0] == 'receiver']
+        self.zipf = TruncatedZipfDist(alpha, n_services - 1, seed)
+        self.labels_zipf = TruncatedZipfDist(alpha_labels, len(topics) + len(types), seed)
+
+        self.n_contents = n_contents
+        # THIS is where CONTENTS are generated!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        # TODO: Associate all below content properties to contents, according to CONFIGURATION required IN FILE, in
+        #  contentplacement.py file, registered placement strategies!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.contents = range(0, n_contents)
+        self.content_hashes_file = content_hashes_file
+        self.data = dict()
+
+
+        # TODO: This is where the hash spaces should be allocated (similar to the below content allocation) - in order,
+        #  while being calculated beforehand, in matlab
+        #
+        # self.contents = []
+        # contents = []
+        # with open(self.contents_file, 'r', buffering=self.buffering) as f:
+        #     data = csv.reader(f)
+        #     first = True
+        #     for content in data:
+        #         for cont in content:
+        #             if first:
+        #                  first = False
+        #                  continue
+        #             contents.append(cont)
+
+        self.h_spaces = []
+        with open(self.content_hashes_file, 'r', buffering=self.buffering) as f:
+            data = csv.reader(f)
+            first = True
+            for space in data:  # row
+                for hash in space:  # column
+                    if first:
+                         first = False
+                         continue
+                    self.h_spaces.append(hash)
+
+        for content in self.contents:
+            if type(content) is not dict:
+                datum = dict()
+                datum.update(content=content)
+            else:
+                datum = content
+            datum.update(service_type="proc")
+            datum.update(labels=[])
+            datum.update(h_space=self.h_spaces[content])
+            datum.update(msg_size=msg_sizes)
+            datum.update(shelf_life=[])
+            datum.update(freshness_per=freshness_pers)
+            self.data[content] = datum
+
+
+        self.labels = dict(topics=topics,
+                           types=types)
+        self.freshness_pers = freshness_pers
+        self.shelf_lives = shelf_lives
+        self.sizes = msg_sizes
+
+        self.receivers = [v for v in topology.nodes() if 'receiver' in topology.nodes[v]['stack'][0]]
+        self.n_services = n_services
+        self.alpha = alpha
+        self.alpha_labels = alpha_labels
+        self.max_labels = max_labels
+        self.label_ex = label_ex
+        self.alter = False
+        self.rate = rate
+        self.n_warmup = n_warmup
+        self.n_measured = n_measured
+        self.model = None
+        self.beta = beta
+        self.topology = topology
+        if beta != 0:
+            degree = nx.degree(self.topology)
+            self.receivers = sorted(self.receivers, key=lambda x: degree[iter(topology.edge[x]).next()], reverse=True)
+            self.receiver_dist = TruncatedZipfDist(beta, len(self.receivers), seed)
+
+        self.seed = seed
+        self.first = True
+
+    def __iter__(self):
+        req_counter = 0
+        t_event = 0.0
+        flow_id = 0
+
+        # TODO: Associate requests with labels and other, deadline/freshless period/shelf-life requirements,
+        #       rather than just contents (could be either or both, depending on restrictions - maybe create
+        #       more strategies in that case, if needed.
+
+        if self.first:  # TODO remove this first variable, this is not necessary here
+            random.seed(self.seed)
+            self.first = False
+        # aFile = open('workload.txt', 'w')
+        # aFile.write("# Time\tNodeID\tserviceID\n")
+        eventObj = self.model.eventQ[0] if len(self.model.eventQ) > 0 else None
+        # TODO: THIS IS WHAT NEEDS TO BE CHANGED, in order to get ALL THE REQUESTS ACCOUNTED FOR AT THEIR DESTINATIONS!!
+        while req_counter < self.n_warmup + self.n_measured or len(self.model.eventQ) > 0:
+            t_event += (random.expovariate(self.rate))
+            eventObj = self.model.eventQ[0] if len(self.model.eventQ) > 0 else None
+            while eventObj is not None and eventObj.time < t_event:
+                heapq.heappop(self.model.eventQ)
+                log = (req_counter >= self.n_warmup)
+                event = {'receiver': eventObj.receiver, 'content': eventObj.service, 'labels': eventObj.labels,
+                         'h_spaces': eventObj.h_spaces, 'log': log, 'node': eventObj.node, 'flow_id': eventObj.flow_id,
+                         'deadline': eventObj.deadline, 'rtt_delay': eventObj.rtt_delay, 'status': eventObj.status,
+                         'task': eventObj.task}
+
+                yield (eventObj.time, event)
+                eventObj = self.model.eventQ[0] if len(self.model.eventQ) > 0 else None
+
+            if req_counter >= (self.n_warmup + self.n_measured):
+                # skip below if we already sent all the requests
+                continue
+
+            if self.beta == 0:
+                receiver = random.choice(self.receivers)
+            else:
+                receiver = self.receivers[self.receiver_dist.rv() - 1]
+            node = receiver
+
+            labels = []
+            h_spaces = self.h_spaces[content]
+            content = None
+            if self.label_ex is True:
+
+                # TODO: Might need to revise this, programming-wise, to account for no content association to selected
+                #  label\/\/\/\/\/\/\/\/
+                for i in range(0, self.max_labels):
+                    labels_zipf = int(self.labels_zipf.rv())
+                    if labels_zipf < len(self.labels['topics']):
+                        labels.append(self.labels['topics'][labels_zipf])
+                    elif labels_zipf >= len(self.labels['topics']):
+                        labels.append(self.labels['types'][labels_zipf - len(self.labels['topics'])-1])
+
+            else:
+                if self.alpha_labels == 0 or self.alter is True:
+                    content = int(self.zipf.rv())  # TODO: THIS is where the content identifier requests are generated!
+
+                # TODO: Might need to revise this, programming-wise, to account for no content association to selected
+                #  label\/\/\/\/\/\/\/\/
+
+                elif self.alter is False:
+                    for i in range(0, self.max_labels):
+                        labels_zipf = int(self.labels_zipf.rv() - 1)
+                        if labels_zipf < len(self.labels['topics']):
+                            labels.append(self.labels['topics'][labels_zipf])
+                        elif labels_zipf >= len(self.labels['topics']):
+                            labels.append(self.labels['types'][labels_zipf - len(self.labels['topics'])])
+                    self.alter = True
+                    content = int(self.zipf.rv())
+
+            log = (req_counter >= self.n_warmup)
+            flow_id += 1
+            # TODO: Since services are associated with deadlines based on labels as well now, this should be
+            #  accounted for in service placement from now on, as well, the lowest deadline being prioritised
+            #  when instantiated (unless a certain  content/service strategy is implemented, maybe).
+
+            # TODO: CHANGE OF PLANS: This would overcomplicate things - just associating labels to "services"!!!!!!!!!!!
+
+
+            if labels:
+
+                index = int(self.zipf.rv())
+                datum = self.data[index]
+                datum.update(service_type="proc")
+                datum.update(labels=labels)
+                datum.update(h_space=h_spaces)
+                datum.update(freshness_per=self.freshness_pers)
                 self.data[index] = datum
                 self.model.node_labels[node] = dict()
                 for c in self.data:

@@ -16,7 +16,7 @@ LOG_LEVEL = 'INFO'
 
 # If True, executes simulations in parallel using multiple processes
 # to take advantage of multicore CPUs
-PARALLEL_EXECUTION = False
+PARALLEL_EXECUTION = True
 
 # Number of processes used to run simulations in parallel.
 # This option is ignored if PARALLEL_EXECUTION = False
@@ -62,13 +62,13 @@ ALPHA = 0.75 #0.75
 NETWORK_CACHE = 0.05
 
 # Number of content objects
-N_CONTENTS = 150
+N_CONTENTS = 3000
 #N_CONTENTS = 1000
 
 N_SERVICES = N_CONTENTS
 
 # Number of requests per second (over the whole network)
-NETWORK_REQUEST_RATE = 1000.0
+NETWORK_REQUEST_RATE = 500.0
 
 # Number of cores for each node in the experiment
 NUM_CORES = 50

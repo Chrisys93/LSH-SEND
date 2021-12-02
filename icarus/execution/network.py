@@ -344,11 +344,7 @@ class NetworkView(object):
 
                 if len(h_spaces) == 1:
                     h_space = h_spaces[0]
-                    for n in self.model.h_space_sources[h_space]:
-                        # content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
-                        if len(self.shortest_path(node, n)) < hops:
-                            hops = len(self.shortest_path(node, n))
-                            res = n
+                    res = self.model.h_space_sources[h_space].keys()[0]
                 else:
                     for h_space in h_spaces:
                         for n in self.model.h_space_sources[h_space]:
@@ -1244,7 +1240,9 @@ class NetworkView(object):
             cs = self.model.compSpot[node]
             if cs.is_cloud:
                 return True
-            elif cs.numberOfVMInstances[service['content']] > 0:
+            elif type(service) is dict and cs.numberOfVMInstances[service['content']] > 0:
+                return True
+            elif type(service) is int and cs.numberOfVMInstances[service] > 0:
                 return True
 
         return False

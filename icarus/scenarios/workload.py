@@ -982,9 +982,9 @@ class StationaryHashRepoWorkload(object):
 
                 else:
                     event = {'receiver': eventObj.receiver, 'content': eventObj.service, 'labels': eventObj.labels,
-                             'h_spaces': eventObj.h_spaces, 'log': log, 'node': eventObj.node, 'flow_id': eventObj.flow_id,
-                             'deadline': eventObj.deadline, 'rtt_delay': eventObj.rtt_delay, 'status': eventObj.status,
-                             'task': eventObj.task}
+                             'h_spaces': self.data[eventObj.service]['h_space'], 'log': log, 'node': eventObj.node,
+                             'flow_id': eventObj.flow_id, 'deadline': eventObj.deadline, 'rtt_delay': eventObj.rtt_delay,
+                             'status': eventObj.status, 'task': eventObj.task}
                 # TODO: BACKTRACK THROUGH h_spaces and eventObj>event>below event initiation, FIRST ABOVE AND THEN BELOW!!!!!
                 yield (eventObj.time, event)
                 eventObj = self.model.eventQ[0] if len(self.model.eventQ) > 0 else None
@@ -1064,8 +1064,10 @@ class StationaryHashRepoWorkload(object):
                 index = int(self.zipf.rv())
                 datum = self.data[index]
                 datum.update(service_type="proc")
-                datum.update(labels=labels)
-                datum.update(h_space=h_spaces)
+                if not datum['labels']:
+                    datum.update(labels=labels)
+                if not datum['h_space']:
+                    datum.update(h_space=h_spaces)
                 datum.update(freshness_per=self.freshness_pers)
                 self.data[index] = datum
                 self.model.node_labels[node] = dict()
@@ -1086,7 +1088,8 @@ class StationaryHashRepoWorkload(object):
                 index = int(self.zipf.rv())
                 datum = self.data[index]
                 datum.update(service_type="proc")
-                datum.update(h_space=h_spaces)
+                if not datum['h_space']:
+                    datum.update(h_space=h_spaces)
                 self.data[index] = datum
                 deadline = self.model.services[content].deadline + t_event
                 # FIXME: It might be the case that the events are both generated AND re-iterated at the same time!!!!!!!

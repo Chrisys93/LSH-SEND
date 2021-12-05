@@ -595,6 +595,11 @@ class ComputationSpot(object):
         num_of_VMs = 0
         if dist is None and self.is_cloud == False:
             # setup a random set of services to run in the memory
+            self.numberOfVMInstances[0] += 1
+            num_of_VMs += 1
+            aVM = VM(self, 0)
+            self.allVMs.append(aVM)
+            self.scheduler.idleVMs[0].append(aVM)
             while num_of_VMs < self.numOfVMs:
                 # TODO: This is where all services get associated initially to each computational spot. This might
                 #  change over time, but this should not be changed. It might however be worth tracking how these
@@ -901,6 +906,18 @@ class ComputationSpot(object):
             if debug:
                 print ("CLOUD: Accepting TASK")
             return [True, CLOUD]
+
+        service_index = random.choice(range(0, self.service_population_size))
+        # if self.numberOfVMInstances[service_index] == 0:
+        self.numberOfVMInstances[service_index] -= 1
+        for s in self.allVMs:
+            if s.service == service_index:
+                self.allVMs.remove(s)
+                break
+        self.numberOfVMInstances[service] += 1
+        aVM = VM(self, service)
+        self.allVMs.append(aVM)
+        self.scheduler.idleVMs[service].append(aVM)
         
         if self.numberOfVMInstances[service] == 0:
             return [False, NO_INSTANCES]

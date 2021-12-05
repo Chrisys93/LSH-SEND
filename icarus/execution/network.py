@@ -771,6 +771,8 @@ class NetworkView(object):
                         max_node = n
             nodes.append(max_node)
         for n in nodes:
+            if type(n) is not int:
+                continue
             for h in self.model.busy_proc[n]:
                 proc = self.model.busy_proc[n][h]
                 if proc >= max_proc:
@@ -2072,8 +2074,10 @@ class NetworkController(object):
         """
 
         for h in h_space:
-            if h in self.model.all_node_h_spaces[node]:
+            if h in self.model.busy_proc[node]:
                 self.model.busy_proc[node][h] -= 1
+            else:
+                self.model.busy_proc[node][h] = 0
 
     def add_request_labels_to_node(self, s, service_request):
         """Forward a request from node *s* to node *t* over the provided path.
@@ -2314,7 +2318,7 @@ class NetworkController(object):
             Message with content hash (name), labels and properties
         """
         if s not in self.model.node_h_spaces:
-            print("ERROR: This should not happen! - tried to add message with hash " + content['h_space'] + " to node " + s+ ", with hashes:\n")
+            print("ERROR: This should not happen! - tried to add message with hash " + content['h_space'][0] + " to node " + str(s) + ", with hashes:\n")
             for l in self.model.node_hash_spaces[s]:
                 print(l+"\n")
         for l in content["h_space"]:

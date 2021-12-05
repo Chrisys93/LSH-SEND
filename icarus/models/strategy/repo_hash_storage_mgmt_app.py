@@ -551,7 +551,7 @@ class HashRepoProcStorApp(Strategy):
             if cloud_source == node and status == REQUEST:
                 self.controller.cloud_proc_update(self.cloud_proc, self.epoch_ticks)
                 self.controller.update_node_reuse(node, False)
-                print("Flow id "+flow_id+" will be processed in the cloud.")
+                print("Flow id "+ str(flow_id) +" will be processed in the cloud.")
                 ret, reason = compSpot.admit_task(service['content'], service['labels'], service['h_space'], curTime, flow_id,
                                                   deadline, receiver, rtt_delay, self.controller, self.debug)
                 if ret:
@@ -570,67 +570,31 @@ class HashRepoProcStorApp(Strategy):
                     delay = 0.002
                 rtt_delay += 2*delay # /deadline
                 # Processing a request
-                if self.view.has_service(node, service) and service["service_type"] is "proc" \
-                        and all(elem in self.view.get_node_h_spaces(node) for elem in service['h_space']):
-                    if type(content) is dict:
-                        deadline_metric = (deadline - curTime - rtt_delay - compSpot.services[service['content']].service_time)
-                    else:
-                        deadline_metric = (deadline - curTime - rtt_delay - compSpot.services[service].service_time)
-                    self.controller.update_node_reuse(node, False)
-                    ret, reason = compSpot.admit_task(service['content'], service['labels'], service['h_space'],
-                                                      curTime, flow_id, deadline, receiver, rtt_delay,
-                                                      self.controller, self.debug)
-                    if ret:
-                        print("Flow id " + str(flow_id) + " will be processed at the edge.")
-                        self.controller.add_proc(node, service['h_space'])
-                        self.edge_proc += 1
-                        self.controller.edge_proc_update(self.edge_proc, self.epoch_ticks)
-                        if deadline_metric > 0:
-                            self.deadline_metric[node][service['content']] += deadline_metric
-                        return
-                    else:
-                        if type(content) is dict:
-                            compSpot.missed_requests[content['content']] += 1
-                        else:
-                            compSpot.missed_requests[content] += 1
-                        if deadline - rtt_delay - curTime:
-                            if flow_id not in self.first_retry:
-                                self.first_retry.append(flow_id)
-                                print("Flow id " + str(flow_id) + " will be processed LATER.")
-                            if type(service) is dict and self.view.hasStorageCapability(node) and not \
-                                    self.view.storage_nodes()[node].hasMessage(service['content'], service['labels']) \
-                                    and not self.controller.has_request_labels(node, labels):
-                                self.controller.add_request_labels_to_node(node, service)
-                            self.controller.add_event(curTime + delay, receiver, content, content['labels'],
-                                                      content['h_space'], self.source[h_spaces[0]], flow_id, deadline, rtt_delay,
-                                                      REQUEST)
-                            if deadline_metric > 0:
-                                self.cand_deadline_metric[node][service['content']] += deadline_metric
-                            if self.debug:
-                                print("Message is scheduled to run at: " + str(self.source[h_spaces[0]]))
-                        else:
-                            if type(service) is dict and self.view.hasStorageCapability(node) and not \
-                                    self.view.storage_nodes()[node].hasMessage(service['content'], service['labels']) \
-                                    and not self.controller.has_request_labels(node, labels):
-                                self.controller.add_request_labels_to_node(node, service)
-                            self.cloud_proc += 1
-                            self.controller.cloud_proc_update(self.cloud_proc, self.epoch_ticks)
-                            self.controller.add_proc(cloud_source, service['h_space'])
-                            self.controller.cloud_admission_update(True, flow_id)
-                            self.controller.add_event(curTime + delay, receiver, service, service['labels'],
-                                                      service['h_space'], cloud_source, flow_id, deadline, rtt_delay,
-                                                      REQUEST)
-                            if deadline_metric > 0:
-                                self.cand_deadline_metric[node][service['content']] += deadline_metric
-                            if self.debug:
-                                print("Request is scheduled to run at the CLOUD")
+                # if self.view.has_service(node, service) and service["service_type"] is "proc" \
+                #         and all(elem in self.view.get_node_h_spaces(node) for elem in service['h_space']):
+                if type(content) is dict:
+                    deadline_metric = (deadline - curTime - rtt_delay - compSpot.services[service['content']].service_time)
+                else:
+                    deadline_metric = (deadline - curTime - rtt_delay - compSpot.services[service].service_time)
+                self.controller.update_node_reuse(node, False)
+                ret, reason = compSpot.admit_task(service['content'], service['labels'], service['h_space'],
+                                                  curTime, flow_id, deadline, receiver, rtt_delay,
+                                                  self.controller, self.debug)
+                if ret:
+                    print("Flow id " + str(flow_id) + " will be processed at the edge.")
+                    self.controller.add_proc(node, service['h_space'])
+                    self.edge_proc += 1
+                    self.controller.edge_proc_update(self.edge_proc, self.epoch_ticks)
+                    if deadline_metric > 0:
+                        self.deadline_metric[node][service['content']] += deadline_metric
                     return
                 else:
                     if type(content) is dict:
                         compSpot.missed_requests[content['content']] += 1
                     else:
                         compSpot.missed_requests[content] += 1
-                    if deadline - rtt_delay - curTime:
+                    serviceTime = compSpot.services[service['content']].service_time
+                    if deadline - rtt_delay - curTime - serviceTime > 0:
                         if flow_id not in self.first_retry:
                             self.first_retry.append(flow_id)
                             print("Flow id " + str(flow_id) + " will be processed LATER.")
@@ -639,8 +603,10 @@ class HashRepoProcStorApp(Strategy):
                                 and not self.controller.has_request_labels(node, labels):
                             self.controller.add_request_labels_to_node(node, service)
                         self.controller.add_event(curTime + delay, receiver, content, content['labels'],
-                                                  content['h_space'], self.source[h_spaces[0]], flow_id, deadline,
-                                                  rtt_delay, REQUEST)
+                                                  content['h_space'], self.source[h_spaces[0]], flow_id, deadline, rtt_delay,
+                                                  REQUEST)
+                        if deadline_metric > 0:
+                            self.cand_deadline_metric[node][service['content']] += deadline_metric
                         if self.debug:
                             print("Message is scheduled to run at: " + str(self.source[h_spaces[0]]))
                     else:
@@ -648,9 +614,6 @@ class HashRepoProcStorApp(Strategy):
                                 self.view.storage_nodes()[node].hasMessage(service['content'], service['labels']) \
                                 and not self.controller.has_request_labels(node, labels):
                             self.controller.add_request_labels_to_node(node, service)
-
-                        delay = self.view.path_delay(node, cloud_source)
-                        rtt_delay += delay * 2
                         self.cloud_proc += 1
                         self.controller.cloud_proc_update(self.cloud_proc, self.epoch_ticks)
                         self.controller.add_proc(cloud_source, service['h_space'])
@@ -658,8 +621,47 @@ class HashRepoProcStorApp(Strategy):
                         self.controller.add_event(curTime + delay, receiver, service, service['labels'],
                                                   service['h_space'], cloud_source, flow_id, deadline, rtt_delay,
                                                   REQUEST)
+                        if deadline_metric > 0:
+                            self.cand_deadline_metric[node][service['content']] += deadline_metric
                         if self.debug:
                             print("Request is scheduled to run at the CLOUD")
+                return
+                # else:
+                #     if type(content) is dict:
+                #         compSpot.missed_requests[content['content']] += 1
+                #     else:
+                #         compSpot.missed_requests[content] += 1
+                #     serviceTime = compSpot.services[service['content']].service_time
+                #     if deadline - rtt_delay - curTime - serviceTime > 0:
+                #         if flow_id not in self.first_retry:
+                #             self.first_retry.append(flow_id)
+                #             print("Flow id " + str(flow_id) + " will be processed LATER.")
+                #         if type(service) is dict and self.view.hasStorageCapability(node) and not \
+                #                 self.view.storage_nodes()[node].hasMessage(service['content'], service['labels']) \
+                #                 and not self.controller.has_request_labels(node, labels):
+                #             self.controller.add_request_labels_to_node(node, service)
+                #         self.controller.add_event(curTime + delay, receiver, content, content['labels'],
+                #                                   content['h_space'], self.source[h_spaces[0]], flow_id, deadline,
+                #                                   rtt_delay, REQUEST)
+                #         if self.debug:
+                #             print("Message is scheduled to run at: " + str(self.source[h_spaces[0]]))
+                #     else:
+                #         if type(service) is dict and self.view.hasStorageCapability(node) and not \
+                #                 self.view.storage_nodes()[node].hasMessage(service['content'], service['labels']) \
+                #                 and not self.controller.has_request_labels(node, labels):
+                #             self.controller.add_request_labels_to_node(node, service)
+                #
+                #         delay = self.view.path_delay(node, cloud_source)
+                #         rtt_delay += delay * 2
+                #         self.cloud_proc += 1
+                #         self.controller.cloud_proc_update(self.cloud_proc, self.epoch_ticks)
+                #         self.controller.add_proc(cloud_source, service['h_space'])
+                #         self.controller.cloud_admission_update(True, flow_id)
+                #         self.controller.add_event(curTime + delay, receiver, service, service['labels'],
+                #                                   service['h_space'], cloud_source, flow_id, deadline, rtt_delay,
+                #                                   REQUEST)
+                #         if self.debug:
+                #             print("Request is scheduled to run at the CLOUD")
 
                 return
 
@@ -755,16 +757,19 @@ class HashRepoProcStorApp(Strategy):
                     if service['msg_size'] == 1000000:
                         service['msg_size'] = service['msg_size'] / 2
 
+                if type(node) is not str:
+
                     self.controller.replication_overhead_update(service)
                     self.controller.remove_replication_hops(service)
 
                     self.controller.add_message_to_storage(node, service)
+                    self.controller.add_storage_h_spaces_to_node(node, service)
                     self.controller.add_storage_labels_to_node(node, service)
 
                 self.controller.add_event(curTime + delay, receiver, service, service['labels'], service['h_space'], receiver, flow_id,
                                           deadline, rtt_delay, RESPONSE)
 
-                if (node != self.source[h_spaces[0]] and curTime + path_delay > deadline):
+                if node != self.source[h_spaces[0]] and node != 'src_0' and curTime + path_delay > deadline:
                     print("Error in HYBRID strategy: Request missed its deadline\nResponse at receiver at time: " + str(
                         curTime + path_delay) + " deadline: " + str(deadline))
                     task.print_task()
@@ -778,7 +783,8 @@ class HashRepoProcStorApp(Strategy):
                     delay = 0.002
                 rtt_delay += 2 * delay
                 # Processing a request
-                if deadline - rtt_delay - curTime:
+                serviceTime = compSpot.services[service['content']].service_time
+                if deadline - rtt_delay - curTime - serviceTime > 0:
                     if flow_id not in self.first_retry:
                         self.first_retry.append(flow_id)
                         print("Flow id " + str(flow_id) + " will be processed LATER.")

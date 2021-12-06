@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """This module implements the simulation engine.
-
 The simulation engine, given the parameters according to which a single
 experiments needs to be run, instantiates all the required classes and executes
 the experiment by iterating through the event provided by an event generator
@@ -15,7 +14,6 @@ __all__ = ['exec_experiment']
 
 def exec_experiment(topology, workload, netconf, strategy, cache_policy, repo_policy, collectors, warmup_strategy, sched_policy = {'name': 'EDF'}):
     """Execute the simulation of a specific scenario.
-
     Parameters
     ----------
     topology : Topology
@@ -38,7 +36,6 @@ def exec_experiment(topology, workload, netconf, strategy, cache_policy, repo_po
         The collectors to be used. It is a dictionary in which keys are the
         names of collectors to use and values are dictionaries of attributes
         for the collector they refer to.
-
     Returns
     -------
     results : Tree
@@ -64,7 +61,7 @@ def exec_experiment(topology, workload, netconf, strategy, cache_policy, repo_po
     last_time = 0
     flow_ids_in = 0
     for time, event in workload:
-        # continue
+        #continue
         strategy_inst.process_event(time, **event)
         if time - last_time >= 0.5:
             collector.results()
@@ -72,6 +69,17 @@ def exec_experiment(topology, workload, netconf, strategy, cache_policy, repo_po
         if event['status'] == 0 and event['flow_id'] > flow_ids_in:
             flow_ids_in = event['flow_id']
             n += 1
+    if flow_ids_in >= workload.n_measured:
+        for event in workload.model.eventQ:
+            #continue
+            strategy_inst.process_event(event['time'] , **event)
+            if event['time'] - last_time >= 0.5:
+                collector.results()
+                last_time = event['time']
+            if event['status'] == 0 and event['flow_id'] > flow_ids_in:
+                flow_ids_in = event['flow_id']
+                n += 1
+
 
     return collector.results()
 
@@ -83,6 +91,5 @@ def exec_experiment(topology, workload, netconf, strategy, cache_policy, repo_po
             warmup_strategy_inst.process_event(time, **event)
         else:
             strategy_inst.process_event(time, **event)
-
     return collector.results()
     """

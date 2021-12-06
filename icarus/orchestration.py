@@ -324,7 +324,12 @@ def run_scenario(settings, params, curr_exp, n_exp):
             logger.error('There are no implementations for at least one data collector specified')
             return None
         collect_spec = tree['collector_params']
+
         collectors = {m: {} for m in metrics}
+        if 'OUT' in metrics[0]:
+            for collector in collectors:
+                if collector == collect_spec['name']:
+                    collectors[collector]['res_path'] = collect_spec ['res_path']
         # for m in collectors:
         #     if 'REPO' in m:
         #         collectors[m] = dict(collect_spec)

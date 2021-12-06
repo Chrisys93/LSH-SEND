@@ -296,12 +296,14 @@ class NetworkView(object):
                 else:
                     return self.labels_sources(labels)
             return self.model.content_source[k['content']]
+        elif L_H:
+            return self.h_space_sources(h_spaces)
         else:
             for i in self.model.content_source:
                 if i == k:
                     return self.model.content_source[k]
 
-    def content_source_cloud(self, k, labels, h_spaces, L_H):
+    def content_source_cloud(self):
         """Return the node identifier where the content is persistently stored.
         Parameters
         ----------
@@ -314,7 +316,7 @@ class NetworkView(object):
             source is unavailable
         """
         for node in self.model.storageSize:
-            if type(node) != int:
+            if type(self.model.storageSize[node]) != int:
                 if "src" in node:
                     return node
         else:
@@ -338,23 +340,19 @@ class NetworkView(object):
         """
         if bin_based:
             if type(k) is dict:
-                sources_k = copy.deepcopy(k)
-                sources_k['content'] = ''
                 hops = 100
-                if node in self.content_source(sources_k, sources_k['labels'], h_spaces, True):
-                    if self.has_cache(node):
-                        if self.cache_lookup(node, k['content']) or self.local_cache_lookup(node, k['content']):
-                            cache = True
-                        else:
-                            cache = False
-                    else:
-                        cache = False
-                    return node, cache
-                for n in self.content_source(sources_k, sources_k['labels'], h_spaces, True):
-                    # content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
-                    if len(self.shortest_path(node, n)) < hops:
-                        hops = len(self.shortest_path(node, n))
-                        res = n
+
+                if len(h_spaces) == 1:
+                    h_space = h_spaces[0]
+                    res = self.model.h_space_sources[h_space].keys()[0]
+                else:
+                    for h_space in h_spaces:
+                        for n in self.model.h_space_sources[h_space]:
+                            # content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
+                            if h_spaces in self.model.node_h_spaces[n]:
+                                if len(self.shortest_path(node, n)) < hops:
+                                    hops = len(self.shortest_path(node, n))
+                                    res = n
                 if res and self.has_cache(res):
                     if self.cache_lookup(res, k['content']) or self.local_cache_lookup(res, k['content']):
                         cache = True
@@ -363,31 +361,25 @@ class NetworkView(object):
                 else:
                     cache = False
             else:
-                content = dict()
-                content['content'] = k
-                content['labels'] = []
-                sources_content = content
-                sources_content['content'] = ''
                 hops = 100
-                res = 'src_0'
-                if node in self.content_source(sources_content, content['labels'], h_spaces, True):
-                    res = node
-                    if self.has_cache(node):
-                        if self.cache_lookup(node, content['content']) or self.local_cache_lookup(node,
-                                                                                                  content['content']):
-                            cache = True
-                        else:
-                            cache = False
-                    else:
-                        cache = False
-                    return node, cache
-                for n in self.content_source(content, content['labels'], h_spaces, True):
-                    # content = self.model.contents[n][k]
-                    if len(self.shortest_path(node, n)) < hops:
-                        hops = len(self.shortest_path(node, n))
-                        res = n
+
+                if len(h_spaces) == 1:
+                    h_space = h_spaces[0]
+                    for n in self.model.h_space_sources[h_space]:
+                        # content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
+                        if len(self.shortest_path(node, n)) < hops:
+                            hops = len(self.shortest_path(node, n))
+                            res = n
+                else:
+                    for h_space in h_spaces:
+                        for n in self.model.h_space_sources[h_space]:
+                            # content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
+                            if h_spaces in self.model.node_h_spaces[n]:
+                                if len(self.shortest_path(node, n)) < hops:
+                                    hops = len(self.shortest_path(node, n))
+                                    res = n
                 if res and self.has_cache(res):
-                    if self.cache_lookup(res, content['content']) or self.local_cache_lookup(res, content['content']):
+                    if self.cache_lookup(res, k) or self.local_cache_lookup(res, k):
                         cache = True
                     else:
                         cache = False
@@ -779,6 +771,8 @@ class NetworkView(object):
                         max_node = n
             nodes.append(max_node)
         for n in nodes:
+            if type(n) is not int:
+                continue
             for h in self.model.busy_proc[n]:
                 proc = self.model.busy_proc[n][h]
                 if proc >= max_proc:
@@ -1248,7 +1242,9 @@ class NetworkView(object):
             cs = self.model.compSpot[node]
             if cs.is_cloud:
                 return True
-            elif cs.numberOfVMInstances[service['content']] > 0:
+            elif type(service) is dict and cs.numberOfVMInstances[service['content']] > 0:
+                return True
+            elif type(service) is int and cs.numberOfVMInstances[service] > 0:
                 return True
 
         return False
@@ -1501,6 +1497,7 @@ class NetworkModel(object):
         self.node_h_spaces = {}
         self.all_node_h_spaces = {}
         self.cloud_admissions = {}
+        self.system_admissions = {}
         for node in topology.nodes():
             # TODO: Sort out content association in the case that "contents" aren't objects!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             stack_name, stack_props = fnss.get_stack(topology, node)
@@ -1943,8 +1940,6 @@ class NetworkController(object):
         for u, v in path_links(path):
             self.forward_request_hop(u, v)
 
-        # TODO: This needs to be revised for the hash space application!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.add_request_labels_to_node(s, t, self.sess_content.get_request_labels())
 
     def forward_repo_content_path(self, u, v, path=None, main_path=True):
         """Forward a content from node *s* to node *t* over the provided path.
@@ -2043,6 +2038,20 @@ class NetworkController(object):
         self.model.h_space_sources[h_h].update({low_proc: self.model.all_node_h_spaces[low_proc][h_h]})
         del self.model.h_space_sources[h_h][high_proc]
 
+    def add_in_flight(self):
+        """
+        Add one to the in-flight counter
+        """
+
+        self.model.in_flight += 1
+
+    def sub_in_flight(self):
+        """
+        Subtract one to the in-flight counter
+        """
+
+        self.model.in_flight -= 1
+
     def add_proc(self, node, h_space):
         """
         Add one to the processing functions of one node's comp spot
@@ -2065,8 +2074,10 @@ class NetworkController(object):
         """
 
         for h in h_space:
-            if h in self.model.all_node_h_spaces[node]:
+            if h in self.model.busy_proc[node]:
                 self.model.busy_proc[node][h] -= 1
+            else:
+                self.model.busy_proc[node][h] = 0
 
     def add_request_labels_to_node(self, s, service_request):
         """Forward a request from node *s* to node *t* over the provided path.
@@ -2307,7 +2318,9 @@ class NetworkController(object):
             Message with content hash (name), labels and properties
         """
         if s not in self.model.node_h_spaces:
-            self.model.node_h_spaces[s] = Counter()
+            print("ERROR: This should not happen! - tried to add message with hash " + content['h_space'][0] + " to node " + str(s) + ", with hashes:\n")
+            for l in self.model.node_hash_spaces[s]:
+                print(l+"\n")
         for l in content["h_space"]:
             self.model.node_h_spaces[s].update([l])
             if l not in self.model.h_space_sources:
@@ -2483,6 +2496,17 @@ class NetworkController(object):
         epoch_ticks:
         """
         self.model.cloud_admissions[flow_id] = ans
+
+    def system_admission_update(self, flow_id):
+        """
+        Update the amount of similarity miss number that has occured on each epoch.
+        This is for the purpose of collecting statistics on the similarity misses,
+        to determine whether this should be studied (this may be more relevant for
+        cases where processing times are much longer than routing and storage "fetch" times)
+        miss_count:
+        epoch_ticks:
+        """
+        self.model.system_admissions[flow_id] = True
 
     def repo_miss_update(self, repo_miss_count, epoch_ticks):
         """

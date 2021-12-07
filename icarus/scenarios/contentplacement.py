@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 """Content placement strategies.
-
 This module contains function to decide the allocation of content objects to
 source nodes.
-
 TODO: Work on the content generation and all the labels, characteristics and
     associated statistics.
-
 """
 import random
 import collections
@@ -23,7 +20,6 @@ __all__ = ['uniform_content_placement', 'uniform_repo_content_placement',
 
 def apply_content_placement(placement, topology):
     """Apply a placement to a topology
-
     Parameters
     ----------
     placement : dict of sets
@@ -37,7 +33,6 @@ def apply_content_placement(placement, topology):
 def apply_service_association(association, data):
     """
     Apply association of labels to contents
-
     Parameters
     ----------
     association:
@@ -54,7 +49,6 @@ def apply_service_association(association, data):
 def apply_labels_association(association, data):
     """
     Apply association of labels to contents
-
     Parameters
     ----------
     association:
@@ -71,7 +65,6 @@ def apply_labels_association(association, data):
 def apply_space_association(association, data):
     """
     Apply association of labels to contents
-
     Parameters
     ----------
     association:
@@ -101,7 +94,6 @@ def get_sources_repos(topology):
 def uniform_content_placement(topology, contents, seed=None):
     """Places content objects to source nodes randomly following a uniform
     distribution.
-
     Parameters
     ----------
     topology : Topology
@@ -110,12 +102,10 @@ def uniform_content_placement(topology, contents, seed=None):
         Iterable of content objects
     source_nodes : list
         List of nodes of the topology which are content sources
-
     Returns
     -------
     cache_placement : dict
         Dictionary mapping content objects to source nodes
-
     Notes
     -----
     A deterministic placement of objects (e.g., for reproducing results) can be
@@ -132,7 +122,6 @@ def uniform_content_placement(topology, contents, seed=None):
 def uniform_repo_content_placement(topology, contents, seed=None):
     """Places content objects to source nodes randomly following a uniform
     distribution.
-
     Parameters
     ----------
     topology : Topology
@@ -141,12 +130,10 @@ def uniform_repo_content_placement(topology, contents, seed=None):
         Iterable of content objects
     source_nodes : list
         List of nodes of the topology which are content sources
-
     Returns
     -------
     cache_placement : dict
         Dictionary mapping content objects to source nodes
-
     Notes
     -----
     A deterministic placement of objects (e.g., for reproducing results) can be
@@ -166,23 +153,19 @@ def uniform_repo_content_placement(topology, contents, seed=None):
 def weighted_content_placement(topology, contents, source_weights, seed=None):
     """Places content objects to source nodes randomly according to the weight
     of the source node.
-
     Parameters
     ----------
     topology : Topology
         The topology object
    contents : iterable
         Iterable of content objects
-
    source_weights : dict
         Dict mapping nodes nodes of the topology which are content sources and
         the weight according to which content placement decision is made.
-
     Returns
     -------
     cache_placement : dict
         Dictionary mapping content objects to source nodes
-
     Notes
     -----
     A deterministic placement of objects (e.g., for reproducing results) can be
@@ -203,13 +186,11 @@ def weighted_repo_content_placement(topology, contents, freshness_per, shelf_lif
                                     seed=None):
     """Places content objects to source nodes randomly according to the weight
     of the source node.
-
     TODO: This should be modified, or another one created, to include content
         placement parameters, like the freshness periods, shelf-lives, topics/types
         of labels and placement possibilities, maybe depending on hashes, placement
         of nodes and possibly other scenario-specific/service-specific parameters.
         ADD SERVICE TYPE TO MESSAGE PROPERTIES!
-
     Parameters
     ----------
     topology : Topology
@@ -217,24 +198,17 @@ def weighted_repo_content_placement(topology, contents, freshness_per, shelf_lif
     contents : iterable
         Iterable of content objects
     topics :
-
     types :
-
     freshness_per :
-
     shelf_life :
-
     msg_size :
-
     source_weights : dict
         Dict mapping nodes of the topology which are content sources and
         the weight according to which content placement decision is made.
-
     Returns
     -------
     cache_placement : dict
        Dictionary mapping content objects to source nodes
-
     Notes
     -----
     A deterministic placement of objects (e.g., for reproducing results) can be
@@ -322,13 +296,11 @@ def weighted_repo_hash_placement(topology, contents, freshness_per, shelf_life, 
                                  max_label_nos, seed=None):
     """Places content objects to source nodes randomly according to the weight
     of the source node.
-
     TODO: This should be modified, or another one created, to include content
         placement parameters, like the freshness periods, shelf-lives, topics/types
         of labels and placement possibilities, maybe depending on hashes, placement
         of nodes and possibly other scenario-specific/service-specific parameters.
         ADD SERVICE TYPE TO MESSAGE PROPERTIES!
-
     Parameters
     ----------
     topology : Topology
@@ -336,25 +308,18 @@ def weighted_repo_hash_placement(topology, contents, freshness_per, shelf_life, 
     contents : iterable
         Iterable of content objects
     topics :
-
     types :
-
     freshness_per :
-
     shelf_life :
-
     msg_size :
-
     source_weights : dict
         Dict mapping nodes of the topology which are content sources and
         the weight according to which content placement decision is made.
-
     Returns
     -------
     cache_placement : dict
        Dictionary mapping content objects to source node
     service_labels_norm_factor = float(sum(service_weights.values()))s
-
     Notes
     -----
     A deterministic placement of objects (e.g., for reproducing results) can be
@@ -468,13 +433,11 @@ def weighted_repo_bucket_placement(topology, contents, freshness_per, shelf_life
                                  max_label_nos, seed=None):
     """Places content objects to source nodes randomly according to the weight
     of the source node.
-
     TODO: This should be modified, or another one created, to include content
         placement parameters, like the freshness periods, shelf-lives, topics/types
         of labels and placement possibilities, maybe depending on hashes, placement
         of nodes and possibly other scenario-specific/service-specific parameters.
         ADD SERVICE TYPE TO MESSAGE PROPERTIES!
-
     Parameters
     ----------
     topology : Topology
@@ -482,25 +445,18 @@ def weighted_repo_bucket_placement(topology, contents, freshness_per, shelf_life
     contents : iterable
         Iterable of content objects
     topics :
-
     types :
-
     freshness_per :
-
     shelf_life :
-
     msg_size :
-
     source_weights : dict
         Dict mapping nodes of the topology which are content sources and
         the weight according to which content placement decision is made.
-
     Returns
     -------
     cache_placement : dict
        Dictionary mapping content objects to source node
     service_labels_norm_factor = float(sum(service_weights.values()))s
-
     Notes
     -----
     A deterministic placement of objects (e.g., for reproducing results) can be
@@ -641,13 +597,11 @@ def dataset_repo_bucket_placement(topology, contents, freshness_per, shelf_life,
                                  max_label_nos, seed=None):
     """Places content objects to source nodes randomly according to the weight
     of the source node.
-
     TODO: This should be modified, or another one created, to include content
         placement parameters, like the freshness periods, shelf-lives, topics/types
         of labels and placement possibilities, maybe depending on hashes, placement
         of nodes and possibly other scenario-specific/service-specific parameters.
         ADD SERVICE TYPE TO MESSAGE PROPERTIES!
-
     Parameters
     ----------
     topology : Topology
@@ -655,25 +609,18 @@ def dataset_repo_bucket_placement(topology, contents, freshness_per, shelf_life,
     contents : iterable
         Iterable of content objects
     topics :
-
     types :
-
     freshness_per :
-
     shelf_life :
-
     msg_size :
-
     source_weights : dict
         Dict mapping nodes of the topology which are content sources and
         the weight according to which content placement decision is made.
-
     Returns
     -------
     cache_placement : dict
        Dictionary mapping content objects to source node
     service_labels_norm_factor = float(sum(service_weights.values()))s
-
     Notes
     -----
     A deterministic placement of objects (e.g., for reproducing results) can be
@@ -802,6 +749,3 @@ def dataset_repo_bucket_placement(topology, contents, freshness_per, shelf_life,
 
     apply_content_placement(content_placement, topology)
     topology.placed_data = placed_data
-
-
-

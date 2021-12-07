@@ -31,6 +31,7 @@ __all__ = [
     'LinkLoadCollector',
     'LatencyCollector',
     'RepoStatsLatencyCollector',
+    'RepoStatsOutputLatencyCollector',
     'PathStretchCollector',
     'DummyCollector'
 ]
@@ -1154,6 +1155,508 @@ class RepoStatsLatencyCollector(DataCollector):
         self.last_res_call_flow_no = self.res_call_flow_no
 
         return results
+
+
+
+# @register_log_writer('REPO_STORAGE')
+@register_data_collector('REPO_STATS_OUT_H_LATENCY')
+class RepoStatsOutputLatencyCollector(DataCollector):
+    """Data collector measuring latency, i.e. the delay taken to delivery a
+    content.
+    """
+
+    def __init__(self, view, res_path='', sampling_interval=500, cdf=False):
+        """Constructor
+        Parameters
+        ----------
+        view : NetworkView
+            The network view instance
+        cdf : bool, optional
+            If *True*, also collects a cdf of the latency
+        """
+        self.cdf = cdf
+        self.view = view
+        self.sess_count = 0
+        self.interval_sess_count = 0
+        self.latency_interval = 0.0
+        self.deadline_metric_interval = 0.0
+        self.n_satisfied = 0.0  # number of satisfied requests
+        self.n_satisfied_interval = 0.0
+        self.n_sat_cloud_interval = 0
+        self.n_instantiations_interval = 0
+
+        # Cache and storage
+        self.cache_hits = 0
+        self.storage_hits = 0
+        self.cache_misses = 0
+        self.storage_misses = 0
+        self.serv_hits = 0
+
+        self.flow_start = {}  # flow_id to start time
+        self.flow_cloud = {}  # True if flow reched cloud
+        self.flow_service = {}  # flow id to service
+        self.flow_deadline = {}  # flow id to deadline
+        self.flow_labels = {}  # flow id to service-associated labels
+        self.flow_spaces = {}  # flow id to service-associated hash-spaces/bins
+        self.flow_feedback = {}  # flow id to service-associated labels
+        self.service_requests = {}  # number of requests per service
+        self.service_satisfied = {}  # number of satisfied requests per service
+
+        # Time series for various metrics
+        self.satrate_times = {}
+        self.latency_times = {}
+        self.idle_times = {}
+        self.node_idle_times = {}
+        self.deadline_metric_times = {}
+        self.cloud_sat_times = {}
+        self.instantiations_times = {}
+        self.rtt_delays_reuse = {'count': 0}
+        self.rtt_delays_edge = {'count': 0}
+        self.rtt_delays_cloud = {'count': 0}
+        self.rtt_delays_overall = {'count': 0}
+        self.res_call_flow_no = 0
+        self.latest_end_session = 0
+        self.in_flight = 0  # In-flight message tracking
+
+        self.rel_res_path = res_path
+
+        # Log-specific variables TODO: Maybe set up in the same way that the result output is set up.
+        # self.logs_path = self.view.get_logs_path
+        # self.sampling_size = self.view.get_logs_sampling_size
+        # if LOGGING_PARAMETERS is not None:
+        # self.logs_path = logs_path
+        # self.sampling_size = sampling_interval
+
+        if cdf:
+            self.latency_data = collections.deque()
+        self.css = self.view.service_nodes()
+        # self.n_services = self.css.items()[0][1].numOfVMs
+
+    @inheritdoc(DataCollector)
+    def execute_service(self, flow_id, service, node, timestamp, is_cloud):
+        if is_cloud:
+            self.flow_cloud[flow_id] = True
+        else:
+            self.flow_cloud[flow_id] = False
+
+    @inheritdoc(DataCollector)
+    def reassign_vm(self, node, serviceToReplace, serviceToAdd):
+        self.n_instantiations_interval += 1
+
+    @inheritdoc(DataCollector)
+    def replacement_interval_over(self, replacement_interval, timestamp):
+        if self.interval_sess_count == 0:
+            self.satrate_times[timestamp] = 0.0
+        else:
+            self.satrate_times[timestamp] = self.n_satisfied_interval / self.interval_sess_count
+        print ("Number of requests in interval: " + repr(self.interval_sess_count))
+
+        self.instantiations_times[timestamp] = self.n_instantiations_interval
+        self.n_instantiations_interval = 0
+
+        total_idle_time = 0.0
+        total_cores = 0  #  total number of cores in the network
+        for node, cs in self.css.items():
+            if cs.is_cloud:
+                continue
+
+            idle_time = cs.getIdleTime(timestamp)
+            idle_time /= cs.numOfCores
+            total_idle_time += idle_time
+
+            total_cores += cs.numOfCores
+
+            if node not in self.node_idle_times.keys():
+                self.node_idle_times[node] = []
+
+            self.node_idle_times[node].append(idle_time)
+
+            # self.idle_times[timestamp] = total_idle_time
+        self.idle_times[timestamp] = total_idle_time / (total_cores * replacement_interval)
+        if self.n_satisfied_interval == 0:
+            self.latency_times[timestamp] = 0.0
+            self.deadline_metric_times[timestamp] = 0.0
+            self.cloud_sat_times[timestamp] = 0.0
+        else:
+            self.latency_times[timestamp] = self.latency_interval / self.n_satisfied_interval
+            self.deadline_metric_times[timestamp] = self.deadline_metric_interval / self.n_satisfied_interval
+            self.cloud_sat_times[timestamp] = (1.0 * self.n_sat_cloud_interval) / self.n_satisfied_interval
+        # self.per_service_idle_times[timestamp] = [avg_idle_times[x]/replacement_interval for x in range(0, self.n_services)]
+
+        # Initialise interval counts
+        self.n_sat_cloud_interval = 0
+        self.interval_sess_count = 0
+        self.n_satisfied_interval = 0
+        self.latency_interval = 0.0
+        self.deadline_metric_interval = 0.0
+
+    @inheritdoc(DataCollector)
+    def start_session(self, timestamp, receiver, content, labels, flow_id, deadline):
+        self.sess_count += 1
+        self.sess_latency = 0.0
+        self.flow_start[flow_id] = timestamp
+        self.flow_deadline[flow_id] = deadline
+        self.flow_service[flow_id] = content
+        self.flow_cloud[flow_id] = False
+        self.interval_sess_count += 1
+        self.flow_labels[flow_id] = labels
+        self.in_flight += 1
+        # self.flow_spaces[flow_id] = h_spaces
+
+    @inheritdoc(DataCollector)
+    def cache_hit(self, node):
+        self.cache_hits += 1
+
+    @inheritdoc(DataCollector)
+    def storage_hit(self, node):
+        self.storage_hits += 1
+
+    @inheritdoc(DataCollector)
+    def cache_miss(self, node):
+        self.session['cache_misses'].append(node)
+
+    @inheritdoc(DataCollector)
+    def storage_miss(self, node):
+        self.session['storage_misses'].append(node)
+
+    @inheritdoc(DataCollector)
+    def request_hop(self, u, v, main_path=True):
+        if main_path:
+            self.sess_latency += self.view.link_delay(u, v)
+
+    @inheritdoc(DataCollector)
+    def content_hop(self, u, v, main_path=True):
+        if main_path:
+            self.sess_latency += self.view.link_delay(u, v)
+
+    @inheritdoc(DataCollector)
+    def end_session(self, success=True, timestamp=0, flow_id=0):
+        self.latest_end_session = flow_id
+        sat = False
+        if flow_id in self.flow_deadline:
+            service = self.flow_service[flow_id]
+            if self.view.model.cloud_admissions[flow_id]:
+                if service['content'] in self.rtt_delays_cloud:
+                    self.rtt_delays_cloud[service['content']] += timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_cloud['count'] += 1
+                else:
+                    self.rtt_delays_cloud[service['content']] = timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_cloud['count'] += 1
+            elif service['service_type'] is 'reused':
+                if service['content'] in self.rtt_delays_reuse:
+                    self.rtt_delays_reuse[service['content']] += timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_reuse['count'] += 1
+                else:
+                    self.rtt_delays_reuse[service['content']] = timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_reuse['count'] += 1
+            else:
+                if service['content'] in self.rtt_delays_edge:
+                    self.rtt_delays_edge[service['content']] += timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_edge['count'] += 1
+                else:
+                    self.rtt_delays_edge[service['content']] = timestamp - self.flow_start[flow_id]
+                    self.rtt_delays_edge['count'] += 1
+            if service['content'] in self.rtt_delays_overall:
+                self.rtt_delays_overall[service['content']] += timestamp - self.flow_start[flow_id]
+                self.rtt_delays_overall['count'] += 1
+            else:
+                self.rtt_delays_overall[service['content']] = timestamp - self.flow_start[flow_id]
+                self.rtt_delays_overall['count'] += 1
+            if not success:
+                return
+            if self.cdf:
+                self.latency_data.append(self.sess_latency)
+            if self.flow_deadline[flow_id] >= timestamp:
+                # Request is satisfied
+                if self.flow_cloud[flow_id]:
+                    self.n_sat_cloud_interval += 1
+                self.n_satisfied += 1
+                # print "Request satisfied"
+                self.n_satisfied_interval += 1
+                sat = True
+                self.latency_interval += timestamp - self.flow_start[flow_id]
+                self.deadline_metric_interval += self.flow_deadline[flow_id] - timestamp
+
+            if service['content'] not in self.service_requests.keys():
+                self.service_requests[service['content']] = 1
+                self.service_satisfied[service['content']] = 0
+            else:
+                self.service_requests[service['content']] += 1
+
+            if sat:
+                if service['content'] in self.service_satisfied.keys():
+                    self.service_satisfied[service['content']] += 1
+                else:
+                    self.service_satisfied[service['content']] = 1
+
+            self.in_flight -= 1
+            del self.flow_deadline[flow_id]
+            del self.flow_start[flow_id]
+            del self.flow_service[flow_id]
+            del self.flow_cloud[flow_id]
+        else:
+            pass
+
+    @inheritdoc(DataCollector)
+    def results(self):
+        # TODO: Maybe revise the below and make it even more customisable
+
+        self.res_call_flow_no = self.latest_end_session
+
+        os.chdir('/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse' + self.rel_res_path)
+
+        if self.view.model.strategy == 'HYBRID':
+            res = open("hybrid.txt", 'a')
+            overhead = open("hybrid_overheads.txt", 'a')
+        elif self.view.model.strategy == 'HYBRIDS_REPO_APP':
+            res = open("hybrid_repo.txt", 'a')
+            repo_usage = open("repo_usage.txt", 'a')
+            repo_proc_vs_stor = open("repo_proc_vs_stor.txt", 'a')
+            repo_overtime = open("repo_overtime.txt", 'a')
+            repo_incoming_BW = open("repo_incoming.txt", 'a')
+            r_replicas = open("gen_r_replicas.txt", 'a')
+            s_replicas = open("gen_s_replicas.txt", 'a')
+            r_labels_dist = open("gen_r_labels.txt", 'a')
+            s_labels_dist = open("gen_s_labels.txt", 'a')
+            overhead = open("gen_overheads.txt", 'a')
+        elif self.view.model.strategy == 'HYBRIDS_PRO_REPO_APP':
+            res = open("hybrid_pro_repo.txt", 'a')
+            repo_usage = open("pro_usage.txt", 'a')
+            repo_proc_vs_stor = open("pro_proc_vs_stor.txt", 'a')
+            repo_overtime = open("pro_overtime.txt", 'a')
+            repo_incoming_BW = open("pro_incoming.txt", 'a')
+            r_replicas = open("pro_r_replicas.txt", 'a')
+            s_replicas = open("pro_s_replicas.txt", 'a')
+            r_labels_dist = open("pro_r_labels.txt", 'a')
+            s_labels_dist = open("pro_s_labels.txt", 'a')
+            overhead = open("pro_overheads.txt", 'a')
+        elif self.view.model.strategy == 'HYBRIDS_RE_REPO_APP':
+            res = open("hybrid_re_repo.txt", 'a')
+            repo_usage = open("re_usage.txt", 'a')
+            repo_proc_vs_stor = open("re_proc_vs_stor.txt", 'a')
+            repo_overtime = open("re_overtime.txt", 'a')
+            repo_incoming_BW = open("re_incoming.txt", 'a')
+            r_replicas = open("re_r_replicas.txt", 'a')
+            s_replicas = open("re_s_replicas.txt", 'a')
+            r_labels_dist = open("re_r_labels.txt", 'a')
+            s_labels_dist = open("re_s_labels.txt", 'a')
+            overhead = open("re_overheads.txt", 'a')
+        elif self.view.model.strategy == 'HYBRIDS_SPEC_REPO_APP':
+            res = open("hybrid_spec_repo.txt", 'a')
+            repo_usage = open("spec_usage.txt", 'a')
+            repo_proc_vs_stor = open("spec_proc_vs_stor.txt", 'a')
+            repo_overtime = open("spec_overtime.txt", 'a')
+            repo_incoming_BW = open("spec_incoming.txt", 'a')
+            r_replicas = open("spec_r_replicas.txt", 'a')
+            s_replicas = open("spec_s_replicas.txt", 'a')
+            r_labels_dist = open("spec_r_labels.txt", 'a')
+            s_labels_dist = open("spec_s_labels.txt", 'a')
+            overhead = open("spec_overheads.txt", 'a')
+        elif self.view.model.strategy == 'HASH_PROC_REPO_APP':
+            res = open("hash_proc_repo.txt", 'a')
+            repo_usage = open("hash_proc_usage.txt", 'a')
+            repo_proc_vs_stor = open("hash_proc_proc_vs_stor.txt", 'a')
+            repo_overtime = open("hash_proc_overtime.txt", 'a')
+            repo_incoming_BW = open("hash_proc_incoming.txt", 'a')
+            r_replicas = open("hash_proc_r_replicas.txt", 'a')
+            s_replicas = open("hash_proc_s_replicas.txt", 'a')
+            r_labels_dist = open("hash_proc_r_labels.txt", 'a')
+            s_labels_dist = open("hash_proc_s_labels.txt", 'a')
+            overhead = open("hash_proc_overheads.txt", 'a')
+            simil_misses = open("hash_proc_simil_miss.txt", 'a')
+            repo_simil_misses = open("hash_proc_repo_miss.txt", 'a')
+            cloud_proc = open("hash_proc_cloud_proc.txt", 'a')
+            edge_proc = open("hash_proc_edge_proc.txt", 'a')
+            reuse_hits = open("hash_proc_reuse_hits.txt", 'a')
+            in_flight = open("hash_proc_in_flight.txt", 'a')
+            overall_delay_averages = open("hash_proc_overall_delay_avg.txt", 'a')
+            reuse_delay_averages = open("hash_proc_reuse_delay_avg.txt", 'a')
+            edge_delay_averages = open("hash_proc_edge_delay_avg.txt", 'a')
+            cloud_delay_averages = open("hash_proc_cloud_delay_avg.txt", 'a')
+        if self.cdf:
+            self.results['CDF'] = cdf(self.latency_data)
+        results = Tree({'SATISFACTION': 1.0 * self.n_satisfied / self.sess_count})
+
+        os.chdir(os.getcwd())
+
+        # TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #  Possibly create another file, specifically for tracking edge/cloud processing and reuse hit counts!!!!!!!!!!!
+        #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+        per_service_sats = {}
+        per_node_r_replicas_requested = {}
+        per_node_s_replicas_stored = {}
+        per_label_node_storage = {}
+        per_label_node_requests = {}
+        per_node_storage_used = {}
+        per_node_proc_vs_stor_used = {}
+        per_node_overtime= {}
+        incoming_bw = {}
+        per_node_simil_misses = {}
+        # res.write(str(100*self.n_satisfied/self.sess_count) + " " + str(self.n_satisfied) + " " + str(self.sess_count) + ": \n")
+        for service in self.service_requests.keys():
+            per_service_sats[service] = 1.0 * self.service_satisfied[service] / self.service_requests[service]
+            res.write(str(100 * self.service_satisfied[service] / self.service_requests[service]) + ", ")
+        res.write("\n")
+
+        for content in range(0, 1000):
+            # overhead.write(str(content) + ": ")
+            msg = dict()
+            msg['content'] = content
+            msg['msg_size'] = 1000000
+            for node in self.view.model.storageSize:
+                if self.view.storage_nodes()[node].hasMessage(content, []):
+                    msg = self.view.storage_nodes()[node].hasMessage(content, [])
+                    break
+            if msg['content'] in self.view.model.replication_overheads:
+                self.view.model.replication_overheads[msg['content']] = self.view.model.replication_overheads[msg['content']] + self.view.model.replication_hops[msg['content']] * msg['msg_size']
+            else:
+                self.view.model.replication_overheads[msg['content']] = self.view.model.replication_hops[msg['content']] * msg['msg_size']
+            overhead.write(str(self.view.replication_overhead(content)) + ", ")
+            self.view.model.replication_hops[msg['content']] = 1
+        overhead.write("\n")
+
+        if self.view.model.strategy == 'HASH_PROC_REPO_APP':
+            simil_misses.write(str(self.view.model.last_miss_count))
+            simil_misses.write("\n")
+            cloud_proc.write(str(self.view.model.last_cloud_proc))
+            cloud_proc.write("\n")
+            edge_proc.write(str(self.view.model.last_edge_proc))
+            edge_proc.write("\n")
+            reuse_hits.write(str(self.view.model.last_reuse_hits))
+            reuse_hits.write("\n")
+            in_flight.write(str(self.in_flight))
+            in_flight.write("\n")
+            for node in self.view.model.storageSize:
+                if node in self.view.model.last_repo_misses:
+                    per_node_simil_misses[node] = self.view.model.last_repo_misses[node]
+                else:
+                    per_node_simil_misses[node] = 0
+                repo_simil_misses.write(str(node) + ':' + str(per_node_simil_misses[node]) + ", ")
+            repo_simil_misses.write("\n")
+
+            total_delays = 0
+            for service in self.rtt_delays_overall:
+                if service != 'count':
+                    total_delays += self.rtt_delays_overall[service]
+            if self.rtt_delays_overall['count']:
+                avg_overall_delay = total_delays/self.rtt_delays_overall['count']
+            else:
+                avg_overall_delay = 0
+            overall_delay_averages.write(str(avg_overall_delay) + "\n")
+
+            total_delays = 0
+            for service in self.rtt_delays_reuse:
+                if service != 'count':
+                    total_delays += self.rtt_delays_reuse[service]
+            if self.rtt_delays_reuse['count']:
+                avg_reuse_delay = total_delays/self.rtt_delays_reuse['count']
+            else:
+                avg_reuse_delay = 0
+            reuse_delay_averages.write(str(avg_reuse_delay) + "\n")
+
+            total_delays = 0
+            for service in self.rtt_delays_edge:
+                if service != 'count':
+                    total_delays += self.rtt_delays_edge[service]
+            if self.rtt_delays_edge['count']:
+                avg_edge_delay = total_delays/self.rtt_delays_edge['count']
+            else:
+                avg_edge_delay = 0
+            edge_delay_averages.write(str(avg_edge_delay) + "\n")
+
+            total_delays = 0
+            for service in self.rtt_delays_cloud:
+                if service != 'count':
+                    total_delays += self.rtt_delays_cloud[service]
+            if self.rtt_delays_cloud['count']:
+                avg_cloud_delay = total_delays/self.rtt_delays_cloud['count']
+            else:
+                avg_cloud_delay = 0
+            cloud_delay_averages.write(str(avg_cloud_delay) + "\n")
+
+
+        if self.view.model.strategy != 'HYBRID':
+            for node in self.view.model.storageSize:
+                per_node_r_replicas_requested[node] = self.view.replications_requests(node)
+                r_replicas.write(str(per_node_r_replicas_requested[node]) + ", ")
+            r_replicas.write("\n")
+            for node in self.view.model.storageSize:
+                per_node_s_replicas_stored[node] = self.view.replications_destination(node)
+                s_replicas.write(str(per_node_s_replicas_stored[node]) + ", ")
+            s_replicas.write("\n")
+
+            for node in self.view.model.storageSize:
+                per_node_storage_used[node] = self.view.storage_nodes()[node].getMessagesSize() + \
+                                              self.view.storage_nodes()[node].getProcMessagesSize() + \
+                                              self.view.storage_nodes()[node].getProcessedMessagesSize()
+                repo_usage.write(str(per_node_storage_used[node]) + ", ")
+            repo_usage.write("\n")
+
+            for node in self.view.model.storageSize:
+                if self.view.storage_nodes()[node].getMessagesSize():
+                    per_node_proc_vs_stor_used[node] = 100 * self.view.storage_nodes()[node].getProcessedMessagesSize() / \
+                                                       self.view.storage_nodes()[node].getMessagesSize()
+                else:
+                    per_node_proc_vs_stor_used[node] = 0
+                repo_proc_vs_stor.write(str(per_node_proc_vs_stor_used[node]) + ", ")
+            repo_proc_vs_stor.write("\n")
+
+
+            for node in self.view.model.storageSize:
+                per_node_overtime[node] = self.view.storage_nodes()[node].getNrofOvertimeMessages()
+                repo_overtime.write(str(per_node_overtime[node]) + ", ")
+            repo_overtime.write("\n")
+
+
+            for node in self.view.model.storageSize:
+                incoming_bw[node] = self.view.storage_nodes()[node].getOverallMeanIncomingSpeed()
+                repo_incoming_BW.write(str(incoming_bw[node]) + ", ")
+            repo_incoming_BW.write("\n")
+
+
+            # TODO: Modify the following, to include ALL NODES, no matter what!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+            for label in self.view.model.labels_sources:
+                # r_labels_dist.write(label + ": ")
+                if label in self.view.model.request_labels_nodes:
+                    for node in self.view.model.request_labels_nodes[label]:
+                        per_label_node_requests[node] = self.view.model.request_labels_nodes[label][node]
+                        r_labels_dist.write(str(per_label_node_requests[node]) + ", ")
+                    r_labels_dist.write("\n ")
+            # r_labels_dist.write("r\n")
+            for label in self.view.model.labels_sources:
+                # s_labels_dist.write(label + ": ")
+                for node in self.view.labels_sources([label]):
+                    per_label_node_storage[node] = self.view.labels_sources([label])[node]
+                    s_labels_dist.write(str(per_label_node_storage[node]) + ", ")
+                s_labels_dist.write("\n ")
+
+        results['PER_SERVICE_SATISFACTION'] = per_service_sats
+        results['PER_SERVICE_REQUESTS'] = self.service_requests
+        results['PER_SERVICE_SAT_REQUESTS'] = self.service_satisfied
+        results['SAT_TIMES'] = self.satrate_times
+        results['IDLE_TIMES'] = self.idle_times
+        results['NODE_IDLE_TIMES'] = self.node_idle_times
+        results['LATENCY'] = self.latency_times
+        results['DEADLINE_METRIC'] = self.deadline_metric_times
+        results['CLOUD_SAT_TIMES'] = self.cloud_sat_times
+        results['INSTANTIATION_OVERHEAD'] = self.instantiations_times
+
+        print ("Printing Sat. rate times:")
+        for key in sorted(self.satrate_times):
+            print (repr(key) + " " + repr(self.satrate_times[key]))
+
+        print ("Printing Idle times:")
+        for key in sorted(self.idle_times):
+            print (repr(key) + " " + repr(self.idle_times[key]))
+        # results['VMS_PER_SERVICE'] = self.vms_per_service
+        res.close()
+
+        self.last_res_call_flow_no = self.res_call_flow_no
+
+        return results
+
 
 
 @register_data_collector('CACHE_HIT_RATIO')

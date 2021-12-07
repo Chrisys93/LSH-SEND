@@ -211,7 +211,7 @@ class NetworkView(object):
                 loc.add(node)
         return loc
 
-    def label_locations(self, h_spaces):
+    def h_space_locations(self, h_spaces):
         """Return a set of all current locations of a specific content.
         TODO: Add MOST_POPULAR_STORAGE_ and _REQUEST_LABELS, which return
             the nodes which have the most hits of certain labels, through
@@ -338,21 +338,23 @@ class NetworkView(object):
             * epoch-specific stats (for the change over larger periods of time - these could be used for ML or human-led,
                                     Edge-based or system-wide decisions)
         """
+        hops = 100
         if bin_based:
-            if type(k) is dict:
-                hops = 100
-
-                if len(h_spaces) == 1:
-                    h_space = h_spaces[0]
-                    res = self.model.h_space_sources[h_space].keys()[0]
-                else:
+            for n in self.h_space_sources(h_spaces):
+                # content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
+                if len(h_spaces) > 1:
                     for h_space in h_spaces:
-                        for n in self.model.h_space_sources[h_space]:
-                            # content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
-                            if h_spaces in self.model.node_h_spaces[n]:
-                                if len(self.shortest_path(node, n)) < hops:
-                                    hops = len(self.shortest_path(node, n))
-                                    res = n
+                        if h_space in list(self.model.all_node_h_spaces[n].keys()):
+                            if len(self.shortest_path(node, n)) < hops:
+                                hops = len(self.shortest_path(node, n))
+                                res = n
+                else:
+                    h_spaces = h_spaces[0]
+                    if h_spaces in list(self.model.all_node_h_spaces[n].keys()):
+                        if len(self.shortest_path(node, n)) < hops:
+                            hops = len(self.shortest_path(node, n))
+                            res = n
+            if type(k) is dict:
                 if res and self.has_cache(res):
                     if self.cache_lookup(res, k['content']) or self.local_cache_lookup(res, k['content']):
                         cache = True
@@ -361,23 +363,6 @@ class NetworkView(object):
                 else:
                     cache = False
             else:
-                hops = 100
-
-                if len(h_spaces) == 1:
-                    h_space = h_spaces[0]
-                    for n in self.model.h_space_sources[h_space]:
-                        # content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
-                        if len(self.shortest_path(node, n)) < hops:
-                            hops = len(self.shortest_path(node, n))
-                            res = n
-                else:
-                    for h_space in h_spaces:
-                        for n in self.model.h_space_sources[h_space]:
-                            # content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
-                            if h_spaces in self.model.node_h_spaces[n]:
-                                if len(self.shortest_path(node, n)) < hops:
-                                    hops = len(self.shortest_path(node, n))
-                                    res = n
                 if res and self.has_cache(res):
                     if self.cache_lookup(res, k) or self.local_cache_lookup(res, k):
                         cache = True
@@ -503,9 +488,9 @@ class NetworkView(object):
             if type(n) != int and "src" in n:
                 del nodes[n]
             for h in h_spaces:
-                if n in self.model.node_h_spaces:
+                if n in self.model.all_node_h_spaces:
                     Found = False
-                    for h_space in self.model.node_h_spaces[n]:
+                    for h_space in self.model.all_node_h_spaces[n]:
                         if h == h_space:
                             Found = True
                     if not Found:
@@ -754,28 +739,37 @@ class NetworkView(object):
 
         nodes = []
         hashes = []
-        max_proc = 0
-        max_node_proc = 0
-        max_node = float('inf')
-        max_hash = float('inf')
 
         while len(nodes) < list_len:
+            max_node_proc = 0
+            max_node = None
             for n in self.model.busy_proc:
-                if n in nodes:
+                if n in nodes or type(n) is str:
                     continue
                 node_proc = 0
-                for h in self.model.busy_proc[n]:
+                for h in self.model.busy_proc[n].keys():
                     node_proc += self.model.busy_proc[n][h]
-                    if node_proc >= max_node_proc:
-                        max_node_proc = node_proc
-                        max_node = n
-            nodes.append(max_node)
+                if node_proc >= max_node_proc and type(n) is int:
+                    max_node_proc = node_proc
+                    max_node = n
+            if max_node_proc > 0:
+                nodes.append(max_node)
+            else:
+                for i in range(len(nodes)):
+                    if len(self.model.busy_proc[nodes[i]].keys()) > nodes.count(nodes[i]):
+                        nodes.append(nodes[i])
+                        break
+                else:
+                    nodes.append(max_node)
+
+        max_hash = None
         for n in nodes:
-            if type(n) is not int:
+            if type(n) is str:
                 continue
+            max_proc = 0
             for h in self.model.busy_proc[n]:
                 proc = self.model.busy_proc[n][h]
-                if proc >= max_proc:
+                if proc >= max_proc and h not in hashes:
                     max_proc = proc
                     max_hash = h
             hashes.append(max_hash)
@@ -794,28 +788,38 @@ class NetworkView(object):
 
         nodes = []
         hashes = []
-        min_proc = float('inf')
-        min_node_proc = float('inf')
-        min_node = 10
-        node_proc = 0
 
         while len(nodes) < list_len:
+            min_node_proc = float('inf')
+            min_node = None
+            min_hashes = float('inf')
             for n in self.model.busy_proc:
+                if n in nodes or type(n) is str:
+                    continue
                 node_proc = 0
-                for h in self.model.busy_proc[n]:
+                for h in self.model.busy_proc[n].keys():
                     node_proc += self.model.busy_proc[n][h]
-                if node_proc <= min_node_proc and n != 'src_0' and n not in nodes:
+                if node_proc <= min_node_proc and type(n) is int:
                     min_node_proc = node_proc
-                    min_node = n
+                    if len(self.model.all_node_h_spaces[n].keys()) == 0:
+                        min_node = n
+                        break
+                    if min_hashes >= len(self.model.all_node_h_spaces[n].keys()):
+                        min_hashes = len(self.model.all_node_h_spaces[n].keys())
+                        min_node = n
+
             nodes.append(min_node)
+
         min_hash = None
         for n in nodes:
-            proc = 0
+            if type(n) is str:
+                continue
+            min_proc = 0
             for h in self.model.busy_proc[n]:
                 proc = self.model.busy_proc[n][h]
-            if proc <= min_proc and h not in hashes:
-                min_proc = proc
-                min_hash = h
+                if proc <= min_proc and h not in hashes:
+                    min_proc = proc
+                    min_hash = h
             hashes.append(min_hash)
 
         return nodes, hashes
@@ -1494,7 +1498,6 @@ class NetworkModel(object):
         self.rate = rate
         self.epochs_label_node_reuse = {}
         self.epochs_node_reuse = {}
-        self.node_h_spaces = {}
         self.all_node_h_spaces = {}
         self.cloud_admissions = {}
         self.system_admissions = {}
@@ -1534,7 +1537,6 @@ class NetworkModel(object):
                     self.epochs_node_reuse[node] = 0
                     self.request_labels[node] = Counter()
                     self.request_h_spaces[node] = Counter()
-                    self.node_h_spaces[node] = Counter()
                 if 'source' and 'router' in extra_types and stack_props.has_key('contents'):
                     self.contents[node] = stack_props['contents']
                     # print("contents[0] is: ", contents[0], " and its type is: ", type(contents[0]))
@@ -1561,12 +1563,8 @@ class NetworkModel(object):
 
                             if not self.node_labels.has_key(node):
                                 self.node_labels[node] = Counter()
-                            if not self.node_h_spaces.has_key(node):
-                                self.node_h_spaces[node] = Counter()
                             for label in self.all_node_labels[node]:
                                 self.node_labels[node].update({label: self.all_node_labels[node][label]})
-                            for h_space in self.all_node_h_spaces[node]:
-                                self.node_h_spaces[node].update({h_space: self.all_node_h_spaces[node][h_space]})
 
                             for k in self.all_node_labels[node]:
                                 if k not in self.labels_sources:
@@ -1622,12 +1620,6 @@ class NetworkModel(object):
                         else:
                             self.node_labels[node] = Counter()
                             self.node_labels[node] = self.all_node_labels[node]
-
-                        if self.node_h_spaces.has_key(node):
-                            self.node_h_spaces[node].update(self.all_node_h_spaces[node])
-                        else:
-                            self.node_h_spaces[node] = Counter()
-                            self.node_h_spaces[node] = self.all_node_h_spaces[node]
 
                         for k in self.all_node_labels[node]:
                             if k not in self.labels_sources:
@@ -2020,23 +2012,47 @@ class NetworkController(object):
         h:
         """
 
-        if h_l:
-            self.model.all_node_h_spaces[high_proc].update([h_l])
         del self.model.all_node_h_spaces[low_proc][h_l]
-        self.model.all_node_h_spaces[low_proc].update([h_h])
         del self.model.all_node_h_spaces[high_proc][h_h]
+        if h_l and h_l in self.model.h_space_sources:
+            del self.model.h_space_sources[h_l]
+            for n in self.model.all_node_h_spaces:
+                if h_l in self.model.all_node_h_spaces[n]:
+                    del self.model.all_node_h_spaces[n][h_l]
+        if h_h in self.model.h_space_sources:
+            del self.model.h_space_sources[h_h]
+            for n in self.model.all_node_h_spaces:
+                if h_h in self.model.all_node_h_spaces[n]:
+                    del self.model.all_node_h_spaces[n][h_h]
+
+        if type(self.model.all_node_h_spaces[low_proc]) is not Counter:
+            self.model.all_node_h_spaces[low_proc] = Counter()
+        if type(self.model.all_node_h_spaces[high_proc]) is not Counter:
+            self.model.all_node_h_spaces[high_proc] = Counter()
+        self.model.h_space_sources[h_h] = Counter()
 
         if h_l:
-            self.model.node_h_spaces[high_proc].update([h_l])
-        del self.model.node_h_spaces[low_proc][h_l]
-        self.model.node_h_spaces[low_proc].update([h_h])
-        del self.model.node_h_spaces[high_proc][h_h]
+            self.model.h_space_sources[h_l] = Counter()
+            if h_l in self.model.h_space_sources:
+                self.model.all_node_h_spaces[high_proc].update([h_l])
+            else:
+                self.model.all_node_h_spaces[high_proc] = Counter([h_l, 1])
+
+        if low_proc in self.model.all_node_h_spaces:
+            self.model.all_node_h_spaces[low_proc].update([h_h])
+        else:
+            self.model.all_node_h_spaces[low_proc] = Counter([h_h, 1])
 
         if h_l:
-            self.model.h_space_sources[h_l].update({high_proc: self.model.all_node_h_spaces[high_proc][h_l]})
-        del self.model.h_space_sources[h_l][low_proc]
-        self.model.h_space_sources[h_h].update({low_proc: self.model.all_node_h_spaces[low_proc][h_h]})
-        del self.model.h_space_sources[h_h][high_proc]
+            if h_l in self.model.h_space_sources:
+                self.model.h_space_sources[h_l].update({high_proc: self.model.all_node_h_spaces[high_proc][h_l]})
+            else:
+                self.model.h_space_sources[h_l] = Counter([high_proc, 1])
+
+        if h_h in self.model.h_space_sources:
+            self.model.h_space_sources[h_h].update({low_proc: self.model.all_node_h_spaces[low_proc][h_h]})
+        else:
+            self.model.h_space_sources[h_h] = Counter([low_proc, 1])
 
     def add_in_flight(self):
         """
@@ -2060,11 +2076,10 @@ class NetworkController(object):
         """
 
         for h in h_space:
-            if h in self.model.all_node_h_spaces[node]:
-                if h in self.model.busy_proc[node]:
-                    self.model.busy_proc[node][h] += 1
-                else:
-                    self.model.busy_proc[node][h] = 1
+            if h in self.model.busy_proc[node]:
+                self.model.busy_proc[node][h] += 1
+            else:
+                self.model.busy_proc[node][h] = 1
 
     def sub_proc(self, node, h_space):
         """
@@ -2234,9 +2249,9 @@ class NetworkController(object):
             if h_space in self.model.request_h_spaces[s]:
                 Deletion.append(h_space)
                 if add:
-                    if s not in self.model.node_h_spaces:
-                        self.model.node_h_spaces[s] = Counter()
-                    self.model.node_h_spaces[s].update([h_space])
+                    if s not in self.model.all_node_h_spaces:
+                        self.model.all_node_h_spaces[s] = Counter()
+                    self.model.all_node_h_spaces[s].update([h_space])
                     if h_space not in self.model.h_space_sources:
                         self.model.h_space_sources[h_space] = Counter()
                     self.model.h_space_sources[h_space].update([s])
@@ -2317,12 +2332,12 @@ class NetworkController(object):
         content: hashable object
             Message with content hash (name), labels and properties
         """
-        if s not in self.model.node_h_spaces:
+        if s not in self.model.all_node_h_spaces:
             print("ERROR: This should not happen! - tried to add message with hash " + content['h_space'][0] + " to node " + str(s) + ", with hashes:\n")
             for l in self.model.node_hash_spaces[s]:
                 print(l+"\n")
         for l in content["h_space"]:
-            self.model.node_h_spaces[s].update([l])
+            self.model.all_node_h_spaces[s].update([l])
             if l not in self.model.h_space_sources:
                 self.model.h_space_sources[l] = Counter()
             self.model.h_space_sources[l].update([s])

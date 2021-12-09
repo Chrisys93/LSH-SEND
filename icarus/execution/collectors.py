@@ -1452,7 +1452,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             r_labels_dist = open("spec_r_labels.txt", 'a')
             s_labels_dist = open("spec_s_labels.txt", 'a')
             overhead = open("spec_overheads.txt", 'a')
-        elif self.view.model.strategy == 'HASH_PROC_REPO_APP':
+        elif 'HASH' in self.view.model.strategy:
             res = open("hash_proc_repo.txt", 'a')
             repo_usage = open("hash_proc_usage.txt", 'a')
             repo_proc_vs_stor = open("hash_proc_proc_vs_stor.txt", 'a')
@@ -1574,6 +1574,18 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             else:
                 avg_cloud_delay = 0
             cloud_delay_averages.write(str(avg_cloud_delay) + "\n")
+
+        overhead.close()
+        simil_misses.close()
+        repo_simil_misses.close()
+        cloud_proc.close()
+        edge_proc.close()
+        reuse_hits.close()
+        in_flight.close()
+        overall_delay_averages.close()
+        reuse_delay_averages.close()
+        edge_delay_averages.close()
+        cloud_delay_averages.close()
 
 
         if self.view.model.strategy != 'HYBRID':

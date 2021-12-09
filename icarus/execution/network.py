@@ -1675,8 +1675,8 @@ class NetworkModel(object):
         self.n_services = n_services
         internal_link_delay = 0.001  # This is the delay from receiver to router
 
-        service_time_min = 0.50  # used to be 0.10 # used to be 0.001
-        service_time_max = 0.70  # used to be 0.10  # used to be 0.1
+        service_time_min = 0.009  # used to be 0.10 # used to be 0.001
+        service_time_max = 0.012 # used to be 0.10  # used to be 0.1
         # delay_min = 0.005
         if 'depth' in topology.graph:
             delay_min = 2 * topology.graph['receiver_access_delay'] + service_time_max

@@ -485,7 +485,7 @@ class HashRepoReuseStorApp(Strategy):
                 self.controller.cloud_admission_update(False, flow_id)
 
         if self.epoch_count == self.epoch_ticks:
-            self.epoch_node_proc_update()
+            self.epoch_node_proc_update(10)
 
         if curTime - self.last_replacement > self.replacement_interval:
             #self.print_stats()
@@ -688,7 +688,7 @@ class HashRepoReuseStorApp(Strategy):
                         print("Flow id " + str(flow_id) + " is being sent back.")
                     delay = self.view.path_delay(node, receiver)
                     fetch_del = 0.005
-                    LSH_simil_del = 0.01
+                    LSH_simil_del = 0.005
                     self.controller.add_event(curTime + fetch_del + LSH_simil_del + delay, receiver, service, service['labels'], service['h_space'],
                                               receiver, flow_id, deadline, rtt_delay, RESPONSE)
                     return

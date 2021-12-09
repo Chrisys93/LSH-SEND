@@ -1,12 +1,8 @@
 # -*- coding: utf-8 -*-
 """Orchestrate the execution of all experiments.
-
 The orchestrator is responsible for scheduling experiments specified in the
 user-provided settings.
-
-
     This is the file where caches are associated, THROUGH PLACEMENT
-
     TODO: This is where the placement strategy is determined and, through it,
         caches are associated to nodes
 """
@@ -21,28 +17,25 @@ import signal
 import traceback
 
 from icarus.execution import exec_experiment
-from icarus.registry import TOPOLOGY_FACTORY, COMPUTATION_PLACEMENT, CACHE_PLACEMENT, CONTENT_PLACEMENT, COMPUTATION_PLACEMENT, \
-                            CACHE_POLICY, REPO_POLICY, WORKLOAD, DATA_COLLECTOR, STRATEGY
+from icarus.registry import TOPOLOGY_FACTORY, COMPUTATION_PLACEMENT, CACHE_PLACEMENT, CONTENT_PLACEMENT, \
+    COMPUTATION_PLACEMENT, \
+    CACHE_POLICY, REPO_POLICY, WORKLOAD, DATA_COLLECTOR, STRATEGY
 from icarus.results import ResultSet
 from icarus.util import SequenceNumber, timestr
 
-
 __all__ = ['Orchestrator', 'run_scenario']
-
 
 logger = logging.getLogger('orchestration')
 
 
 class Orchestrator(object):
     """Orchestrator.
-
     It is responsible for orchestrating the execution of all experiments and
     aggregate results.
     """
 
     def __init__(self, settings, summary_freq=4):
         """Constructor
-
         Parameters
         ----------
         settings : Settings
@@ -73,7 +66,6 @@ class Orchestrator(object):
 
     def run(self):
         """Run the orchestrator.
-
         This call is blocking, whether multiple processes are used or not. This
         methods returns only after all experiments are executed.
         """
@@ -82,8 +74,8 @@ class Orchestrator(object):
         # Calculate number of experiments and number of processes
         self.n_exp = len(queue) * self.settings.N_REPLICATIONS
         self.n_proc = self.settings.N_PROCESSES \
-                      if self.settings.PARALLEL_EXECUTION \
-                      else 1
+            if self.settings.PARALLEL_EXECUTION \
+            else 1
         logger.info('Starting simulations: %d experiments, %d process(es)'
                     % (self.n_exp, self.n_proc))
 
@@ -97,9 +89,9 @@ class Orchestrator(object):
                 experiment = queue.popleft()
                 for _ in range(self.settings.N_REPLICATIONS):
                     job_queue.append(self.pool.apply_async(run_scenario,
-                            args=(self.settings, experiment,
-                                  self.seq.assign(), self.n_exp),
-                            callback=self.experiment_callback))
+                                                           args=(self.settings, experiment,
+                                                                 self.seq.assign(), self.n_exp),
+                                                           callback=self.experiment_callback))
             self.pool.close()
             # This solution is probably not optimal, but at least makes
             # KeyboardInterrupt work fine, which is crucial if launching the
@@ -122,18 +114,16 @@ class Orchestrator(object):
                 experiment = queue.popleft()
                 for _ in range(self.settings.N_REPLICATIONS):
                     self.experiment_callback(run_scenario(self.settings,
-                                            experiment, self.seq.assign(),
-                                            self.n_exp))
+                                                          experiment, self.seq.assign(),
+                                                          self.n_exp))
                     if self._stop:
                         self.stop()
 
         logger.info('END | Planned: %d, Completed: %d, Succeeded: %d, Failed: %d',
                     self.n_exp, self.n_fail + self.n_success, self.n_success, self.n_fail)
 
-
     def experiment_callback(self, args):
         """Callback method called by run_scenario
-
         Parameters
         ----------
         args : tuple
@@ -164,7 +154,6 @@ class Orchestrator(object):
 
 def run_scenario(settings, params, curr_exp, n_exp):
     """Run a single scenario experiment
-
     Parameters
     ----------
     settings : Settings
@@ -175,7 +164,6 @@ def run_scenario(settings, params, curr_exp, n_exp):
         sequence number of the experiment
     n_exp : int
         Number of scheduled experiments
-
     Returns
     -------
     results : 3-tuple
@@ -213,7 +201,7 @@ def run_scenario(settings, params, curr_exp, n_exp):
             return None
         workload = WORKLOAD[workload_name](topology, **workload_spec)
 
-       # Assign computation to nodes
+        # Assign computation to nodes
         if 'computation_placement' in tree:
             computationpl_spec = tree['computation_placement']
             computationpl_name = computationpl_spec.pop('name')
@@ -237,11 +225,11 @@ def run_scenario(settings, params, curr_exp, n_exp):
             cachepl_spec['cache_budget'] = workload.n_contents * network_cache
 
             # TODO: ADD STORAGE-SPECIFIC PLACEMENT AND BUDGET VARIABLES!
-            
+
             # Onur: need the full budget to assign to receivers for SIT cache placement
             cachepl_spec['n_contents'] = workload.n_contents
             # NOTE: cache placement is now done together with comp. spot placement!
-            #CACHE_PLACEMENT[cachepl_name](topology, **cachepl_spec)
+            # CACHE_PLACEMENT[cachepl_name](topology, **cachepl_spec)
 
         # Assign contents to sources
         # If there are many contents, after doing this, performing operations
@@ -256,7 +244,7 @@ def run_scenario(settings, params, curr_exp, n_exp):
             logger.error('No content placement implementation named %s was found.'
                          % contpl_name)
             return None
-        #if "_REPO_" in contpl_name:
+        # if "_REPO_" in contpl_name:
         #    contpl_spec = {topics:      workload.labels,
         #                  types:        ,
         #                  freshness_pers,
@@ -295,9 +283,9 @@ def run_scenario(settings, params, curr_exp, n_exp):
             return None
         if warmup_strategy['name'] not in STRATEGY:
             logger.error('No implementation of warm-up strategy %s was found.' % warmup_strategy['name'])
-            return None  
+            return None
 
-        # cache eviction policy definition
+            # cache eviction policy definition
         cache_policy = tree['cache_policy']
         if cache_policy['name'] not in CACHE_POLICY:
             logger.error('No implementation of cache policy %s was found.' % cache_policy['name'])
@@ -324,13 +312,19 @@ def run_scenario(settings, params, curr_exp, n_exp):
             logger.error('There are no implementations for at least one data collector specified')
             return None
         collect_spec = tree['collector_params']
+
         collectors = {m: {} for m in metrics}
+        if 'OUT' in metrics[0]:
+            for collector in collectors:
+                if collector == collect_spec['name']:
+                    collectors[collector]['res_path'] = collect_spec['res_path']
         # for m in collectors:
         #     if 'REPO' in m:
         #         collectors[m] = dict(collect_spec)
 
         logger.info('Experiment %d/%d | Start simulation', curr_exp, n_exp)
-        results = exec_experiment(topology, workload, netconf, strategy, cache_policy, repo_policy, collectors, warmup_strategy, sched_policy)
+        results = exec_experiment(topology, workload, netconf, strategy, cache_policy, repo_policy, collectors,
+                                  warmup_strategy, sched_policy)
 
         duration = time.time() - start_time
         logger.info('Experiment %d/%d | End simulation | Duration %s.',

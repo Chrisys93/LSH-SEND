@@ -41,7 +41,8 @@ N_REPLICATIONS = 1
 
 # List of metrics to be measured in the experiments
 # The implementation of data collectors are located in ./icaurs/execution/collectors.py
-DATA_COLLECTORS = ['REPO_STATS_W_LATENCY']
+DATA_COLLECTORS = ['REPO_STATS_OUT_H_LATENCY']
+RESULTS_PATH = ['/reuse/orchestration', '/reuse/no_orchestration']
 
 # Range of alpha values of the Zipf distribution using to generate content requests
 # alpha values must be positive. The greater the value the more skewed is the
@@ -67,10 +68,13 @@ N_CONTENTS = 3000
 
 N_SERVICES = N_CONTENTS
 
+# Input file for hash allocation to contents
+HASH_FILE = '/img_matches.txt'
+
 # Number of requests per second (over the whole network)
 NETWORK_REQUEST_RATE = 500.0
 
-# Number of cores for each node in the experiment
+# Number of cores for each node in the experiment
 NUM_CORES = 50
 
 # Number of content requests generated to prepopulate the caches
@@ -98,13 +102,13 @@ NUM_REPLACEMENTS = 5000
 
 # List of workloads that generate the request rates
 # The code is located in ./icarus/scenatios
-WORKLOAD = 'STATIONARY_HASH_LABEL_REQS'
+WORKLOAD = 'STATIONARY_DATASET_HASH_LABEL_REQS'
 
 # List of caching and routing strategies
 # The code is located in ./icarus/models/strategy.py
 STRATEGIES = ['HASH_REUSE_REPO_APP']
-EPOCH_TICKS = 200
-HIT_RATE = 0.6
+EPOCH_TICKS = [500, float('inf')]
+HIT_RATE = 0.75
 #STRATEGIES = ['COORDINATED']  # service-based routing
 
 # Cache replacement policy used by the network caches.
@@ -159,6 +163,7 @@ default = Tree()
 
 
 default['workload'] = {'name': WORKLOAD,
+                       'content_hashes_file': HASH_FILE,
                        'n_contents': N_CONTENTS,
                        'n_warmup': N_WARMUP_REQUESTS,
                        'n_measured': N_MEASURED_REQUESTS,
@@ -182,6 +187,10 @@ default['workload'] = {'name': WORKLOAD,
                        'labels_file': LABELS_FILE,
                        'content_locations': CONTENT_LOCATIONS
                        }
+
+default['collector_params'] = {'name':      DATA_COLLECTORS[0],
+                               'res_path':  RESULTS_PATH
+                                }
 
 default['cache_placement']['name'] = 'CONSOLIDATED_REPO_CACHE'
 default['cache_placement']['storage_budget'] = 10000000000
@@ -233,13 +242,18 @@ for strategy in ['LRU']: # STRATEGIES:
 # TODO: Add workloads - Furthermore, we don't need service budget variations here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SERVICE_BUDGET = NUM_CORES*NUM_NODES*3
 for strategy in STRATEGIES:
-    experiment = copy.deepcopy(default)
-    experiment['computation_placement']['service_budget'] = SERVICE_BUDGET
-    experiment['strategy']['name'] = strategy
-    experiment['warmup_strategy']['name'] = strategy
-    experiment['desc'] = "strategy: %s" \
-                     % (strategy)
-    EXPERIMENT_QUEUE.append(experiment)
+    index = 0
+    for EPOCH in EPOCH_TICKS:
+        experiment = copy.deepcopy(default)
+        experiment['collector_params']['res_path'] = RESULTS_PATH[index]
+        experiment['computation_placement']['service_budget'] = SERVICE_BUDGET
+        experiment['strategy']['epoch_ticks'] = EPOCH
+        experiment['strategy']['name'] = strategy
+        experiment['warmup_strategy']['name'] = strategy
+        experiment['desc'] = "strategy: %s" \
+                         % (strategy)
+        EXPERIMENT_QUEUE.append(experiment)
+        index += 1
 #"""
 # Experiment with different budgets
 """

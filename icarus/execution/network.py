@@ -1,21 +1,17 @@
 # -*- coding: utf-8 -*-
 """Network Model-View-Controller (MVC)
-
 TODO: Main Edge network data placement manager ("ERP") - to be implemented
     appropriately, with a few placement strategies, probably, or a new
     class for these specific data storage placement strategies, using the
     inputs from service feedback, network updates, system-wide status updates
     and service provision updates.
-
 This module contains classes providing an abstraction of the network shown to
 the strategy implementation. The network is modelled using an MVC design
 pattern.
-
 A strategy performs actions on the network by calling methods of the
 `NetworkController`, that in turns updates  the `NetworkModel` instance that
 updates the `NetworkView` instance. The strategy can get updated information
 about the network status by calling methods of the `NetworkView` instance.
-
 The `NetworkController` is also responsible to notify a `DataCollectorProxy`
 of all relevant events.
 """
@@ -49,7 +45,8 @@ logger = logging.getLogger('orchestration')
 class Event(object):
     """Implementation of an Event object: arrival of a request to a node"""
 
-    def __init__(self, time, receiver, service, labels, h_spaces, node, flow_id, deadline, rtt_delay, status, task=None):
+    def __init__(self, time, receiver, service, labels, h_spaces, node, flow_id, deadline, rtt_delay, status,
+                 task=None):
         """Constructor
         Parameters
         ----------
@@ -94,20 +91,16 @@ class Service(object):
 
 def symmetrify_paths(shortest_paths):
     """Make paths symmetric
-
     Given a dictionary of all-pair shortest paths, it edits shortest paths to
     ensure that all path are symmetric, e.g., path(u,v) = path(v,u)
-
     Parameters
     ----------
     shortest_paths : dict of dict
         All pairs shortest paths
-
     Returns
     -------
     shortest_paths : dict of dict
         All pairs shortest paths, with all paths symmetric
-
     Notes
     -----
     This function modifies the shortest paths dictionary provided
@@ -121,11 +114,9 @@ def symmetrify_paths(shortest_paths):
 
 class NetworkView(object):
     """Network view
-
     TODO: Very important part of the ERP system view, for updating storage (and
         service) allocation within the local EDR environment. To be used in
         conjunction with the adapted "optimal placement" strategy, for the data.
-
     This class provides an interface that strategies and data collectors can
     use to know updated information about the status of the network.
     For example the network view provides information about shortest paths,
@@ -134,7 +125,6 @@ class NetworkView(object):
 
     def __init__(self, model):
         """Constructor
-
         Parameters
         ----------
         model : NetworkModel
@@ -150,17 +140,13 @@ class NetworkView(object):
 
     def service_locations(self, service_labels=Counter()):
         """Return a set of all current locations of a specific content.
-
                 This include both persistent content sources and temporary caches.
-
                 Parameters
                 ----------
                 k : any hashable type
                     The function identifier
-
                 service_labels: any function and/or content topics
                     Topics identifiers, as array
-
                 Returns
                 -------
                 nodes : set
@@ -170,18 +156,14 @@ class NetworkView(object):
 
     def content_locations(self, k):
         """Return a set of all current locations of a specific content.
-
         TODO: Add MOST_POPULAR_STORAGE_ and _REQUEST_LABELS, which return
             the nodes which have the most hits of certain labels, through
             the "NetworkView" class.
-
         This include both persistent content sources and temporary caches.
-
         Parameters
         ----------
         k : any hashable type
             The content identifier
-
         Returns
         -------
         nodes : set
@@ -202,18 +184,14 @@ class NetworkView(object):
 
     def label_locations(self, labels):
         """Return a set of all current locations of a specific content.
-
         TODO: Add MOST_POPULAR_STORAGE_ and _REQUEST_LABELS, which return
             the nodes which have the most hits of certain labels, through
             the "NetworkView" class.
-
         This include both persistent content sources and temporary caches.
-
         Parameters
         ----------
         labels : any hashable type
             The content identifier
-
         Returns
         -------
         nodes : set
@@ -233,20 +211,16 @@ class NetworkView(object):
                 loc.add(node)
         return loc
 
-    def label_locations(self, h_spaces):
+    def h_space_locations(self, h_spaces):
         """Return a set of all current locations of a specific content.
-
         TODO: Add MOST_POPULAR_STORAGE_ and _REQUEST_LABELS, which return
             the nodes which have the most hits of certain labels, through
             the "NetworkView" class.
-
         This include both persistent content sources and temporary caches.
-
         Parameters
         ----------
         labels : any hashable type
             The content identifier
-
         Returns
         -------
         nodes : set
@@ -286,12 +260,10 @@ class NetworkView(object):
 
     def get_node_h_spaces(self, s):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         s : node index
             The node identifier
-
         Returns
         -------
         h_spaces : list
@@ -306,19 +278,16 @@ class NetworkView(object):
 
     def content_source(self, k, labels, h_spaces, L_H=False):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         k : any hashable type
             The content identifier
-
         Returns
         -------
         node : any hashable type
             The node persistently storing the given content or None if the
             source is unavailable
         """
-
 
         if type(k) is dict:
             if k['content'] == '':
@@ -327,85 +296,66 @@ class NetworkView(object):
                 else:
                     return self.labels_sources(labels)
             return self.model.content_source[k['content']]
+        elif L_H:
+            return self.h_space_sources(h_spaces)
         else:
             for i in self.model.content_source:
                 if i == k:
                     return self.model.content_source[k]
 
-    def content_source_cloud(self, k, labels, h_spaces, L_H):
+    def content_source_cloud(self):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         k : any hashable type
             The content identifier
-
         Returns
         -------
         node : any hashable type
             The node persistently storing the given content or None if the
             source is unavailable
         """
-
-        if type(k) is dict:
-            if L_H:
-                for node in self.h_space_sources(h_spaces):
-                    if type(node) != int:
-                        if "src" in node:
-                            return node
-            else:
-                for node in self.labels_sources(labels):
-                    if type(node) != int:
-                        if "src" in node:
-                            return node
-
-        for node in self.model.source_node:
-            if type(node) != int:
+        for node in self.model.storageSize:
+            if type(self.model.storageSize[node]) != int:
                 if "src" in node:
                     return node
         else:
             return None
 
-
     def closest_source(self, node, k, h_spaces, bin_based=False):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         k : any dict type
             The content
-
         Returns
         -------
         node : any hashable type
             The node persistently storing the given content or None if the
             source is unavailable
-
         FIXME: These need to be changed, and pretty much duplicated/hacked, to account for two main parts:
             * between-epoch stats (for short-term changes, which the strategies account for) and
             * epoch-specific stats (for the change over larger periods of time - these could be used for ML or human-led,
                                     Edge-based or system-wide decisions)
         """
+        hops = 100
         if bin_based:
+            for n in self.h_space_sources(h_spaces):
+                # content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
+                if len(h_spaces) > 1:
+                    for h_space in h_spaces:
+                        if h_space in list(self.model.all_node_h_spaces[n].keys()):
+                            if len(self.shortest_path(node, n)) < hops:
+                                hops = len(self.shortest_path(node, n))
+                                res = n
+                else:
+                    h_spaces = h_spaces[0]
+                    if h_spaces in list(self.model.all_node_h_spaces[n].keys()):
+                        if len(self.shortest_path(node, n)) < hops:
+                            hops = len(self.shortest_path(node, n))
+                            res = n
             if type(k) is dict:
-                sources_k = copy.deepcopy(k)
-                sources_k['content'] = ''
-                hops = 100
-                if node in self.content_source(sources_k, sources_k['labels'], h_spaces, True):
-                    if self.has_cache(node):
-                        if self.cache_lookup(node, k['content']) or self.local_cache_lookup(node, k['content']):
-                            cache = True
-                        else:
-                            cache = False
-                    else:
-                        cache = False
-                    return node, cache
-                for n in self.content_source(sources_k, sources_k['labels'], h_spaces, True):
-                    # content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
-                    if len(self.shortest_path(node, n)) < hops:
-                        hops = len(self.shortest_path(node, n))
-                        res = n
-                if self.has_cache(res):
+                if res and self.has_cache(res):
                     if self.cache_lookup(res, k['content']) or self.local_cache_lookup(res, k['content']):
                         cache = True
                     else:
@@ -413,30 +363,8 @@ class NetworkView(object):
                 else:
                     cache = False
             else:
-                content = dict()
-                content['content'] = k
-                content['labels'] = []
-                sources_content = content
-                sources_content['content'] = ''
-                hops = 100
-                res = 'src_0'
-                if node in self.content_source(sources_content, content['labels'], h_spaces, True):
-                    res = node
-                    if self.has_cache(node):
-                        if self.cache_lookup(node, content['content']) or self.local_cache_lookup(node, content['content']):
-                            cache = True
-                        else:
-                            cache = False
-                    else:
-                        cache = False
-                    return node, cache
-                for n in self.content_source(content, content['labels'], h_spaces, True):
-                    # content = self.model.contents[n][k]
-                    if len(self.shortest_path(node, n)) < hops:
-                        hops = len(self.shortest_path(node, n))
-                        res = n
                 if res and self.has_cache(res):
-                    if self.cache_lookup(res, content['content']) or self.local_cache_lookup(res, content['content']):
+                    if self.cache_lookup(res, k) or self.local_cache_lookup(res, k):
                         cache = True
                     else:
                         cache = False
@@ -500,12 +428,10 @@ class NetworkView(object):
 
     def labels_sources(self, labels):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         labels : list of label strings
             The identifiers for the labels of interest
-
         Returns
         -------
         node : any hashable type
@@ -536,17 +462,14 @@ class NetworkView(object):
         for n in del_nodes:
             del nodes[n]
 
-
         return nodes
 
     def h_space_sources(self, h_spaces):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         labels : list of label strings
             The identifiers for the labels of interest
-
         Returns
         -------
         node : any hashable type
@@ -565,9 +488,9 @@ class NetworkView(object):
             if type(n) != int and "src" in n:
                 del nodes[n]
             for h in h_spaces:
-                if n in self.model.node_h_spaces:
+                if n in self.model.all_node_h_spaces:
                     Found = False
-                    for h_space in self.model.node_h_spaces[n]:
+                    for h_space in self.model.all_node_h_spaces[n]:
                         if h == h_space:
                             Found = True
                     if not Found:
@@ -577,17 +500,14 @@ class NetworkView(object):
         for n in del_nodes:
             del nodes[n]
 
-
         return nodes
 
     def labels_requests(self, r_labels):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         labels : list of label strings
             The identifiers for the labels of interest
-
         Returns
         -------
         node : any hashable type
@@ -597,7 +517,6 @@ class NetworkView(object):
         nodes = Counter()
 
         for label in r_labels:
-
             nodes.update(self.model.request_labels_nodes.get(label, None))
 
         del_nodes = []
@@ -620,12 +539,10 @@ class NetworkView(object):
 
     def h_space_requests(self, h_space):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         labels : list of label strings
             The identifiers for the labels of interest
-
         Returns
         -------
         node : any hashable type
@@ -635,7 +552,6 @@ class NetworkView(object):
         nodes = Counter()
 
         for label in h_space:
-
             nodes.update(self.model.request_h_space_nodes.get(label, None))
 
         del_nodes = []
@@ -658,12 +574,10 @@ class NetworkView(object):
 
     def labels_reuse(self, r_labels, reuse_min):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         labels : list of label strings
             The identifiers for the labels of interest
-
         Returns
         -------
         node : any hashable type
@@ -673,7 +587,6 @@ class NetworkView(object):
         nodes = Counter()
 
         for label in r_labels:
-
             nodes.update(self.model.request_labels_nodes.get(label, None))
 
         del_nodes = []
@@ -696,16 +609,12 @@ class NetworkView(object):
 
         return nodes
 
-
-
     def h_space_reuse(self, h_spaces, reuse_min):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         labels : list of label strings
             The identifiers for the labels of interest
-
         Returns
         -------
         node : any hashable type
@@ -715,7 +624,6 @@ class NetworkView(object):
         nodes = Counter()
 
         for h in h_spaces:
-
             nodes.update(self.model.request_h_space_nodes.get(h, None))
 
         del_nodes = []
@@ -740,12 +648,10 @@ class NetworkView(object):
 
     def all_spaces_main_source(self, h_spaces):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         h_spaces : list of bin/hash-space strings
             The identifiers for the hash-spaces of interest
-
         Returns
         -------
         node : any hashable type
@@ -767,12 +673,10 @@ class NetworkView(object):
 
     def all_labels_main_source(self, labels):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         labels : list of label strings
             The identifiers for the labels of interest
-
         Returns
         -------
         node : any hashable type
@@ -794,12 +698,10 @@ class NetworkView(object):
 
     def all_labels_most_requests(self, request_labels):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         labels : list of label strings
             The identifiers for the labels of interest
-
         Returns
         -------
         node : any hashable type
@@ -827,7 +729,6 @@ class NetworkView(object):
 
     def most_proc_usage(self, list_len):
         """
-
         Parameters
         ----------
         list_len: integer
@@ -838,26 +739,37 @@ class NetworkView(object):
 
         nodes = []
         hashes = []
-        max_proc = 0
-        max_node_proc = 0
-        max_node = float('inf')
-        max_hash = float('inf')
 
         while len(nodes) < list_len:
+            max_node_proc = 0
+            max_node = None
             for n in self.model.busy_proc:
-                if n in nodes:
+                if n in nodes or type(n) is str:
                     continue
                 node_proc = 0
-                for h in self.model.busy_proc[n]:
+                for h in self.model.busy_proc[n].keys():
                     node_proc += self.model.busy_proc[n][h]
-                    if node_proc >= max_node_proc:
-                        max_node_proc = node_proc
-                        max_node = n
-            nodes.append(max_node)
+                if node_proc >= max_node_proc and type(n) is int:
+                    max_node_proc = node_proc
+                    max_node = n
+            if max_node_proc > 0:
+                nodes.append(max_node)
+            else:
+                for i in range(len(nodes)):
+                    if len(self.model.busy_proc[nodes[i]].keys()) > nodes.count(nodes[i]):
+                        nodes.append(nodes[i])
+                        break
+                else:
+                    nodes.append(max_node)
+
+        max_hash = None
         for n in nodes:
+            if type(n) is str:
+                continue
+            max_proc = 0
             for h in self.model.busy_proc[n]:
                 proc = self.model.busy_proc[n][h]
-                if proc >= max_proc:
+                if proc >= max_proc and h not in hashes:
                     max_proc = proc
                     max_hash = h
             hashes.append(max_hash)
@@ -866,7 +778,6 @@ class NetworkView(object):
 
     def least_proc_usage(self, list_len):
         """
-
         Parameters
         ----------
         list_len: integer
@@ -877,42 +788,48 @@ class NetworkView(object):
 
         nodes = []
         hashes = []
-        min_proc = float('inf')
-        min_node_proc = float('inf')
-        min_node = 10
-        node_proc = 0
 
         while len(nodes) < list_len:
+            min_node_proc = float('inf')
+            min_node = None
+            min_hashes = float('inf')
             for n in self.model.busy_proc:
+                if n in nodes or type(n) is str:
+                    continue
                 node_proc = 0
-                for h in self.model.busy_proc[n]:
+                for h in self.model.busy_proc[n].keys():
                     node_proc += self.model.busy_proc[n][h]
-                if node_proc <= min_node_proc and n != 'src_0' and n not in nodes:
+                if node_proc <= min_node_proc and type(n) is int:
                     min_node_proc = node_proc
-                    min_node = n
+                    if len(self.model.all_node_h_spaces[n].keys()) == 0:
+                        min_node = n
+                        break
+                    if min_hashes >= len(self.model.all_node_h_spaces[n].keys()):
+                        min_hashes = len(self.model.all_node_h_spaces[n].keys())
+                        min_node = n
+
             nodes.append(min_node)
+
         min_hash = None
         for n in nodes:
-            proc = 0
+            if type(n) is str:
+                continue
+            min_proc = 0
             for h in self.model.busy_proc[n]:
                 proc = self.model.busy_proc[n][h]
-            if proc <= min_proc and h not in hashes:
-                min_proc = proc
-                min_hash = h
+                if proc <= min_proc and h not in hashes:
+                    min_proc = proc
+                    min_hash = h
             hashes.append(min_hash)
 
         return nodes, hashes
 
-
-
     def all_labels_highest_reuse(self, request_labels):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         labels : list of label strings
             The identifiers for the labels of interest
-
         Returns
         -------
         node : any hashable type
@@ -937,12 +854,10 @@ class NetworkView(object):
 
     def h_space_highest_reuse(self, h_space):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         h_space : list of label strings
             The identifiers for the labels of interest
-
         Returns
         -------
         node : any hashable type
@@ -967,13 +882,11 @@ class NetworkView(object):
 
     def storage_labels_closest_service(self, labels, path):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         labels : list of label strings
             The identifiers for the labels of interest
         path :
-
         Returns
         -------
         in_path, node : any hashable type
@@ -991,13 +904,11 @@ class NetworkView(object):
 
     def service_labels_closest_repo(self, labels, node, path, on_path):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         labels : list of label strings
             The identifiers for the labels of interest
         path :
-
         Returns
         -------
         in_path, node : any hashable type
@@ -1035,13 +946,11 @@ class NetworkView(object):
 
     def most_services_labels_closest_repo(self, labels, node, path, on_path):
         """Return the node identifier where the content is persistently stored.
-
         Parameters
         ----------
         labels : list of label strings
             The identifiers for the labels of interest
         path :
-
         Returns
         -------
         in_path, node : any hashable type
@@ -1067,7 +976,6 @@ class NetworkView(object):
 
         for n in del_nodes:
             del nodes[n]
-
 
         current_hops = float('inf')
         for n in nodes:
@@ -1097,14 +1005,12 @@ class NetworkView(object):
 
     def shortest_path(self, s, t):
         """Return the shortest path from *s* to *t*
-
         Parameters
         ----------
         s : any hashable type
             Origin node
         t : any hashable type
             Destination node
-
         Returns
         -------
         shortest_path : list
@@ -1116,14 +1022,13 @@ class NetworkView(object):
     def num_services(self):
         """
         Returns
-        ------- 
+        -------
         the size of the service population
         """
         return self.model.n_services
 
     def all_pairs_shortest_paths(self):
         """Return all pairs shortest paths
-
         Return
         ------
         all_pairs_shortest_paths : dict of lists
@@ -1133,12 +1038,10 @@ class NetworkView(object):
 
     def cluster(self, v):
         """Return cluster to which a node belongs, if any
-
         Parameters
         ----------
         v : any hashable type
             Node
-
         Returns
         -------
         cluster : int
@@ -1152,16 +1055,13 @@ class NetworkView(object):
 
     def link_type(self, u, v):
         """Return the type of link *(u, v)*.
-
         Type can be either *internal* or *external*
-
         Parameters
         ----------
         u : any hashable type
             Origin node
         v : any hashable type
             Destination node
-
         Returns
         -------
         link_type : str
@@ -1171,14 +1071,12 @@ class NetworkView(object):
 
     def link_delay(self, u, v):
         """Return the delay of link *(u, v)*.
-
         Parameters
         ----------
         u : any hashable type
             Origin node
         v : any hashable type
             Destination node
-
         Returns
         -------
         delay : float
@@ -1188,7 +1086,6 @@ class NetworkView(object):
 
     def path_delay(self, s, t):
         """Return the delay from *s* to *t*
-
         Parameters
         ----------
         s : any hashable type
@@ -1208,7 +1105,6 @@ class NetworkView(object):
 
     def get_logs_path(self):
         """Return the path to the results logs
-
         Returns
         _______
         logs_path: model.logs_path (string)
@@ -1218,7 +1114,6 @@ class NetworkView(object):
 
     def get_logs_sampling_size(self):
         """Return the number of requests per log sample (logging sample rate)
-
         Returns
         _______
         logs_path: model.sampling_size (int)
@@ -1228,12 +1123,10 @@ class NetworkView(object):
 
     def topology(self):
         """Return the network topology
-
         Returns
         -------
         topology : fnss.Topology
             The topology object
-
         Notes
         -----
         The topology object returned by this method must not be modified by the
@@ -1249,7 +1142,7 @@ class NetworkView(object):
         return self.model.eventQ
 
     def getRequestRate(self):
-        """Return the request rate per second of the aggregate traffic 
+        """Return the request rate per second of the aggregate traffic
         """
         return self.model.rate
 
@@ -1269,7 +1162,6 @@ class NetworkView(object):
         """Return
         a dictionary consisting of only the nodes with computational spots
         the dict. maps node to its comp. spot
-
         TODO: EXTEND TO RepoStorage AND labels!
             Also NOTE: This CompSpot return IS NOT SERVICE-SPECIFIC!!!!!!!
             NOTE ON NOTE: Check has_computationalSpot and has_service defs
@@ -1280,12 +1172,10 @@ class NetworkView(object):
 
     def cache_nodes(self, size=False):
         """Returns a list of nodes with caching capability
-
         Parameters
         ----------
         size: bool, opt
             If *True* return dict mapping nodes with size
-
         Returns
         -------
         cache_nodes : list or dict
@@ -1298,12 +1188,10 @@ class NetworkView(object):
 
     def storage_nodes(self, size=False):
         """Returns a list of nodes with caching capability
-
         Parameters
         ----------
         size: bool, opt
             If *True* return dict mapping nodes with size
-
         Returns
         -------
         cache_nodes : list or dict
@@ -1318,12 +1206,10 @@ class NetworkView(object):
 
     def has_cache(self, node):
         """Check if a node has a content cache.
-
         Parameters
         ----------
         node : any hashable type
             The node identifier
-
         Returns
         -------
         has_cache : bool,
@@ -1333,12 +1219,10 @@ class NetworkView(object):
 
     def has_computationalSpot(self, node):
         """Check if a node is a computational spot.
-
         Parameters
         ----------
         node : any hashable type
             The node identifier
-
         Returns
         -------
         has_computationalSpot : bool,
@@ -1348,12 +1232,10 @@ class NetworkView(object):
 
     def has_service(self, node, service):
         """Check if a node is a computational spot and is running a service instance
-
         Parameters
         ----------
         node : any hashable type
             The node identifier
-
         Returns
         -------
         has_service : bool,
@@ -1364,7 +1246,9 @@ class NetworkView(object):
             cs = self.model.compSpot[node]
             if cs.is_cloud:
                 return True
-            elif cs.numberOfVMInstances[service['content']] > 0:
+            elif type(service) is dict and cs.numberOfVMInstances[service['content']] > 0:
+                return True
+            elif type(service) is int and cs.numberOfVMInstances[service] > 0:
                 return True
 
         return False
@@ -1372,26 +1256,22 @@ class NetworkView(object):
     def cache_lookup(self, node, content):
         """Check if the cache of a node has a content object, without changing
         the internal state of the cache.
-
         This method is meant to be used by data collectors to calculate
         metrics. It should not be used by strategies to look up for contents
         during the simulation. Instead they should use
         `NetworkController.get_content`
-
         TODO: Provide another means of showing topics/labels, for RepoStorage
             in nodes associated with RepoStorage. Provide: node with most of
             one label, node(s) with the most relevant SET of labels, THEN
             (more complex) most relevant SET of labels with highest freshness
             period/shelf-life; could MOST AND LEAST ACCESSED RepoStorage labels
             be checked???!!!
-
         Parameters
         ----------
         node : any hashable type
             The node identifier
         content : any hashable type
             The content identifier
-
         Returns
         -------
         has_content : bool
@@ -1404,23 +1284,19 @@ class NetworkView(object):
     def local_cache_lookup(self, node, content):
         """Check if the local cache of a node has a content object, without
         changing the internal state of the cache.
-
         The local cache is an area of the cache of a node reserved for
         uncoordinated caching. This is currently used only by hybrid
         hash-routing strategies.
-
         This method is meant to be used by data collectors to calculate
         metrics. It should not be used by strategies to look up for contents
         during the simulation. Instead they should use
         `NetworkController.get_content_local_cache`.
-
         Parameters
         ----------
         node : any hashable type
             The node identifier
         content : any hashable type
             The content identifier
-
         Returns
         -------
         has_content : bool
@@ -1434,12 +1310,10 @@ class NetworkView(object):
 
     def cache_dump(self, node):
         """Returns the dump of the content of a cache in a specific node
-
         Parameters
         ----------
         node : any hashable type
             The node identifier
-
         Returns
         -------
         dump : list
@@ -1479,10 +1353,8 @@ class NetworkView(object):
 
 class NetworkModel(object):
     """Models the internal state of the network.
-
     This object should never be edited by strategies directly, but only through
     calls to the network controller.
-
     TODO: This is where all the node characteristics are determined, through the "stack" property.
         Look into this, how it is initiated (discovered in cacheplacement, so maybe start with that)
         and develop on that, to associate RepoStorage objects and see how messages could be better
@@ -1496,7 +1368,6 @@ class NetworkModel(object):
         """
 
         """Constructor
-
         Parameters
         ----------
         topology : fnss.Topology
@@ -1591,7 +1462,7 @@ class NetworkModel(object):
         # calculated as: (similarity misses/epoch*100)/number of request ticks per epoch for each repo
         self.last_repo_misses = {}
 
-        #  A heap with events (see Event class above)
+        #  A heap with events (see Event class above)
         self.eventQ = []
 
         # Dictionary of link types (internal/external)
@@ -1610,7 +1481,7 @@ class NetworkModel(object):
         cache_size = {}
         self.storageSize = {}
         self.busy_proc = {}
-        self.comp_size = {}     # NOTE that this is the number of cores
+        self.comp_size = {}  # NOTE that this is the number of cores
         self.service_size = {}  # NOTE that this is the number of supported services per comp spot
         self.all_node_labels = {}
         self.contents = {}
@@ -1627,9 +1498,9 @@ class NetworkModel(object):
         self.rate = rate
         self.epochs_label_node_reuse = {}
         self.epochs_node_reuse = {}
-        self.node_h_spaces = {}
         self.all_node_h_spaces = {}
         self.cloud_admissions = {}
+        self.system_admissions = {}
         for node in topology.nodes():
             # TODO: Sort out content association in the case that "contents" aren't objects!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             stack_name, stack_props = fnss.get_stack(topology, node)
@@ -1656,7 +1527,7 @@ class NetworkModel(object):
                     self.comp_size[node] = stack_props['computation_size']
                 if 'service_size' in stack_props:
                     self.service_size[node] = stack_props['service_size']
-                #  A "leaf" or EDGE node, with some of the information and limited resources
+                #  A "leaf" or EDGE node, with some of the information and limited resources
                 if 'source' and 'router' in extra_types:
                     self.all_node_labels[node] = Counter()
                     self.all_node_h_spaces[node] = Counter()
@@ -1666,7 +1537,6 @@ class NetworkModel(object):
                     self.epochs_node_reuse[node] = 0
                     self.request_labels[node] = Counter()
                     self.request_h_spaces[node] = Counter()
-                    self.node_h_spaces[node] = Counter()
                 if 'source' and 'router' in extra_types and stack_props.has_key('contents'):
                     self.contents[node] = stack_props['contents']
                     # print("contents[0] is: ", contents[0], " and its type is: ", type(contents[0]))
@@ -1693,12 +1563,8 @@ class NetworkModel(object):
 
                             if not self.node_labels.has_key(node):
                                 self.node_labels[node] = Counter()
-                            if not self.node_h_spaces.has_key(node):
-                                self.node_h_spaces[node] = Counter()
                             for label in self.all_node_labels[node]:
-                                self.node_labels[node].update({label:self.all_node_labels[node][label]})
-                            for h_space in self.all_node_h_spaces[node]:
-                                self.node_h_spaces[node].update({h_space:self.all_node_h_spaces[node][h_space]})
+                                self.node_labels[node].update({label: self.all_node_labels[node][label]})
 
                             for k in self.all_node_labels[node]:
                                 if k not in self.labels_sources:
@@ -1755,12 +1621,6 @@ class NetworkModel(object):
                             self.node_labels[node] = Counter()
                             self.node_labels[node] = self.all_node_labels[node]
 
-                        if self.node_h_spaces.has_key(node):
-                            self.node_h_spaces[node].update(self.all_node_h_spaces[node])
-                        else:
-                            self.node_h_spaces[node] = Counter()
-                            self.node_h_spaces[node] = self.all_node_h_spaces[node]
-
                         for k in self.all_node_labels[node]:
                             if k not in self.labels_sources:
                                 self.labels_sources[k] = Counter()
@@ -1804,39 +1664,41 @@ class NetworkModel(object):
             self.repoStorage = dict()
             for node in self.storageSize:
                 if node in self.contents:
-                    self.repoStorage[node] = REPO_POLICY[repo_policy_name](node, self, self.contents[node], self.storageSize[node], **repo_policy_args)
+                    self.repoStorage[node] = REPO_POLICY[repo_policy_name](node, self, self.contents[node],
+                                                                           self.storageSize[node], **repo_policy_args)
                 elif node in self.storageSize:
-                    self.repoStorage[node] = REPO_POLICY[repo_policy_name](node, self, None, self.storageSize[node], **repo_policy_args)
+                    self.repoStorage[node] = REPO_POLICY[repo_policy_name](node, self, None, self.storageSize[node],
+                                                                           **repo_policy_args)
 
-
-        #  Generate the actual services processing requests
+        #  Generate the actual services processing requests
         self.services = []
         self.n_services = n_services
-        internal_link_delay = 0.001  #  This is the delay from receiver to router
+        internal_link_delay = 0.001  # This is the delay from receiver to router
 
-        service_time_min = 0.50  # used to be 0.10 # used to be 0.001
-        service_time_max = 0.70  # used to be 0.10  # used to be 0.1
+        service_time_min = 0.009  # used to be 0.10 # used to be 0.001
+        service_time_max = 0.012 # used to be 0.10  # used to be 0.1
         # delay_min = 0.005
         if 'depth' in topology.graph:
             delay_min = 2 * topology.graph['receiver_access_delay'] + service_time_max
             delay_max = delay_min + 2 * topology.graph['depth'] * topology.graph['link_delay'] + 0.005
         else:
             delay_min = 2 * topology.graph['receiver_access_delay'] + service_time_max
-            delay_max = delay_min + 2 * (len(topology.graph['routers']) + len(topology.graph['sources'])) * topology.graph[
-                'link_delay'] + 0.005
+            delay_max = delay_min + 2 * (len(topology.graph['routers']) + len(topology.graph['sources'])) * \
+                        topology.graph[
+                            'link_delay'] + 0.005
         service_indx = 0
         random.seed(seed)
         for service in range(0, n_services):
             service_time = random.uniform(service_time_min, service_time_max)
             # service_time = 2*random.uniform(service_time_min, service_time_max)
-            deadline = random.uniform(delay_min, delay_max) + 2 * internal_link_delay
+            deadline = random.uniform(delay_min, delay_max)
             # deadline = service_time + 1.5*(random.uniform(delay_min, delay_max) + 2*internal_link_delay)
             s = Service(service_time, deadline)
             # print ("Service " + str(service) + " has a deadline of " + str(deadline))
             self.services.append(s)
         # """ #END OF Generating Services
 
-        ### Prepare input for the optimizer
+        ### Prepare input for the optimizer
         if False:
             aFile = open('inputToOptimizer.txt', 'w')
             aFile.write("# 1. ServiceIDs\n")
@@ -1897,7 +1759,7 @@ class NetworkModel(object):
                                     if s.deadline >= (s.service_time + 2 * node_to_delay[egress]):
                                         node_to_services[egress].append(service_indx)
                                     service_indx += 1
-                aFile.write("# 4. Ap,Node,service1,service2, ....]\n")
+                aFile.write("# 4. Ap,Node,service1,service2, ....]\n")
                 for ap in topology.graph['receivers']:
                     node_to_services = ap_node_to_services[ap]
                     node_to_delay = ap_node_to_delay[ap]
@@ -1919,7 +1781,8 @@ class NetworkModel(object):
             aFile.close()
         ComputationSpot.services = self.services
         self.compSpot = {
-            node: ComputationSpot(self, self.comp_size[node], self.service_size[node], self.services, node, sched_policy, None)
+            node: ComputationSpot(self, self.comp_size[node], self.service_size[node], self.services, node,
+                                  sched_policy, None)
             for node in self.comp_size}
         # print ("Generated Computation Spot Objects")
         sys.stdout.flush()
@@ -1942,11 +1805,9 @@ class NetworkModel(object):
 
 class NetworkController(object):
     """Network controller
-
     This class is in charge of executing operations on the network model on
     behalf of a strategy implementation. It is also in charge of notifying
     data collectors of relevant events.
-
     TODO: Important! One of the main (if not THE MAIN) transmitters of data
         (and functions) across the network - the main network controller/
         data plane, it seems.
@@ -1954,7 +1815,6 @@ class NetworkController(object):
 
     def __init__(self, model):
         """Constructor
-
         Parameters
         ----------
         model : NetworkModel
@@ -1966,7 +1826,6 @@ class NetworkController(object):
 
     def attach_collector(self, collector):
         """Attach a data collector to which all events will be reported.
-
         Parameters
         ----------
         collector : DataCollector
@@ -1981,7 +1840,6 @@ class NetworkController(object):
     def start_session(self, timestamp, receiver, content, labels, h_spaces, log, flow_id=0, deadline=0):
         """Instruct the controller to start a new session (i.e. the retrieval
         of a content).
-
         Parameters
         ----------
         timestamp : int
@@ -1991,7 +1849,6 @@ class NetworkController(object):
         content : any hashable type
             The content identifier requested by the receiver
         labels :
-
         log : bool
             *True* if this session needs to be reported to the collector,
             *False* otherwise
@@ -2014,7 +1871,6 @@ class NetworkController(object):
 
     def forward_request_path(self, s, t, path=None, main_path=True):
         """Forward a request from node *s* to node *t* over the provided path.
-
         Parameters
         ----------
         s : any hashable type
@@ -2035,7 +1891,6 @@ class NetworkController(object):
 
     def forward_content_path(self, u, v, path=None, main_path=True):
         """Forward a content from node *s* to node *t* over the provided path.
-
         Parameters
         ----------
         s : any hashable type
@@ -2057,12 +1912,10 @@ class NetworkController(object):
 
     def forward_repo_request_path(self, s, t, path=None):
         """Forward a request from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the forwarding and redirection of the requests,
             towards the appropriate collectors, for optimal storage placement decisions,
             depending on service request type and data request source, popularity and distance.
-
         Parameters
         ----------
         s : any hashable type
@@ -2079,17 +1932,13 @@ class NetworkController(object):
         for u, v in path_links(path):
             self.forward_request_hop(u, v)
 
-        # TODO: This needs to be revised for the hash space application!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        self.add_request_labels_to_node(s, t, self.sess_content.get_request_labels())
 
     def forward_repo_content_path(self, u, v, path=None, main_path=True):
         """Forward a content from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the feedback and redirection of the content,
             towards the optimal storage locations. BUT (!!!) once the content gets
             redirected, it should also be stored by the appropriate Repo.
-
         Parameters
         ----------
         u : any hashable type
@@ -2115,12 +1964,10 @@ class NetworkController(object):
 
     def forward_request_hop(self, u, v, main_path=True):
         """Forward a request over link  u -> v.
-
         TODO: Account for feedback collector, as well, on top of the logger.
             This will be included below, but the session property of 'feedback'
             also needs to be added in session! THESE SHOULD BE DONE HERE, BUT
             THEY SHOULD BE PROPERLY DEFINED IN COLLECTORS.PY!!!!!!!!!!!!!!!!!!
-
         Parameters
         ----------
         u : any hashable type
@@ -2139,7 +1986,6 @@ class NetworkController(object):
 
     def forward_content_hop(self, u, v, main_path=True):
         """Forward a content over link  u -> v.
-
         Parameters
         ----------
         u : any hashable type
@@ -2161,66 +2007,95 @@ class NetworkController(object):
         """
         This function moves PART OF the hash spaces at each epoch from each of the highest
         processing power usage repos to the lowest processing power usage repos
-
         high_proc:
-
         low_proc:
-
         h:
-
         """
 
-        if h_l:
-            self.model.all_node_h_spaces[high_proc].update([h_l])
         del self.model.all_node_h_spaces[low_proc][h_l]
-        self.model.all_node_h_spaces[low_proc].update([h_h])
         del self.model.all_node_h_spaces[high_proc][h_h]
+        if h_l and h_l in self.model.h_space_sources:
+            del self.model.h_space_sources[h_l]
+            for n in self.model.all_node_h_spaces:
+                if h_l in self.model.all_node_h_spaces[n]:
+                    del self.model.all_node_h_spaces[n][h_l]
+        if h_h in self.model.h_space_sources:
+            del self.model.h_space_sources[h_h]
+            for n in self.model.all_node_h_spaces:
+                if h_h in self.model.all_node_h_spaces[n]:
+                    del self.model.all_node_h_spaces[n][h_h]
+
+        if type(self.model.all_node_h_spaces[low_proc]) is not Counter:
+            self.model.all_node_h_spaces[low_proc] = Counter()
+        if type(self.model.all_node_h_spaces[high_proc]) is not Counter:
+            self.model.all_node_h_spaces[high_proc] = Counter()
+        self.model.h_space_sources[h_h] = Counter()
 
         if h_l:
-            self.model.node_h_spaces[high_proc].update([h_l])
-        del self.model.node_h_spaces[low_proc][h_l]
-        self.model.node_h_spaces[low_proc].update([h_h])
-        del self.model.node_h_spaces[high_proc][h_h]
+            self.model.h_space_sources[h_l] = Counter()
+            if h_l in self.model.h_space_sources:
+                self.model.all_node_h_spaces[high_proc].update([h_l])
+            else:
+                self.model.all_node_h_spaces[high_proc] = Counter([h_l, 1])
+
+        if low_proc in self.model.all_node_h_spaces:
+            self.model.all_node_h_spaces[low_proc].update([h_h])
+        else:
+            self.model.all_node_h_spaces[low_proc] = Counter([h_h, 1])
 
         if h_l:
-            self.model.h_space_sources[h_l].update({high_proc: self.model.all_node_h_spaces[high_proc][h_l]})
-        del self.model.h_space_sources[h_l][low_proc]
-        self.model.h_space_sources[h_h].update({low_proc: self.model.all_node_h_spaces[low_proc][h_h]})
-        del self.model.h_space_sources[h_h][high_proc]
+            if h_l in self.model.h_space_sources:
+                self.model.h_space_sources[h_l].update({high_proc: self.model.all_node_h_spaces[high_proc][h_l]})
+            else:
+                self.model.h_space_sources[h_l] = Counter([high_proc, 1])
+
+        if h_h in self.model.h_space_sources:
+            self.model.h_space_sources[h_h].update({low_proc: self.model.all_node_h_spaces[low_proc][h_h]})
+        else:
+            self.model.h_space_sources[h_h] = Counter([low_proc, 1])
+
+    def add_in_flight(self):
+        """
+        Add one to the in-flight counter
+        """
+
+        self.model.in_flight += 1
+
+    def sub_in_flight(self):
+        """
+        Subtract one to the in-flight counter
+        """
+
+        self.model.in_flight -= 1
 
     def add_proc(self, node, h_space):
         """
         Add one to the processing functions of one node's comp spot
-
         node: Any hashable type
             The node for which to add one count in busy_proc
-
         """
 
         for h in h_space:
-            if h in self.model.all_node_h_spaces[node]:
-                if h in self.model.busy_proc[node]:
-                    self.model.busy_proc[node][h] += 1
-                else:
-                    self.model.busy_proc[node][h] = 1
+            if h in self.model.busy_proc[node]:
+                self.model.busy_proc[node][h] += 1
+            else:
+                self.model.busy_proc[node][h] = 1
 
     def sub_proc(self, node, h_space):
         """
         Subtract one from the processing functions of one node's comp spot
-
         node: Any hashable type
             The node for which to subtract one count in busy_proc
-
         """
 
         for h in h_space:
-            if h in self.model.all_node_h_spaces[node]:
+            if h in self.model.busy_proc[node]:
                 self.model.busy_proc[node][h] -= 1
-
+            else:
+                self.model.busy_proc[node][h] = 0
 
     def add_request_labels_to_node(self, s, service_request):
         """Forward a request from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the forwarding and redirection of the requests,
             towards the appropriate collectors, for optimal storage placement decisions,
@@ -2229,7 +2104,6 @@ class NetworkController(object):
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             *AND YES! - flow_id's are basically the identifiers for requests - currently*
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         Parameters
         ----------
         s : any hashable type
@@ -2238,7 +2112,6 @@ class NetworkController(object):
             Destination node
         request_labels : list, optional
             The path to use. If not provided, shortest path is used
-
         """
 
         if type(self.model.request_labels[s]) is not Counter():
@@ -2251,7 +2124,6 @@ class NetworkController(object):
 
     def add_request_h_spaces_to_node(self, s, service_request):
         """Forward a request from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the forwarding and redirection of the requests,
             towards the appropriate collectors, for optimal storage placement decisions,
@@ -2260,7 +2132,6 @@ class NetworkController(object):
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             *AND YES! - flow_id's are basically the identifiers for requests - currently*
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         Parameters
         ----------
         s : any hashable type
@@ -2269,7 +2140,6 @@ class NetworkController(object):
             Destination node
         request_labels : list, optional
             The path to use. If not provided, shortest path is used
-
         """
 
         if type(self.model.request_h_spaces[s]) is not Counter():
@@ -2279,7 +2149,6 @@ class NetworkController(object):
             if not self.model.request_h_space_nodes.has_key(h_space):
                 self.model.request_h_space_nodes[h_space] = Counter()
             self.model.request_h_space_nodes[h_space].update([s])
-
 
     def has_request_labels(self, s, labels):
         all_in = []
@@ -2300,7 +2169,6 @@ class NetworkController(object):
         else:
             return False
 
-
     def has_request_h_spaces(self, s, h_spaces):
         all_in = []
         for h in h_spaces:
@@ -2320,10 +2188,8 @@ class NetworkController(object):
         else:
             return False
 
-
     def add_request_labels_to_storage(self, s, labels, add=False):
         """Forward a request from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the forwarding and redirection of the requests,
             towards the appropriate collectors, for optimal storage placement decisions,
@@ -2332,7 +2198,6 @@ class NetworkController(object):
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             *AND YES! - flow_id's are basically the identifiers for requests - currently*
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         Parameters
         ----------
         s : any hashable type
@@ -2341,7 +2206,6 @@ class NetworkController(object):
             Destination node
         request_labels : list, optional
             The path to use. If not provided, shortest path is used
-
         """
 
         Deletion = []
@@ -2355,14 +2219,13 @@ class NetworkController(object):
                     if label not in self.model.labels_sources:
                         self.model.labels_sources[label] = Counter()
                     self.model.labels_sources[label].update([s])
-                    
+
         for label in Deletion:
             if label in self.model.request_labels[s]:
                 del self.model.request_labels[s][label]
 
     def add_request_h_spaces_to_storage(self, s, spaces, add=False):
         """Forward a request from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the forwarding and redirection of the requests,
             towards the appropriate collectors, for optimal storage placement decisions,
@@ -2371,7 +2234,6 @@ class NetworkController(object):
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             *AND YES! - flow_id's are basically the identifiers for requests - currently*
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         Parameters
         ----------
         s : any hashable type
@@ -2380,7 +2242,6 @@ class NetworkController(object):
             Destination node
         request_labels : list, optional
             The path to use. If not provided, shortest path is used
-
         """
 
         Deletion = []
@@ -2388,9 +2249,9 @@ class NetworkController(object):
             if h_space in self.model.request_h_spaces[s]:
                 Deletion.append(h_space)
                 if add:
-                    if s not in self.model.node_h_spaces:
-                        self.model.node_h_spaces[s] = Counter()
-                    self.model.node_h_spaces[s].update([h_space])
+                    if s not in self.model.all_node_h_spaces:
+                        self.model.all_node_h_spaces[s] = Counter()
+                    self.model.all_node_h_spaces[s].update([h_space])
                     if h_space not in self.model.h_space_sources:
                         self.model.h_space_sources[h_space] = Counter()
                     self.model.h_space_sources[h_space].update([s])
@@ -2401,14 +2262,12 @@ class NetworkController(object):
 
     def add_message_to_storage(self, s, content):
         """Forward a content from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the feedback and redirection of the content,
             towards the optimal storage locations. BUT (!!!) once the content gets
             redirected, it should also be stored by the appropriate Repo.
             The _content methods defined from here on need to be adapted for storage,
             as well!
-
         Parameters
         ----------
         s : any hashable type
@@ -2437,14 +2296,12 @@ class NetworkController(object):
 
     def add_storage_labels_to_node(self, s, content):
         """Forward a content from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the feedback and redirection of the content,
             towards the optimal storage locations. BUT (!!!) once the content gets
             redirected, it should also be stored by the appropriate Repo.
             The _content methods defined from here on need to be adapted for storage,
             as well!
-
         Parameters
         ----------
         s : any hashable type
@@ -2462,14 +2319,12 @@ class NetworkController(object):
 
     def add_storage_h_spaces_to_node(self, s, content):
         """Forward a content from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the feedback and redirection of the content,
             towards the optimal storage locations. BUT (!!!) once the content gets
             redirected, it should also be stored by the appropriate Repo.
             The _content methods defined from here on need to be adapted for storage,
             as well!
-
         Parameters
         ----------
         s : any hashable type
@@ -2477,24 +2332,24 @@ class NetworkController(object):
         content: hashable object
             Message with content hash (name), labels and properties
         """
-        if s not in self.model.node_h_spaces:
-            self.model.node_h_spaces[s] = Counter()
+        if s not in self.model.all_node_h_spaces:
+            print("ERROR: This should not happen! - tried to add message with hash " + content['h_space'][0] + " to node " + str(s) + ", with hashes:\n")
+            for l in self.model.node_hash_spaces[s]:
+                print(l+"\n")
         for l in content["h_space"]:
-            self.model.node_h_spaces[s].update([l])
+            self.model.all_node_h_spaces[s].update([l])
             if l not in self.model.h_space_sources:
                 self.model.h_space_sources[l] = Counter()
             self.model.h_space_sources[l].update([s])
 
     def update_node_reuse(self, s, reused=True):
         """Forward a content from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the feedback and redirection of the content,
             towards the optimal storage locations. BUT (!!!) once the content gets
             redirected, it should also be stored by the appropriate Repo.
             The _content methods defined from here on need to be adapted for storage,
             as well!
-
         Parameters
         ----------
         s : any hashable type
@@ -2507,22 +2362,19 @@ class NetworkController(object):
         if reused:
             self.model.node_reused_count.update([s])
             self.model.node_new_count.update([s])
-            self.model.reuse[s] = self.model.node_reused_count[s]/self.model.node_new_count[s]
+            self.model.reuse[s] = self.model.node_reused_count[s] / self.model.node_new_count[s]
         else:
             self.model.node_new_count.update([s])
-            self.model.reuse[s] = self.model.node_reused_count[s]/self.model.node_new_count[s]
-
+            self.model.reuse[s] = self.model.node_reused_count[s] / self.model.node_new_count[s]
 
     def update_label_node_reuse(self, s, label, reused=True):
         """Forward a content from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the feedback and redirection of the content,
             towards the optimal storage locations. BUT (!!!) once the content gets
             redirected, it should also be stored by the appropriate Repo.
             The _content methods defined from here on need to be adapted for storage,
             as well!
-
         Parameters
         ----------
         s : any hashable type
@@ -2531,7 +2383,7 @@ class NetworkController(object):
             Message with content hash (name), labels and properties
         """
         if label not in self.model.label_node_reuse:
-            self.model.label_node_reuse[label]={}
+            self.model.label_node_reuse[label] = {}
             self.model.label_node_reused_count[label] = Counter()
             self.model.label_node_new_count[label] = Counter()
         if s not in self.model.label_node_reuse[label]:
@@ -2539,24 +2391,21 @@ class NetworkController(object):
         if reused:
             self.model.label_node_reused_count[label].update(s)
             self.model.label_node_new_count[label].update(s)
-            self.model.label_node_reuse[label][s] = self.model.label_node_reused_count[label]/\
-                                                   self.model.label_node_new_count[label]
+            self.model.label_node_reuse[label][s] = self.model.label_node_reused_count[label] / \
+                                                    self.model.label_node_new_count[label]
         else:
             self.model.label_node_new_count[label].update(s)
-            self.model.label_node_reuse[label][s] = self.model.node_reused_count[s]/self.model.node_new_count[s]
+            self.model.label_node_reuse[label][s] = self.model.node_reused_count[s] / self.model.node_new_count[s]
 
     def update_node_epoch_reuse(self, s, reused=True):
         """Forward a content from node *s* to node *t* over the provided path.
-
         TODO: These should be purged each 100 or 1000 entries, so that they don't just use historic memory for nothing.
-
         Parameters
         ----------
         s : any hashable type
             Origin node
         reused : Boolean
             Whether the last message was reused or not
-
         content: hashable object
             Message with content hash (name), labels and properties
         """
@@ -2567,17 +2416,14 @@ class NetworkController(object):
         if reused:
             self.model.node_reused_count.update(s)
             self.model.node_new_count.update(s)
-            self.model.epochs_node_reuse[s].append(self.model.node_reused_count[s]/self.model.node_new_count[s])
+            self.model.epochs_node_reuse[s].append(self.model.node_reused_count[s] / self.model.node_new_count[s])
         else:
             self.model.node_new_count.update(s)
-            self.model.epochs_node_reuse[s].append(self.model.node_reused_count[s]/self.model.node_new_count[s])
-
+            self.model.epochs_node_reuse[s].append(self.model.node_reused_count[s] / self.model.node_new_count[s])
 
     def update_label_node_epoch_reuse(self, s, label, reused=True):
         """Forward a content from node *s* to node *t* over the provided path.
-
         TODO: These should be purged each 100 or 1000 entries, so that they don't just use historic memory for nothing.
-
         Parameters
         ----------
         s : any hashable type
@@ -2586,10 +2432,9 @@ class NetworkController(object):
             The label of a message with a content hash (name)
         reused : Boolean
             Message with content hash (name), labels and properties
-
         """
         if label not in self.model.epochs_label_node_reuse:
-            self.model.epochs_label_node_epoch_reuse[label]={}
+            self.model.epochs_label_node_epoch_reuse[label] = {}
             self.model.label_node_reused_count[label] = Counter()
             self.model.label_node_new_count[label] = Counter()
         if s not in self.model.label_node_reuse[label]:
@@ -2597,11 +2442,11 @@ class NetworkController(object):
         if reused:
             self.model.label_node_reused_count[label].update(s)
             self.model.label_node_new_count[label].update(s)
-            self.model.epochs_label_node_reuse[label][s].append(self.model.label_node_reused_count[label]/\
-                                                   self.model.label_node_new_count[label])
+            self.model.epochs_label_node_reuse[label][s].append(self.model.label_node_reused_count[label] / \
+                                                                self.model.label_node_new_count[label])
         else:
             self.model.label_node_new_count[label].update(s)
-            self.model.label_node_reuse[label][s].append(self.model.node_reused_count[s]/self.model.node_new_count[s])
+            self.model.label_node_reuse[label][s].append(self.model.node_reused_count[s] / self.model.node_new_count[s])
 
     def simil_miss_update(self, miss_count, epoch_ticks):
         """
@@ -2609,55 +2454,52 @@ class NetworkController(object):
         This is for the purpose of collecting statistics on the similarity misses,
         to determine whether this should be studied (this may be more relevant for
         cases where processing times are much longer than routing and storage "fetch" times)
-
         miss_count:
-
         epoch_ticks:
-
         """
         self.model.last_miss_count = miss_count * 100 / epoch_ticks
 
-    def edge_proc_update(self, edge_proc):
+    def edge_proc_update(self, edge_proc, epoch_ticks=0):
         """
         Update the amount of similarity miss number that has occured on each epoch.
         This is for the purpose of collecting statistics on the similarity misses,
         to determine whether this should be studied (this may be more relevant for
         cases where processing times are much longer than routing and storage "fetch" times)
-
         miss_count:
-
         epoch_ticks:
-
         """
-        self.model.last_edge_proc = edge_proc
+        if epoch_ticks and type(epoch_ticks) is not float:
+            self.model.last_edge_proc = edge_proc #* 100 / epoch_ticks
+        else:
+            self.model.last_edge_proc = edge_proc
 
-    def cloud_proc_update(self, cloud_proc):
+    def cloud_proc_update(self, cloud_proc, epoch_ticks=0):
         """
         Update the amount of similarity miss number that has occured on each epoch.
         This is for the purpose of collecting statistics on the similarity misses,
         to determine whether this should be studied (this may be more relevant for
         cases where processing times are much longer than routing and storage "fetch" times)
-
         miss_count:
-
         epoch_ticks:
-
         """
-        self.model.last_cloud_proc = cloud_proc
+        if epoch_ticks and type(epoch_ticks) is not float:
+            self.model.last_cloud_proc = cloud_proc #* 100 / epoch_ticks
+        else:
+            self.model.last_cloud_proc = cloud_proc
 
-    def reuse_hits_update(self, reuse_hits):
+    def reuse_hits_update(self, reuse_hits, epoch_ticks=0):
         """
         Update the amount of similarity miss number that has occured on each epoch.
         This is for the purpose of collecting statistics on the similarity misses,
         to determine whether this should be studied (this may be more relevant for
         cases where processing times are much longer than routing and storage "fetch" times)
-
         miss_count:
-
         epoch_ticks:
-
         """
-        self.model.last_reuse_hits = reuse_hits
+        if epoch_ticks and type(epoch_ticks) is not float:
+            self.model.last_reuse_hits = reuse_hits #* 100 / epoch_ticks
+        else:
+            self.model.last_reuse_hits = reuse_hits
 
     def cloud_admission_update(self, ans, flow_id):
         """
@@ -2665,13 +2507,21 @@ class NetworkController(object):
         This is for the purpose of collecting statistics on the similarity misses,
         to determine whether this should be studied (this may be more relevant for
         cases where processing times are much longer than routing and storage "fetch" times)
-
         miss_count:
-
         epoch_ticks:
-
         """
         self.model.cloud_admissions[flow_id] = ans
+
+    def system_admission_update(self, flow_id):
+        """
+        Update the amount of similarity miss number that has occured on each epoch.
+        This is for the purpose of collecting statistics on the similarity misses,
+        to determine whether this should be studied (this may be more relevant for
+        cases where processing times are much longer than routing and storage "fetch" times)
+        miss_count:
+        epoch_ticks:
+        """
+        self.model.system_admissions[flow_id] = True
 
     def repo_miss_update(self, repo_miss_count, epoch_ticks):
         """
@@ -2679,26 +2529,20 @@ class NetworkController(object):
         This is for the purpose of collecting statistics on the similarity misses,
         to determine whether this should be studied (this may be more relevant for
         cases where processing times are much longer than routing and storage "fetch" times)
-
         miss_count:
-
         epoch_ticks:
-
         """
         for n in self.model.repoStorage:
             self.model.last_repo_misses[n] = repo_miss_count[n] * 100 / epoch_ticks
 
-
     def replicate(self, s, d):
         """Forward a content from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the feedback and redirection of the content,
             towards the optimal storage locations. BUT (!!!) once the content gets
             redirected, it should also be stored by the appropriate Repo.
             The _content methods defined from here on need to be adapted for storage,
             as well!
-
         Parameters
         ----------
         s : any hashabe type
@@ -2714,18 +2558,14 @@ class NetworkController(object):
         self.model.replications_from.update([s])
         self.model.replications_to.update([d])
 
-
-
     def add_replication_hops(self, content):
         """Forward a content from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the feedback and redirection of the content,
             towards the optimal storage locations. BUT (!!!) once the content gets
             redirected, it should also be stored by the appropriate Repo.
             The _content methods defined from here on need to be adapted for storage,
             as well!
-
         Parameters
         ----------
         s : any hashable type
@@ -2740,18 +2580,14 @@ class NetworkController(object):
         """
         self.model.replication_hops.update([content['content']])
 
-
-
     def remove_replication_hops(self, content):
         """Forward a content from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the feedback and redirection of the content,
             towards the optimal storage locations. BUT (!!!) once the content gets
             redirected, it should also be stored by the appropriate Repo.
             The _content methods defined from here on need to be adapted for storage,
             as well!
-
         Parameters
         ----------
         s : any hashable type
@@ -2766,18 +2602,14 @@ class NetworkController(object):
         """
         self.model.replication_hops[content['content']] = 0
 
-
-
     def replication_overhead_update(self, content):
         """Forward a content from node *s* to node *t* over the provided path.
-
         TODO: This (and all called methods, defined within this class) should be
             redefined, to account for the feedback and redirection of the content,
             towards the optimal storage locations. BUT (!!!) once the content gets
             redirected, it should also be stored by the appropriate Repo.
             The _content methods defined from here on need to be adapted for storage,
             as well!
-
         Parameters
         ----------
         s : any hashable type
@@ -2791,23 +2623,24 @@ class NetworkController(object):
             *True*
         """
         if content['content'] in self.model.replication_overheads:
-            self.model.replication_overheads[content['content']] = self.model.replication_overheads[content['content']] + self.model.replication_hops[content['content']] * content['msg_size']
+            self.model.replication_overheads[content['content']] = self.model.replication_overheads[
+                                                                       content['content']] + \
+                                                                   self.model.replication_hops[content['content']] * \
+                                                                   content['msg_size']
         else:
-            self.model.replication_overheads[content['content']] = self.model.replication_hops[content['content']] * content['msg_size']
+            self.model.replication_overheads[content['content']] = self.model.replication_hops[content['content']] * \
+                                                                   content['msg_size']
 
     def put_content(self, node, content=0):
         """Store content in the specified node.
-
         The node must have a cache stack and the actual insertion of the
         content is executed according to the caching policy. If the caching
         policy has a selective insertion policy, then content may not be
         inserted.
-
         Parameters
         ----------
         node : any hashable type
             The node where the content is inserted
-
         Returns
         -------
         evicted : any hashable type
@@ -2818,12 +2651,10 @@ class NetworkController(object):
 
     def get_content(self, node, content=0):
         """Get a content from a server or a cache.
-
         Parameters
         ----------
         node : any hashable type
             The node where the content is retrieved
-
         Returns
         -------
         content : bool
@@ -2848,14 +2679,12 @@ class NetworkController(object):
 
     def has_message(self, node, labels=None, h_spaces=None, message_ID=''):
         """Get a content from a server or a cache.
-
         Parameters
         ----------
         node : any hashable type
             The node where the content is retrieved
         message_ID : any hashable type
             The ID of the message/content seeked by the function
-
         Returns
         -------
         storage_hit : bool
@@ -2881,18 +2710,14 @@ class NetworkController(object):
         else:
             return False
 
-
-
     def has_proc_message(self, node, labels=None, h_spaces=None, message_ID=''):
         """Get a content from a server or a cache.
-
         Parameters
         ----------
         node : any hashable type
             The node where the content is retrieved
         message_ID : any hashable type
             The ID of the message/content seeked by the function
-
         Returns
         -------
         storage_hit : bool
@@ -2901,7 +2726,7 @@ class NetworkController(object):
         if (node in self.model.storageSize) and (message_ID or labels or h_spaces):
             storage_hit = False
             if self.model.repoStorage[node].hasProcMessage(message_ID, labels, h_spaces):
-                    storage_hit = True
+                storage_hit = True
             return storage_hit
 
         name, props = fnss.get_stack(self.model.topology, node)
@@ -2914,14 +2739,12 @@ class NetworkController(object):
 
     def get_message(self, node, h_spaces=None, labels=None, H_C=False, message_ID=''):
         """Get a content from a server or a cache.
-
         Parameters
         ----------
         node : any hashable type
             The node where the content is retrieved
         message_ID : any hashable type
             The ID of the message/content seeked by the function
-
         Returns
         -------
         storage_hit : bool
@@ -2944,14 +2767,12 @@ class NetworkController(object):
 
     def get_processed_message(self, node, h_spaces=None, labels=None, H_C=False, message_ID=''):
         """Get a content from a server or a cache.
-
         Parameters
         ----------
         node : any hashable type
             The node where the content is retrieved
         message_ID : any hashable type
             The ID of the message/content seeked by the function
-
         Returns
         -------
         storage_hit : bool
@@ -2974,12 +2795,10 @@ class NetworkController(object):
 
     def remove_content(self, node):
         """Remove the content being handled from the cache
-
         Parameters
         ----------
         node : any hashable type
             The node where the cached content is removed
-
         Returns
         -------
         removed : bool
@@ -2988,7 +2807,8 @@ class NetworkController(object):
         if node in self.model.cache:
             return self.model.cache[node].remove(self.session['content'])
 
-    def add_event(self, time, receiver, service, labels, h_spaces, node, flow_id, deadline, rtt_delay, status, task=None):
+    def add_event(self, time, receiver, service, labels, h_spaces, node, flow_id, deadline, rtt_delay, status,
+                  task=None):
         """Add an arrival event to the eventQ
         """
         if time == float('inf'):
@@ -3022,9 +2842,9 @@ class NetworkController(object):
 
     def reassign_vm(self, curTime, compSpot, serviceToReplace, serviceToAdd, debugFlag=False):
         """ Instantiate a VM with a given service
-        NOTE: this method should ideally call reassign_vm of ComputationSpot as well. 
-        However, some strategies rebuild VMs from scratch every time and they do not 
-        use that method always. 
+        NOTE: this method should ideally call reassign_vm of ComputationSpot as well.
+        However, some strategies rebuild VMs from scratch every time and they do not
+        use that method always.
         """
         if serviceToAdd == serviceToReplace:
             print("Error in reassign_vm(): serviceToAdd equals serviceToReplace")
@@ -3035,7 +2855,6 @@ class NetworkController(object):
 
     def end_session(self, success=True, timestamp=0, flow_id=0):
         """Close a session
-
         Parameters
         ----------
         success : bool, optional
@@ -3047,16 +2866,13 @@ class NetworkController(object):
 
     def rewire_link(self, u, v, up, vp, recompute_paths=True):
         """Rewire an existing link to new endpoints
-
         This method can be used to model mobility patters, e.g., changing
         attachment points of sources and/or receivers.
-
         Note well. With great power comes great responsibility. Be careful when
         using this method. In fact as a result of link rewiring, network
         partitions and other corner cases might occur. Ensure that the
         implementation of strategies using this method deal with all potential
         corner cases appropriately.
-
         Parameters
         ----------
         u, v : any hashable type
@@ -3073,17 +2889,14 @@ class NetworkController(object):
 
     def remove_link(self, u, v, recompute_paths=True):
         """Remove a link from the topology and update the network model.
-
         Note well. With great power comes great responsibility. Be careful when
         using this method. In fact as a result of link removal, network
         partitions and other corner cases might occur. Ensure that the
         implementation of strategies using this method deal with all potential
         corner cases appropriately.
-
         Also, note that, for these changes to be effective, the strategy must
         use fresh data provided by the network view and not storing local copies
         of network state because they won't be updated by this method.
-
         Parameters
         ----------
         u : any hashable type
@@ -3101,7 +2914,6 @@ class NetworkController(object):
 
     def restore_link(self, u, v, recompute_paths=True):
         """Restore a previously-removed link and update the network model
-
         Parameters
         ----------
         u : any hashable type
@@ -3118,30 +2930,25 @@ class NetworkController(object):
 
     def remove_node(self, v, recompute_paths=True):
         """Remove a node from the topology and update the network model.
-
         Note well. With great power comes great responsibility. Be careful when
         using this method. In fact, as a result of node removal, network
         partitions and other corner cases might occur. Ensure that the
         implementation of strategies using this method deal with all potential
         corner cases appropriately.
-
         It should be noted that when this method is called, all links connected
         to the node to be removed are removed as well. These links are however
         restored when the node is restored. However, if a link attached to this
         node was previously removed using the remove_link method, restoring the
         node won't restore that link as well. It will need to be restored with a
         call to restore_link.
-
         This method is normally quite safe when applied to remove cache nodes or
         routers if this does not cause partitions. If used to remove content
         sources or receiver, special attention is required. In particular, if
         a source is removed, the content items stored by that source will no
         longer be available if not cached elsewhere.
-
         Also, note that, for these changes to be effective, the strategy must
         use fresh data provided by the network view and not storing local copies
         of network state because they won't be updated by this method.
-
         Parameters
         ----------
         v : any hashable type
@@ -3170,7 +2977,6 @@ class NetworkController(object):
 
     def restore_node(self, v, recompute_paths=True):
         """Restore a previously-removed node and update the network model.
-
         Parameters
         ----------
         v : any hashable type
@@ -3197,15 +3003,12 @@ class NetworkController(object):
 
     def reserve_local_cache(self, ratio=0.1):
         """Reserve a fraction of cache as local.
-
         This method reserves a fixed fraction of the cache of each caching node
         to act as local uncoodinated cache. Methods `get_content` and
         `put_content` will only operated to the coordinated cache. The reserved
         local cache can be accessed with methods `get_content_local_cache` and
         `put_content_local_cache`.
-
         This function is currently used only by hybrid hash-routing strategies.
-
         Parameters
         ----------
         ratio : float
@@ -3228,10 +3031,8 @@ class NetworkController(object):
 
     def get_content_local_cache(self, node):
         """Get content from local cache of node (if any)
-
         Get content from a local cache of a node. Local cache must be
         initialized with the `reserve_local_cache` method.
-
         Parameters
         ----------
         node : any hashable type
@@ -3250,10 +3051,8 @@ class NetworkController(object):
 
     def put_content_local_cache(self, node):
         """Put content into local cache of node (if any)
-
         Put content into a local cache of a node. Local cache must be
         initialized with the `reserve_local_cache` method.
-
         Parameters
         ----------
         node : any hashable type

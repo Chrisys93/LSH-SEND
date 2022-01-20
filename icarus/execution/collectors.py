@@ -1403,7 +1403,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
 
         self.res_call_flow_no = self.latest_end_session
 
-        os.chdir('/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse' + self.rel_res_path)
+        os.chdir(os.getcwd() + self.rel_res_path)
 
         if self.view.model.strategy == 'HYBRID':
             res = open("hybrid.txt", 'a')
@@ -1473,11 +1473,16 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             reuse_delay_averages = open("hash_proc_reuse_delay_avg.txt", 'a')
             edge_delay_averages = open("hash_proc_edge_delay_avg.txt", 'a')
             cloud_delay_averages = open("hash_proc_cloud_delay_avg.txt", 'a')
+            cpu_load_averages = open("hash_proc_cpu_load_avg.txt", 'a')
+            missed_node_reqs = open("hash_proc_missed_node_reqs.txt", 'a')
+            queued_node_reqs = open("hash_proc_queued_node_reqs.txt", 'a')
+            repo_queue_delays = open("hash_proc_queue_node_delays.txt", 'a')
+            repo_CPU_perc = open("hash_proc_node_CPU_perc.txt", 'a')
         if self.cdf:
             self.results['CDF'] = cdf(self.latency_data)
         results = Tree({'SATISFACTION': 1.0 * self.n_satisfied / self.sess_count})
 
-        os.chdir(os.getcwd())
+        os.chdir(os.getcwd() + '/../..')
 
         # TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         #  Possibly create another file, specifically for tracking edge/cloud processing and reuse hit counts!!!!!!!!!!!
@@ -1535,6 +1540,32 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                 repo_simil_misses.write(str(node) + ':' + str(per_node_simil_misses[node]) + ", ")
             repo_simil_misses.write("\n")
 
+            for node in self.view.model.node_CPU_usage:
+                cpu_load_averages.write(str(self.view.model.node_CPU_usage[node]) + ', ')
+            cpu_load_averages.write('\n')
+
+            for node in self.view.model.avg_CPU_perc:
+                repo_CPU_perc.write(str(self.view.model.avg_CPU_perc[node]) + ', ')
+            repo_CPU_perc.write('\n')
+
+            for node in self.view.model.max_queue_delay:
+                repo_queue_delays.write(str(self.view.model.max_queue_delay[node]) + ', ')
+            repo_queue_delays.write('\n')
+
+            for node in self.view.model.missed_hashes:
+                node_misses = 0
+                for h in self.view.model.missed_hashes[node]:
+                    node_misses += self.view.model.missed_hashes[node][h]
+                missed_node_reqs.write(str(node_misses) + ', ')
+            missed_node_reqs.write('\n')
+
+            for node in self.view.model.queued_hashes:
+                node_misses = 0
+                for h in self.view.model.queued_hashes[node]:
+                    node_misses += self.view.model.queued_hashes[node][h]
+                queued_node_reqs.write(str(node_misses) + ', ')
+            queued_node_reqs.write('\n')
+
             total_delays = 0
             for service in self.rtt_delays_overall:
                 if service != 'count':
@@ -1586,6 +1617,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
         reuse_delay_averages.close()
         edge_delay_averages.close()
         cloud_delay_averages.close()
+        repo_CPU_perc.close()
 
 
         if self.view.model.strategy != 'HYBRID':

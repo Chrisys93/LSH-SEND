@@ -743,35 +743,44 @@ class NetworkView(object):
         while len(nodes) < list_len:
             max_node_proc = 0
             max_node = None
+            max_hashes = 0
             for n in self.model.busy_proc:
                 if n in nodes or type(n) is str:
                     continue
-                node_proc = 0
-                for h in self.model.busy_proc[n].keys():
-                    node_proc += self.model.busy_proc[n][h]
-                if node_proc >= max_node_proc and type(n) is int:
+                # node_proc = 0
+                # for h in self.model.busy_proc[n].keys():
+                #     node_proc += self.model.busy_proc[n][h]
+                node_proc = self.model.node_CPU_usage[n]
+                if node_proc >= max_node_proc and type(n) is int and len(self.model.busy_proc[n].keys()) > 0:
                     max_node_proc = node_proc
                     max_node = n
-            if max_node_proc > 0:
-                nodes.append(max_node)
-            else:
+                elif len(self.model.busy_proc[n].keys()) > max_hashes:
+                    max_node = n
+                    max_hashes = len(self.model.busy_proc[n].keys())
+            if nodes and (not max_node or not self.model.busy_proc[max_node]):
                 for i in range(len(nodes)):
-                    if len(self.model.busy_proc[nodes[i]].keys()) > nodes.count(nodes[i]):
+                    if nodes[i] in self.model.busy_proc and \
+                            len(self.model.busy_proc[nodes[i]].keys()) > nodes.count(nodes[i]):
                         nodes.append(nodes[i])
                         break
                 else:
                     nodes.append(max_node)
+            else:
+                nodes.append(max_node)
 
         max_hash = None
         for n in nodes:
             if type(n) is str:
                 continue
             max_proc = 0
-            for h in self.model.busy_proc[n]:
-                proc = self.model.busy_proc[n][h]
-                if proc >= max_proc and h not in hashes:
-                    max_proc = proc
-                    max_hash = h
+            proc = 0
+            if self.model.hash_CPU_usage[n]:
+                for h in self.model.hash_CPU_usage[n]:
+                    if h and h not in hashes and h in self.model.all_node_h_spaces[n]:
+                        proc = self.model.hash_CPU_usage[n][h]
+                    if proc >= max_proc:
+                        max_proc = proc
+                        max_hash = h
             hashes.append(max_hash)
 
         return nodes, hashes
@@ -788,6 +797,7 @@ class NetworkView(object):
 
         nodes = []
         hashes = []
+        first_recall = False
 
         while len(nodes) < list_len:
             min_node_proc = float('inf')
@@ -796,9 +806,10 @@ class NetworkView(object):
             for n in self.model.busy_proc:
                 if n in nodes or type(n) is str:
                     continue
-                node_proc = 0
-                for h in self.model.busy_proc[n].keys():
-                    node_proc += self.model.busy_proc[n][h]
+                # node_proc = 0
+                # for h in self.model.busy_proc[n].keys():
+                #     node_proc += self.model.busy_proc[n][h]
+                node_proc = self.model.node_CPU_usage[n]
                 if node_proc <= min_node_proc and type(n) is int:
                     min_node_proc = node_proc
                     if len(self.model.all_node_h_spaces[n].keys()) == 0:
@@ -807,6 +818,11 @@ class NetworkView(object):
                     if min_hashes >= len(self.model.all_node_h_spaces[n].keys()):
                         min_hashes = len(self.model.all_node_h_spaces[n].keys())
                         min_node = n
+            if min_node is None:
+                if not first_recall:
+                    first_recall = True
+                    nodes_length = len(nodes)
+                min_node = nodes[len(nodes) - nodes_length]
 
             nodes.append(min_node)
 
@@ -814,12 +830,241 @@ class NetworkView(object):
         for n in nodes:
             if type(n) is str:
                 continue
-            min_proc = 0
-            for h in self.model.busy_proc[n]:
-                proc = self.model.busy_proc[n][h]
-                if proc <= min_proc and h not in hashes:
-                    min_proc = proc
-                    min_hash = h
+            min_proc = float('inf')
+            if self.model.hash_CPU_usage[n]:
+                if n in self.model.busy_proc and len(self.model.busy_proc[n]) > 0:
+                    for h in self.model.hash_CPU_usage[n]:
+                        proc = self.model.hash_CPU_usage[n][h]
+                        if proc <= min_proc and h not in hashes and h in self.model.all_node_h_spaces[n]:
+                            min_proc = proc
+                            min_hash = h
+                        else:
+                            min_hash = None
+            else:
+                min_hash = None
+            hashes.append(min_hash)
+
+        return nodes, hashes
+
+    def high_queue_usage(self, list_len):
+        """
+        Parameters
+        ----------
+        list_len: integer
+            The number of nodes with the highest processing power usage
+        nodes: list
+            The list of nodes with the highest procesing power usage
+        """
+
+        nodes = []
+        hashes = []
+
+        while len(nodes) < list_len:
+            max_node_queue = 0
+            max_node = None
+            max_hashes = 0
+            for n in self.model.max_queue_delay:
+                if n in nodes or type(n) is str:
+                    continue
+                # node_delay = 0
+                # for h in self.model.queued_hashes[n].keys():
+                #     node_delay += self.model.queued_hashes[n][h]
+                node_delay = self.model.max_queue_delay[n]
+                if node_delay >= max_node_queue and type(n) is int and len(self.model.queued_hashes[n].keys()) > 0:
+                    max_node_queue = node_delay
+                    max_node = n
+                elif len(self.model.queued_hashes[n].keys()) > max_hashes and type(n) is int:
+                    max_node = n
+                    max_hashes = len(self.model.queued_hashes[n].keys())
+            if nodes and (not max_node or not self.model.queued_hashes[max_node]):
+                for i in range(len(nodes)):
+                    if nodes[i] in self.model.queued_hashes and \
+                            len(self.model.queued_hashes[nodes[i]].keys()) > nodes.count(nodes[i]):
+                        nodes.append(nodes[i])
+                        break
+                else:
+                    nodes.append(max_node)
+            else:
+                nodes.append(max_node)
+
+        max_hash = None
+        for n in nodes:
+            if type(n) is str:
+                continue
+            max_proc = 0
+            proc = 0
+            if self.model.queued_hashes[n]:
+                for h in self.model.queued_hashes[n]:
+                    if h and h not in hashes and h in self.model.all_node_h_spaces[n]:
+                        proc = self.model.queued_hashes[n][h]
+                    if proc >= max_proc:
+                        max_proc = proc
+                        max_hash = h
+            hashes.append(max_hash)
+
+        return nodes, hashes
+
+    def low_queue_usage(self, list_len):
+        """
+        Parameters
+        ----------
+        list_len: integer
+            The number of nodes with the lowest processing power usage
+        nodes: list
+            The list of nodes with the lowest processing power usage
+        """
+
+        nodes = []
+        hashes = []
+        first_recall = False
+
+        while len(nodes) < list_len:
+            min_node_delay = float('inf')
+            min_node = None
+            min_hashes = float('inf')
+            for n in self.model.max_queue_delay:
+                if n in nodes or type(n) is str:
+                    continue
+                # node_delay = 0
+                # for h in self.model.queued_hashes[n].keys():
+                #     node_delay += self.model.queued_hashes[n][h]
+                node_delay = self.model.max_queue_delay[n]
+                if node_delay <= min_node_delay and type(n) is int:
+                    min_node_delay = node_delay
+                    if len(self.model.all_node_h_spaces[n].keys()) == 0:
+                        min_node = n
+                        break
+                    if min_hashes >= len(self.model.all_node_h_spaces[n].keys()):
+                        min_hashes = len(self.model.all_node_h_spaces[n].keys())
+                        min_node = n
+            if min_node is None:
+                if not first_recall:
+                    first_recall = True
+                    nodes_length = len(nodes)
+                min_node = nodes[len(nodes) - nodes_length]
+
+            nodes.append(min_node)
+
+        min_hash = None
+        for n in nodes:
+            if type(n) is str:
+                continue
+            min_proc = float('inf')
+            if n in self.model.queued_hashes and len(self.model.queued_hashes[n]) > 0:
+                for h in self.model.queued_hashes[n]:
+                    proc = self.model.queued_hashes[n][h]
+                    if proc <= min_proc and h not in hashes and h in self.model.all_node_h_spaces[n]:
+                        min_proc = proc
+                        min_hash = h
+            else:
+                min_hash = None
+            hashes.append(min_hash)
+
+        return nodes, hashes
+
+    def high_reuse(self, list_len):
+        """
+        Parameters
+        ----------
+        list_len: integer
+            The number of nodes with the highest processing power usage
+        nodes: list
+            The list of nodes with the highest procesing power usage
+        """
+
+        nodes = []
+        hashes = []
+
+        while len(nodes) < list_len:
+            max_node_reuse = 0
+            max_node = None
+            max_hashes = 0
+            for n in self.model.reuse:
+                if n in nodes or type(n) is str:
+                    continue
+                # node_reuse = 0
+                # for h in self.model.queued_hashes[n].keys():
+                #     node_reuse += self.model.queued_hashes[n][h]
+                node_reuse = self.model.reuse[n]
+                if node_reuse >= max_node_reuse and type(n) is int and len(self.model.all_node_h_spaces[n].keys()) > 0:
+                    max_node_reuse = node_reuse
+                    max_node = n
+            if nodes and (not max_node or not self.model.reuse[max_node]):
+                for i in range(len(nodes)):
+                    if nodes[i] in self.model.reuse and \
+                            len(self.model.all_node_h_spaces.keys()) > nodes.count(nodes[i]):
+                        nodes.append(nodes[i])
+                        break
+                else:
+                    nodes.append(max_node)
+            else:
+                nodes.append(max_node)
+
+        max_hash = None
+        for n in nodes:
+            if type(n) is str:
+                continue
+            max_reuse = 0
+            reuse = 0
+            if self.model.reuse[n]:
+                for h in self.model.all_node_h_spaces[n]:
+                    if h and h not in hashes and h in self.model.all_node_h_spaces[n]:
+                        reuse = self.model.hash_reuse[h]
+                    if reuse >= max_reuse:
+                        max_reuse = reuse
+                        max_hash = h
+            hashes.append(max_hash)
+
+        return nodes, hashes
+
+    def low_reuse(self, list_len):
+        """
+        Parameters
+        ----------
+        list_len: integer
+            The number of nodes with the lowest processing power usage
+        nodes: list
+            The list of nodes with the lowest processing power usage
+        """
+
+        nodes = []
+        hashes = []
+        first_recall = False
+
+        while len(nodes) < list_len:
+            min_node_reuse = float('inf')
+            min_node = None
+            min_hashes = float('inf')
+            for n in self.model.reuse:
+                if n in nodes or type(n) is str:
+                    continue
+                # node_delay = 0
+                # for h in self.model.queued_hashes[n].keys():
+                #     node_delay += self.model.queued_hashes[n][h]
+                node_reuse = self.model.reuse[n]
+                if node_reuse <= min_node_reuse and type(n) is int:
+                    min_node_reuse = node_reuse
+            if min_node is None:
+                if not first_recall:
+                    first_recall = True
+                    nodes_length = len(nodes)
+                min_node = nodes[len(nodes) - nodes_length]
+
+            nodes.append(min_node)
+
+        min_hash = None
+        for n in nodes:
+            if type(n) is str:
+                continue
+            min_reuse = float('inf')
+            if n in self.model.reuse and len(self.model.all_node_h_spaces[n]) > 0:
+                for h in self.model.hash_reuse:
+                    reuse = self.model.hash_reuse[h]
+                    if reuse <= min_reuse and h not in hashes and h in self.model.all_node_h_spaces[n]:
+                        min_reuse = reuse
+                        min_hash = h
+            else:
+                min_hash = None
             hashes.append(min_hash)
 
         return nodes, hashes
@@ -1465,6 +1710,35 @@ class NetworkModel(object):
         #  A heap with events (see Event class above)
         self.eventQ = []
 
+        # Keeping track of per-node, time-dependent CPU occupancy
+        self.node_CPU_usage = dict()
+
+        # Keeping track of per-hash, time-dependent CPU occupancy
+        self.hash_CPU_usage = dict()
+
+        # Keeping track of per-hash number of missed requests
+        self.missed_hashes= dict()
+
+        # Keeping track of per-hash number of queued requests
+        self.queued_hashes= dict()
+
+        # Variable to keep track of the maximum delay of requests in queues
+        self.max_queue_delay = dict()
+        
+        # Instantaneous ACTUAL CPU percentage usage, as a function of occupied cores
+        self.node_CPU_perc = dict()
+
+        # Cumulative percentage of CPUs (per-node) and the associated average percentages over the time of the simulation
+        self.node_CPU_perc_cumulative = dict()
+        self.avg_CPU_perc = dict()
+
+        # Cumulative percentage of CPUs (per-node) to be passed into next period
+        self.next_node_CPU_cumulative = dict()
+
+        # Variables determining the frequency of updating the latter, above.
+        self.last_CPU_update_time = 0
+        self.CPU_update_period = 0.1
+
         # Dictionary of link types (internal/external)
         self.link_type = nx.get_edge_attributes(topology, 'type')
         self.link_delay = fnss.get_delays(topology)
@@ -1490,8 +1764,11 @@ class NetworkModel(object):
         self.replications_from = Counter()
         self.replications_to = Counter()
         self.reuse = {}
+        self.reused_hash = dict()
         self.node_reused_count = Counter()
+        self.hash_reused_count = Counter()
         self.node_new_count = Counter()
+        self.hash_new_count = Counter()
         self.label_node_reused_count = {}
         self.label_node_new_count = {}
         self.label_node_reuse = {}
@@ -1501,6 +1778,7 @@ class NetworkModel(object):
         self.all_node_h_spaces = {}
         self.cloud_admissions = {}
         self.system_admissions = {}
+        self.hash_reuse = dict()
         for node in topology.nodes():
             # TODO: Sort out content association in the case that "contents" aren't objects!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             stack_name, stack_props = fnss.get_stack(topology, node)
@@ -1537,8 +1815,23 @@ class NetworkModel(object):
                     self.epochs_node_reuse[node] = 0
                     self.request_labels[node] = Counter()
                     self.request_h_spaces[node] = Counter()
+                    self.node_CPU_usage[node] = 0
+                    self.hash_CPU_usage[node] = dict()
+                    self.missed_hashes[node] = dict()
+                    self.queued_hashes[node] = dict()
+                    self.max_queue_delay[node] = 0
+                    self.node_CPU_perc[node] = 0
+                    self.node_CPU_perc_cumulative[node] = 0
+                    self.next_node_CPU_cumulative[node] = 0
+                    self.avg_CPU_perc[node] = 0
                 if 'source' and 'router' in extra_types and stack_props.has_key('contents'):
                     self.contents[node] = stack_props['contents']
+                    if 'hash_reuse' in stack_props:
+                        for h in stack_props['hash_reuse']:
+                            self.hash_reuse[h] = stack_props['hash_reuse'][h]
+                            self.hash_reused_count[h] = 0
+                            self.hash_new_count[h] = 0
+                            self.reused_hash[h] = 0
                     # print("contents[0] is: ", contents[0], " and its type is: ", type(contents[0]))
                     # TODO: IMPORTANT QUESTION: do sources need to have EDRs or not...?
                     if 'storageSize' in stack_props:
@@ -1553,6 +1846,9 @@ class NetworkModel(object):
                                     self.all_node_labels[node].update([label])
                                 for h_space in self.contents[node][c]['h_space']:
                                     self.all_node_h_spaces[node].update([h_space])
+                                    self.hash_CPU_usage[node][h_space] = 0
+                                    self.missed_hashes[node][h_space] = 0
+                                    self.queued_hashes[node][h_space] = 0
 
                             self.source_node[node] = self.contents[node].keys()
                             for content in self.contents[node]:
@@ -1675,24 +1971,27 @@ class NetworkModel(object):
         self.n_services = n_services
         internal_link_delay = 0.001  # This is the delay from receiver to router
 
-        service_time_min = 0.009  # used to be 0.10 # used to be 0.001
-        service_time_max = 0.012 # used to be 0.10  # used to be 0.1
+        service_time_min = 0.01  # used to be 0.10 # used to be 0.001, 0.03 for Multi, 0.01 for MNIST
+        service_time_max = 0.015 # used to be 0.10  # used to be 0.1, 0.08 for Multi, 0.015 for MNIST
         # delay_min = 0.005
         if 'depth' in topology.graph:
-            delay_min = 2 * topology.graph['receiver_access_delay'] + service_time_max
-            delay_max = delay_min + 2 * topology.graph['depth'] * topology.graph['link_delay'] + 0.005
+            # delay_min = 2 * topology.graph['receiver_access_delay'] + service_time_max + 2 * topology.graph['link_delay']
+            delay_min = 4 * topology.graph['receiver_access_delay'] + service_time_max + 4 * topology.graph['link_delay'] + 4 * topology.graph['depth'] * topology.graph['link_delay'] + 0.1
+            delay_max = delay_min + 4 * topology.graph['depth'] * topology.graph['link_delay'] + 0.1
         else:
-            delay_min = 2 * topology.graph['receiver_access_delay'] + service_time_max
-            delay_max = delay_min + 2 * (len(topology.graph['routers']) + len(topology.graph['sources'])) * \
-                        topology.graph[
-                            'link_delay'] + 0.005
+            # delay_min = 2 * topology.graph['receiver_access_delay'] + service_time_max + 2 * topology.graph['link_delay']
+            delay_min = 4 * topology.graph['receiver_access_delay'] + service_time_max + 4 * topology.graph['link_delay'] + 4 * (len(topology.graph['routers']) + len(topology.graph['sources'])) * \
+                        topology.graph['link_delay'] + 0.1
+            delay_max = delay_min + 4 * (len(topology.graph['routers']) + len(topology.graph['sources'])) * \
+                        topology.graph['link_delay'] + 0.1
         service_indx = 0
         random.seed(seed)
         for service in range(0, n_services):
             service_time = random.uniform(service_time_min, service_time_max)
             # service_time = 2*random.uniform(service_time_min, service_time_max)
-            deadline = random.uniform(delay_min, delay_max)
+            # deadline = random.uniform(delay_min, delay_max)
             # deadline = service_time + 1.5*(random.uniform(delay_min, delay_max) + 2*internal_link_delay)
+            deadline = float('inf')
             s = Service(service_time, deadline)
             # print ("Service " + str(service) + " has a deadline of " + str(deadline))
             self.services.append(s)
@@ -2003,7 +2302,7 @@ class NetworkController(object):
         if self.collector is not None and self.session['feedback']:
             self.collector.content_storage_labels(u, self.session.storage_labels)
 
-    def move_h_space_proc(self, high_proc, low_proc, h_h, h_l=None):
+    def move_h_space_proc_high_low(self, high_proc, low_proc, h_h, h_l=None):
         """
         This function moves PART OF the hash spaces at each epoch from each of the highest
         processing power usage repos to the lowest processing power usage repos
@@ -2012,13 +2311,7 @@ class NetworkController(object):
         h:
         """
 
-        del self.model.all_node_h_spaces[low_proc][h_l]
         del self.model.all_node_h_spaces[high_proc][h_h]
-        if h_l and h_l in self.model.h_space_sources:
-            del self.model.h_space_sources[h_l]
-            for n in self.model.all_node_h_spaces:
-                if h_l in self.model.all_node_h_spaces[n]:
-                    del self.model.all_node_h_spaces[n][h_l]
         if h_h in self.model.h_space_sources:
             del self.model.h_space_sources[h_h]
             for n in self.model.all_node_h_spaces:
@@ -2029,30 +2322,56 @@ class NetworkController(object):
             self.model.all_node_h_spaces[low_proc] = Counter()
         if type(self.model.all_node_h_spaces[high_proc]) is not Counter:
             self.model.all_node_h_spaces[high_proc] = Counter()
-        self.model.h_space_sources[h_h] = Counter()
-
-        if h_l:
+        if h_h not in self.model.h_space_sources or type(self.model.h_space_sources[h_h]) is not Counter:
+            self.model.h_space_sources[h_h] = Counter()
+        if h_l not in self.model.h_space_sources or type(self.model.h_space_sources[h_l]) is not Counter:
             self.model.h_space_sources[h_l] = Counter()
-            if h_l in self.model.h_space_sources:
-                self.model.all_node_h_spaces[high_proc].update([h_l])
-            else:
-                self.model.all_node_h_spaces[high_proc] = Counter([h_l, 1])
 
         if low_proc in self.model.all_node_h_spaces:
             self.model.all_node_h_spaces[low_proc].update([h_h])
         else:
             self.model.all_node_h_spaces[low_proc] = Counter([h_h, 1])
 
+        if h_h in self.model.h_space_sources:
+            self.model.h_space_sources[h_h].update({low_proc: self.model.all_node_h_spaces[low_proc][h_h]})
+        else:
+            self.model.h_space_sources[h_h] = Counter([low_proc, 1])
+
+    def move_h_space_proc_low_high(self, high_proc, low_proc, h_h, h_l=None):
+        """
+        This function moves PART OF the hash spaces at each epoch from each of the highest
+        processing power usage repos to the lowest processing power usage repos
+        high_proc:
+        low_proc:
+        h:
+        """
+
+        del self.model.all_node_h_spaces[low_proc][h_l]
+        if h_l and h_l in self.model.h_space_sources:
+            del self.model.h_space_sources[h_l]
+            for n in self.model.all_node_h_spaces:
+                if h_l in self.model.all_node_h_spaces[n]:
+                    del self.model.all_node_h_spaces[n][h_l]
+
+        if type(self.model.all_node_h_spaces[low_proc]) is not Counter:
+            self.model.all_node_h_spaces[low_proc] = Counter()
+        if type(self.model.all_node_h_spaces[high_proc]) is not Counter:
+            self.model.all_node_h_spaces[high_proc] = Counter()
+        if h_h not in self.model.h_space_sources or type(self.model.h_space_sources[h_h]) is not Counter:
+            self.model.h_space_sources[h_h] = Counter()
+        if h_l not in self.model.h_space_sources or type(self.model.h_space_sources[h_l]) is not Counter:
+            self.model.h_space_sources[h_l] = Counter()
+
+        if high_proc in self.model.all_node_h_spaces and h_l:
+            self.model.all_node_h_spaces[high_proc].update([h_l])
+        else:
+            self.model.all_node_h_spaces[high_proc] = Counter([h_l, 1])
+
         if h_l:
             if h_l in self.model.h_space_sources:
                 self.model.h_space_sources[h_l].update({high_proc: self.model.all_node_h_spaces[high_proc][h_l]})
             else:
                 self.model.h_space_sources[h_l] = Counter([high_proc, 1])
-
-        if h_h in self.model.h_space_sources:
-            self.model.h_space_sources[h_h].update({low_proc: self.model.all_node_h_spaces[low_proc][h_h]})
-        else:
-            self.model.h_space_sources[h_h] = Counter([low_proc, 1])
 
     def add_in_flight(self):
         """
@@ -2081,6 +2400,9 @@ class NetworkController(object):
             else:
                 self.model.busy_proc[node][h] = 1
 
+        # TODO: Find a way to update usage status by averaging out the overall usage, adding all usage/s up, and then
+        #  dividing by seconds ellapsed
+
     def sub_proc(self, node, h_space):
         """
         Subtract one from the processing functions of one node's comp spot
@@ -2093,6 +2415,53 @@ class NetworkController(object):
                 self.model.busy_proc[node][h] -= 1
             else:
                 self.model.busy_proc[node][h] = 0
+
+    def update_CPU_perc(self, node, curTime, serviceTime):
+        if type(node) is not str:
+            if curTime + serviceTime > self.model.last_CPU_update_time + self.model.CPU_update_period:
+                self.model.node_CPU_perc_cumulative[node] += self.model.last_CPU_update_time + self.model.CPU_update_period - curTime
+                self.model.next_node_CPU_cumulative[node] += serviceTime - (self.model.last_CPU_update_time + self.model.CPU_update_period - curTime)
+            else:
+                self.model.node_CPU_perc_cumulative[node] += serviceTime
+        if curTime - self.model.last_CPU_update_time >= self.model.CPU_update_period:
+            self.update_CPU_avg_perc(curTime)
+
+    def update_CPU_avg_perc(self, update_time):
+        for node in self.model.node_CPU_perc:
+            self.model.avg_CPU_perc[node] = self.model.node_CPU_perc_cumulative[node]/\
+                                            (self.model.comp_size[node]*(update_time - self.model.last_CPU_update_time))
+            if self.model.next_node_CPU_cumulative[node] > 0:
+                self.model.node_CPU_perc_cumulative[node] = self.model.next_node_CPU_cumulative[node]
+                self.model.next_node_CPU_cumulative[node] = 0
+            else:
+                self.model.node_CPU_perc_cumulative[node] = 0
+        self.model.last_CPU_update_time = update_time
+
+    def update_CPU_usage(self, node, h, node_CPU, hash_CPU, CPUtime):
+        self.model.node_CPU_usage[node] = node_CPU/CPUtime
+        self.model.hash_CPU_usage[node][h] = hash_CPU/CPUtime
+
+    def update_missed_hashes(self, node, h, missed_hashes):
+        self.model.missed_hashes[node][h] = missed_hashes
+
+    def add_hash_queue(self, node, h, delay):
+        if node not in self.model.queued_hashes:
+            self.model.queued_hashes[node] = dict()
+            self.model.queued_hashes[node][h] = 1
+        elif h not in self.model.queued_hashes[node]:
+            self.model.queued_hashes[node][h] = 1
+        else:
+            self.model.queued_hashes[node][h] += 1
+        if node not in self.model.max_queue_delay:
+            self.model.max_queue_delay[node] = delay
+        else:
+            self.model.max_queue_delay[node] += delay
+
+    def sub_hash_queue(self, node, h):
+        self.model.queued_hashes[node][h] -= 1
+
+    def reset_max_queue_delay(self, node):
+        self.model.max_queue_delay[node] = 0
 
     def add_request_labels_to_node(self, s, service_request):
         """Forward a request from node *s* to node *t* over the provided path.
@@ -2362,10 +2731,33 @@ class NetworkController(object):
         if reused:
             self.model.node_reused_count.update([s])
             self.model.node_new_count.update([s])
-            self.model.reuse[s] = self.model.node_reused_count[s] / self.model.node_new_count[s]
+            self.model.reuse[s] = float(self.model.node_reused_count[s]) / float(self.model.node_new_count[s])
         else:
             self.model.node_new_count.update([s])
-            self.model.reuse[s] = self.model.node_reused_count[s] / self.model.node_new_count[s]
+            self.model.reuse[s] = float(self.model.node_reused_count[s]) / float(self.model.node_new_count[s])
+
+    def update_hash_reuse(self, h, reused=True):
+        """Forward a content from node *s* to node *t* over the provided path.
+        TODO: This (and all called methods, defined within this class) should be
+            redefined, to account for the feedback and redirection of the content,
+            towards the optimal storage locations. BUT (!!!) once the content gets
+            redirected, it should also be stored by the appropriate Repo.
+            The _content methods defined from here on need to be adapted for storage,
+            as well!
+        Parameters
+        ----------
+        s : any hashable type
+            Origin node
+        content: hashable object
+            Message with content hash (name), labels and properties
+        """
+        if reused:
+            self.model.hash_reused_count.update([h])
+            self.model.hash_new_count.update([h])
+            self.model.reused_hash[h] = float(self.model.hash_reused_count[h]) / float(self.model.hash_new_count[h])
+        else:
+            self.model.hash_new_count.update([h])
+            self.model.reused_hash[h] = float(self.model.hash_reused_count[h]) / float(self.model.hash_new_count[h])
 
     def update_label_node_reuse(self, s, label, reused=True):
         """Forward a content from node *s* to node *t* over the provided path.
@@ -2416,10 +2808,10 @@ class NetworkController(object):
         if reused:
             self.model.node_reused_count.update(s)
             self.model.node_new_count.update(s)
-            self.model.epochs_node_reuse[s].append(self.model.node_reused_count[s] / self.model.node_new_count[s])
+            self.model.epochs_node_reuse[s].append(float(self.model.node_reused_count[s]) / float(self.model.node_new_count[s]))
         else:
             self.model.node_new_count.update(s)
-            self.model.epochs_node_reuse[s].append(self.model.node_reused_count[s] / self.model.node_new_count[s])
+            self.model.epochs_node_reuse[s].append(float(self.model.node_reused_count[s]) / float(self.model.node_new_count[s]))
 
     def update_label_node_epoch_reuse(self, s, label, reused=True):
         """Forward a content from node *s* to node *t* over the provided path.
@@ -2660,15 +3052,15 @@ class NetworkController(object):
         content : bool
             True if the content is available, False otherwise
         """
-        if node in self.model.cache:
-            cache_hit = self.model.cache[node].get(content)
-            if cache_hit:
-                # if self.session['log']:
-                self.collector.cache_hit(node)
-            else:
-                # if self.session['log']:
-                self.collector.cache_miss(node)
-            return cache_hit
+        # if node in self.model.cache:
+        #     cache_hit = self.model.cache[node].get(content)
+        #     if cache_hit:
+        #         # if self.session['log']:
+        #         self.collector.cache_hit(node)
+        #     else:
+        #         # if self.session['log']:
+        #         self.collector.cache_miss(node)
+        #     return cache_hit
         name, props = fnss.get_stack(self.model.topology, node)
         if name == 'source':
             if self.collector is not None and self.session['log']:
@@ -2759,7 +3151,7 @@ class NetworkController(object):
                     if h in self.model.all_node_h_spaces[node]:
                         all_h.append(h)
                 if all_h == h_spaces:
-                    msg = self.model.repoStorage[node].hasMessage(message_ID, [], h_spaces)
+                    msg = self.model.repoStorage[node].hasMessage('', [], h_spaces)
             else:
                 if self.model.repoStorage[node].hasMessage(message_ID, labels, h_spaces):
                     msg = self.model.repoStorage[node].hasMessage(message_ID, labels, h_spaces)
@@ -2787,7 +3179,7 @@ class NetworkController(object):
                     if h in self.model.all_node_h_spaces[node]:
                         all_h.append(h)
                 if all_h == h_spaces:
-                    msg = self.model.repoStorage[node].hasMessage(message_ID, [], h_spaces, True)
+                    msg = self.model.repoStorage[node].hasMessage('', [], h_spaces, True)
             else:
                 if self.model.repoStorage[node].hasMessage(message_ID, labels, h_spaces, True):
                     msg = self.model.repoStorage[node].hasMessage(message_ID, labels, h_spaces, True)

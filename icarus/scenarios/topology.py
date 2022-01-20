@@ -219,7 +219,7 @@ def topology_tree(k, h, delay=0.020, **kwargs):
 
 
 @register_topology_factory('EDGE_TREE')
-def topology_edge_tree(k, h, delay=0.020, **kwargs):
+def topology_edge_tree(k, h, delay=0.010, **kwargs):
     """Returns a tree topology, with a source at the root, receivers at the
     leafs and caches at all intermediate nodes.
 

@@ -20,7 +20,7 @@ PARALLEL_EXECUTION = False
 
 # Number of processes used to run simulations in parallel.
 # This option is ignored if PARALLEL_EXECUTION = False
-N_PROCESSES = 10 #cpu_count()
+N_PROCESSES = 8 #cpu_count()
 
 # Granularity of caching.
 # Currently, only OBJECT is supported
@@ -63,19 +63,20 @@ ALPHA = 0.75 #0.75
 NETWORK_CACHE = 0.05
 
 # Number of content objects
-N_CONTENTS = 3000
+N_CONTENTS = 800
 #N_CONTENTS = 1000
 
 N_SERVICES = N_CONTENTS
 
 # Input file for hash allocation to contents
 HASH_FILE = '/img_matches.txt'
+HASH_REUSE_FILE = '/hashes_reuse.txt'
 
 # Number of requests per second (over the whole network)
-NETWORK_REQUEST_RATE = 500.0
+NETWORK_REQUEST_RATE = 1000.0
 
 # Number of cores for each node in the experiment
-NUM_CORES = 50
+NUM_CORES = 4
 
 # Number of content requests generated to prepopulate the caches
 # These requests are not logged
@@ -107,8 +108,8 @@ WORKLOAD = 'STATIONARY_DATASET_HASH_LABEL_REQS'
 # List of caching and routing strategies
 # The code is located in ./icarus/models/strategy.py
 STRATEGIES = ['HASH_REUSE_REPO_APP', 'HASH_PROC_REPO_APP']
-EPOCH_TICKS = [1000, float('inf')]
-HIT_RATE = 0.75
+EPOCH_TICKS = [500, float('inf')]
+HIT_RATE = 0.55
 #STRATEGIES = ['COORDINATED']  # service-based routing
 
 # Cache replacement policy used by the network caches.
@@ -128,7 +129,7 @@ SCHED_POLICY = 'EDF'
 FRESHNESS_PER = 0.78
 SHELF_LIFE = 30
 MSG_SIZE = 1000000
-SOURCE_WEIGHTS = {1: 0.2, 3: 0.1, 5: 0.1, 7: 0.2, 9: 0.2, 13: 0.1, 14: 0.1}
+# SOURCE_WEIGHTS = {0: 0.2, 1: 0.1, 2: 0.2, 4:0.2, 5:0.1, 6:0.2}
 SERVICE_WEIGHTS = {"proc": 0.7, "non-proc": 0.3}
 TYPES_WEIGHTS = None
 TOPICS_WEIGHTS = {"smartHome": 1}
@@ -203,14 +204,15 @@ default['cache_placement']['network_cache'] = default['computation_placement']['
 default['computation_placement']['computation_budget'] = (NUM_NODES)*NUM_CORES  # NUM_CORES for each node
 #default['content_placement']['name'] = 'WEIGHTED_REPO'
 
-default['content_placement'] = {"name":             'WEIGHTED_BUCKET_REPO_HASH',
+default['content_placement'] = {"name":             'DATASET_BUCKET_RAND_REPO_HASH',
                                 "topics_weights" :  TOPICS_WEIGHTS,
                                 "types_weights" :   TYPES_WEIGHTS,
-                                "space_weights" :   H_SPACE_WEIGHTS,
+                                # "space_weights" :   H_SPACE_WEIGHTS,
                                 "max_replications": MAX_REPLICATIONS,
-                                "source_weights" :  SOURCE_WEIGHTS,
+                                "num_of_repos" :  NUM_NODES,
                                 "service_weights":  SERVICE_WEIGHTS,
-                                "max_label_nos" :   MAX_REQUESTED_LABELS
+                                "max_label_nos" :   MAX_REQUESTED_LABELS,
+                                "hash_reuse_file":HASH_REUSE_FILE
                                 }
 
 default['cache_policy']['name'] = CACHE_POLICY

@@ -325,26 +325,27 @@ class RepoStorage(object):
 
     def hasMessage(self, MessageId, labels, spaces=None, processed=False):
         answer = None
-        for i in range(0, len(self.processedMessages)):
-            if MessageId is not None and self.processedMessages[i]['content'] == MessageId:
-                answer = self.processedMessages[i]
-            elif spaces:
-                j_spaces = []
-                for space in self.processedMessages[i]['h_space']:
-                    if space in spaces:
-                        j_spaces.append(space)
-                if (j_spaces == spaces):
+        if processed:
+            for i in range(0, len(self.processedMessages)):
+                if MessageId is not None and self.processedMessages[i]['content'] == MessageId:
                     answer = self.processedMessages[i]
-            elif labels:
-                j_labels = []
-                for label in self.processedMessages[i]['labels']:
-                    if label in labels:
-                        j_labels.append(label)
-                if (j_labels == labels):
-                    answer = self.processedMessages[i]
-        if answer:
-            return answer
-        if not processed:
+                elif spaces:
+                    j_spaces = []
+                    for space in self.processedMessages[i]['h_space']:
+                        if space in spaces:
+                            j_spaces.append(space)
+                    if (j_spaces == spaces):
+                        answer = self.processedMessages[i]
+                elif labels:
+                    j_labels = []
+                    for label in self.processedMessages[i]['labels']:
+                        if label in labels:
+                            j_labels.append(label)
+                    if (j_labels == labels):
+                        answer = self.processedMessages[i]
+            if answer:
+                return answer
+        else:
             for i in range(0, len(self.Messages)):
                 if MessageId is not None and self.Messages[i]['content'] == MessageId:
                     answer = self.Messages[i]
@@ -353,14 +354,14 @@ class RepoStorage(object):
                     for label in self.Messages[i]['labels']:
                         if label in labels:
                             j_labels.append(label)
-                    if (j_labels == labels):
+                    if (j_labels == labels) and self.Messages[i]['service_type'] == 'non-proc':
                         answer = self.Messages[i]
                 elif spaces:
                     j_spaces = []
                     for space in self.Messages[i]['h_space']:
                         if space in spaces:
                             j_spaces.append(space)
-                    if (j_spaces == spaces):
+                    if (j_spaces == spaces) and self.Messages[i]['service_type'] == 'non-proc':
                         answer = self.Messages[i]
         return answer
 
@@ -407,11 +408,11 @@ class RepoStorage(object):
         for i in range(0, len(self.Messages)-1):
             if (self.Messages[i]["content"] == MessageId):
                 self.Size -= self.Messages[i]['msg_size']
-                self.Messages.remove(i)
-                for i in range(0, len(self.processedMessages)-1):
-                    if self.processedMessages[i]['content'] == MessageId:
-                        self.processedMessages.remove(i)
-                return True
+                self.Messages.remove(self.Messages[i])
+                for j in range(0, len(self.processedMessages)-1):
+                    if self.processedMessages[j]['content'] == MessageId:
+                        self.processedMessages.remove(self.processedMessages[j])
+                        return True
         return False
 
     """

@@ -43,7 +43,7 @@ class VM(object):
     """
 
     # Time to instantiate a VM
-    instantiationDuration = 0.8
+    instantiationDuration = 0
 
     def __init__(self, compSpot, serviceType=None):
         ### Service type provided by the VM #
@@ -103,15 +103,15 @@ class Task(object):
         else:
             self.arrivalTime = arrivalTime
         ### Service to add in the case of VM_START task #
-        self.serviceToInstantiate = None
+        # self.serviceToInstantiate = None
         ### Next task to execute after this one (for VM reassignments) #
         self.nextTask = []
 
-    def setServiceToInstantiate(self, service):
-        if self.taskType != Task.TASK_TYPE_VM_START:
-            raise ValueError(
-                "Error: incorrect task type: " + str(self.taskType) + " Expecting: " + str(Task.TASK_TYPE_VM_START))
-        self.serviceToInstantiate = service
+    # def setServiceToInstantiate(self, service):
+    #     if self.taskType != Task.TASK_TYPE_VM_START:
+    #         raise ValueError(
+    #             "Error: incorrect task type: " + str(self.taskType) + " Expecting: " + str(Task.TASK_TYPE_VM_START))
+    #     self.serviceToInstantiate = service
 
     def setNextTasktoRun(self, task):
         if self.taskType != Task.TASK_TYPE_SERVICE:
@@ -123,11 +123,11 @@ class Task(object):
 
         self.nextTask.append(task)
 
-    def setVM(self, aVM):
-        self.vm = aVM
-
-    def getVM(self):
-        return self.vm
+    # def setVM(self, aVM):
+    #     self.vm = aVM
+    #
+    # def getVM(self):
+    #     return self.vm
 
     def print_task(self):
         print("---Task.service: " + repr(self.service))
@@ -142,8 +142,8 @@ class Task(object):
         print("\tTask.flow_id: " + repr(self.flow_id))
         print("\tTask.receiver: " + repr(self.receiver))
         print("\tTask.completionTime: " + repr(self.completionTime))
-        if self.serviceToInstantiate is not None:
-            print("\tTask.serviceToInstantiate: " + str(self.serviceToInstantiate))
+        # if self.serviceToInstantiate is not None:
+        #     print("\tTask.serviceToInstantiate: " + str(self.serviceToInstantiate))
         if self.arrivalTime is not None:
             print("\tTask.arrivalTime: " + repr(self.arrivalTime))
         if len(self.nextTask) > 0:
@@ -180,9 +180,13 @@ class Scheduler(object):
         ### Idle curTime of the cs #
         self.idleTime = 0.0
         ### Task queue #
-        self._taskQueue = []
+        self._taskQueue = dict()
+        for c in range(self.numOfCores):
+            self._taskQueue[c] = []
         ### Task queue for upcoming tasks that will arrive in the future (i.e., for coordinated strategy) #
-        self.upcomingTaskQueue = []
+        self.upcomingTaskQueue = dict()
+        for c in range(self.numOfCores):
+            self.upcomingTaskQueue[c] = []
         ### Schedule policy #
         self.sched_policy = sched_policy
         ### Request count #
@@ -192,7 +196,7 @@ class Scheduler(object):
         ### VMs: busy (carrying out a task), idle, and starting (booting up a service)
         self.busyVMs = {x: [] for x in range(len(self.cs.services))}
         self.idleVMs = {x: [] for x in range(len(self.cs.services))}
-        self.startingVMs = {x: [] for x in range(len(self.cs.services))}
+        # self.startingVMs = {x: [] for x in range(len(self.cs.services))}
 
     def get_idleTime(self, curTime):
 
@@ -204,70 +208,70 @@ class Scheduler(object):
 
         return self.idleTime
 
-    def removeFromTaskQueue(self, aTask):
-        self._taskQueue.remove(aTask)
+    def removeFromTaskQueue(self, aTask, core):
+        self._taskQueue[core].remove(aTask)
         if aTask.taskType == Task.TASK_TYPE_SERVICE:
             self.queuedServices[aTask.service] -= 1
             self.queuedServicesPerReceiver[int(aTask.receiver[4:])][aTask.service] -= 1
 
-    def addVMStartToTaskQ(self, task, curr_time, arrival_time, update_arrival_time=True):
-        """ task.nextTask is a VM_START task. Add this task to the taskQ ensuring that
-            existing tasks in the taskQ still meet their deadlines.
-        """
-        # NOTE: need to make sure the task is added to the end of the queue otherwise existing tasks might miss their deadlines.
-        # However, setting expiry of the VM_Start task to greater than the largest expiry in the queue still DOES NOT guarantee all tasks will meet their deadlines:
-        # In rare cases, a task that is stalled due to insufficient VMs may end up waiting for the VM_START task which will take up CPU
+    # def addVMStartToTaskQ(self, task, curr_time, arrival_time, update_arrival_time=True):
+    #     """ task.nextTask is a VM_START task. Add this task to the taskQ ensuring that
+    #         existing tasks in the taskQ still meet their deadlines.
+    #     """
+    #     # NOTE: need to make sure the task is added to the end of the queue otherwise existing tasks might miss their deadlines.
+    #     # However, setting expiry of the VM_Start task to greater than the largest expiry in the queue still DOES NOT guarantee all tasks will meet their deadlines:
+    #     # In rare cases, a task that is stalled due to insufficient VMs may end up waiting for the VM_START task which will take up CPU
+    #
+    #     for next_task in task.nextTask:
+    #
+    #         # BUG: HOW CAN YOU CHECK FOR next_task IN TASK QUEUE AND EXPECT IT TO BE THERE, IF YOU WANT TO ADD IT?!?!?!
+    #
+    #         # if next_task not in self.upcomingTaskQueue:
+    #         #     if next_task not in self._taskQueue:
+    #         #         print ("Error in addVMStartToTaskQ(): next_task not in upcomingTaskQueue or taskQ. task:")
+    #         #         task.print_task()
+    #         #         print ("Printing task queue:")
+    #         #         for aTask in self._taskQueue:
+    #         #             aTask.print_task()
+    #         #         print ("Printing upcoming task queue:")
+    #         #         for aTask in self.upcomingTaskQueue:
+    #         #             aTask.print_task()
+    #         #         raise ValueError ("Error in addVMStartToTaskQ(): next_task is neither in upcomingTaskQueue nor taskQ")
+    #         #     if next_task.taskType != Task.TASK_TYPE_VM_START:
+    #         #         raise ValueError ("Error in complete_service_task(): nextTask is expected to be a VM_START task")
+    #         # else: # next_task in self.upcomingTaskQueue
+    #
+    #         if arrival_time > curr_time:
+    #             next_task.arrivalTime = arrival_time
+    #         elif arrival_time == curr_time:
+    #             self.upcomingTaskQueue.remove(next_task)
+    #             # Add the next_task to the taskQ
+    #             if len(self._taskQueue) > 0:
+    #                 if self.sched_policy == 'EDF':
+    #                     next_task.expiry = self._taskQueue[-1].expiry
+    #                 elif self.sched_policy == 'FIFO':
+    #                     next_task.arrivalTime = curr_time
+    #                 else:
+    #                     raise ValueError("Invalid scheduling policy")
+    #                 self.addToTaskQueue(next_task, curr_time, update_arrival_time)
+    #             else:
+    #                 # Run this task (if there is available CPU resources)
+    #                 self.addToTaskQueue(next_task, curr_time, update_arrival_time)
+    #         else:
+    #             raise ValueError("Error in addVMStartToTaskQ(): arrival_time for the task: " + str(
+    #                 arrival_time) + " should not be smaller than curr_time: " + str(curr_time))
 
-        for next_task in task.nextTask:
+    def addToTaskQueue(self, aTask, curTime, core, update_arrival_time=True):
 
-            # BUG: HOW CAN YOU CHECK FOR next_task IN TASK QUEUE AND EXPECT IT TO BE THERE, IF YOU WANT TO ADD IT?!?!?!
-
-            # if next_task not in self.upcomingTaskQueue:
-            #     if next_task not in self._taskQueue:
-            #         print ("Error in addVMStartToTaskQ(): next_task not in upcomingTaskQueue or taskQ. task:")
-            #         task.print_task()
-            #         print ("Printing task queue:")
-            #         for aTask in self._taskQueue:
-            #             aTask.print_task()
-            #         print ("Printing upcoming task queue:")
-            #         for aTask in self.upcomingTaskQueue:
-            #             aTask.print_task()
-            #         raise ValueError ("Error in addVMStartToTaskQ(): next_task is neither in upcomingTaskQueue nor taskQ")
-            #     if next_task.taskType != Task.TASK_TYPE_VM_START:
-            #         raise ValueError ("Error in complete_service_task(): nextTask is expected to be a VM_START task")
-            # else: # next_task in self.upcomingTaskQueue
-
-            if arrival_time > curr_time:
-                next_task.arrivalTime = arrival_time
-            elif arrival_time == curr_time:
-                self.upcomingTaskQueue.remove(next_task)
-                # Add the next_task to the taskQ
-                if len(self._taskQueue) > 0:
-                    if self.sched_policy == 'EDF':
-                        next_task.expiry = self._taskQueue[-1].expiry
-                    elif self.sched_policy == 'FIFO':
-                        next_task.arrivalTime = curr_time
-                    else:
-                        raise ValueError("Invalid scheduling policy")
-                    self.addToTaskQueue(next_task, curr_time, update_arrival_time)
-                else:
-                    # Run this task (if there is available CPU resources)
-                    self.addToTaskQueue(next_task, curr_time, update_arrival_time)
-            else:
-                raise ValueError("Error in addVMStartToTaskQ(): arrival_time for the task: " + str(
-                    arrival_time) + " should not be smaller than curr_time: " + str(curr_time))
-
-    def addToTaskQueue(self, aTask, curTime, update_arrival_time=True):
-
-        self._taskQueue.append(aTask)
+        self._taskQueue[core].append(aTask)
 
         if update_arrival_time is True:
             aTask.arrivalTime = curTime
 
         if self.sched_policy == 'EDF':
-            self._taskQueue = sorted(self._taskQueue, key=lambda x: x.expiry)
+            self._taskQueue[core] = sorted(self._taskQueue[core], key=lambda x: x.expiry)
         elif self.sched_policy == 'FIFO':
-            self._taskQueue = sorted(self._taskQueue, key=lambda x: x.arrivalTime)
+            self._taskQueue[core] = sorted(self._taskQueue[core], key=lambda x: x.arrivalTime)
         else:
             raise ValueError("Invalid scheduling policy")
 
@@ -275,13 +279,13 @@ class Scheduler(object):
             self.queuedServicesPerReceiver[int(aTask.receiver[4:])][aTask.service] += 1
             self.queuedServices[aTask.service] += 1
 
-    def addToUpcomingTaskQueue(self, aTask, curTime):
-        self.upcomingTaskQueue.append(aTask)
-        self.upcomingTaskQueue = sorted(self.upcomingTaskQueue, key=lambda x: x.arrivalTime)
+    def addToUpcomingTaskQueue(self, aTask, core, curTime):
+        self.upcomingTaskQueue[core].append(aTask)
+        self.upcomingTaskQueue[core] = sorted(self.upcomingTaskQueue[core], key=lambda x: x.arrivalTime)
 
     def get_available_core(self, curTime, update_arrival_times=True):
-
-        self.update_state(curTime, update_arrival_times)
+        for core in range(self.numOfCores):
+            self.update_state(curTime, core, update_arrival_times)
         indx = self.coreFinishTime.index(min(self.coreFinishTime))
         if self.coreFinishTime[indx] <= curTime:
             self.coreFinishTime[indx] = curTime
@@ -294,11 +298,29 @@ class Scheduler(object):
 
         return indx
 
-    def get_next_task_admit_time(self, curTime):
-        indx = self.get_next_available_core()
-        if self.coreFinishTime[indx] < curTime:
-            self.coreFinishTime[indx] = curTime
-        return self.coreFinishTime[indx]
+    def get_next_task_admit_time(self, curTime, core=None):
+        min_accept = float("inf")
+        if core is None:
+            indx = self.get_next_available_core()
+            if self.coreFinishTime[indx] < curTime:
+                self.coreFinishTime[indx] = curTime
+            else:
+                if not self.upcomingTaskQueue[indx]:
+                    return indx, self.coreFinishTime[indx]
+                for c in range(self.numOfCores):
+                    if not self.upcomingTaskQueue[c]:
+                        indx = c
+                        break
+                    elif self.upcomingTaskQueue[c][-1].completionTime < min_accept:
+                        min_accept = self.upcomingTaskQueue[c][-1].completionTime
+                        indx = c
+                else:
+                    return indx, self.upcomingTaskQueue[indx][-1].completionTime
+        else:
+            indx = core
+            if self.coreFinishTime[indx] < curTime:
+                self.coreFinishTime[indx] = curTime
+        return indx, self.coreFinishTime[indx]
 
     def get_next_finish_time(self, curTime):
         """
@@ -331,7 +353,7 @@ class Scheduler(object):
         self.waitingTime += taskWaitingTime
         self.taskCount += 1
 
-    def update_state(self, curTime, update_arrival_times=True):
+    def update_state(self, curTime, core, update_arrival_times=True):
         """
         Updates the completion times of currently running tasks according to
         the current curTime and returns the number of running tasks
@@ -340,13 +362,13 @@ class Scheduler(object):
 
         # The following is to accommodate coordinated routing
         ### Move any tasks in the upcomingTasksQueue to taskQueue if they have already arrived
-        if len(self.upcomingTaskQueue) > 0:
+        if len(self.upcomingTaskQueue[core]) > 0:
             new_addition = False
-            for task in self.upcomingTaskQueue[:]:
+            for task in self.upcomingTaskQueue[core][:]:
                 if curTime < task.arrivalTime:
                     continue
-                aTask = self.upcomingTaskQueue.remove(task)
-                self.addToTaskQueue(task, curTime, update_arrival_times)
+                self.upcomingTaskQueue[core].remove(task)
+                self.addToTaskQueue(task, curTime, core, update_arrival_times)
                 new_addition = True
         numRunning = 0
         for indx in range(0, self.numOfCores):
@@ -363,8 +385,7 @@ class Scheduler(object):
     # This needs to be modified as it is unable to mimic the real scheduling of VMs that go through a startup process.
     # The problem is that there needs to be a delay before a VM is ready to use (i.e., becomes idle) and this is not done
     # in this method.
-    def schedule_without_vm_allocation(self, curTime, upcomingVMStartEvents, numVMs, numStartingVMs, fail_if_no_vm=True,
-                                       debug=True):
+    def schedule_without_vm_allocation(self, curTime, upcomingVMStartEvents, numVMs, numStartingVMs, fail_if_no_vm=False, debug=False):
         """
         Return the next task to be executed, if there is any.
         """
@@ -374,61 +395,65 @@ class Scheduler(object):
             raise ValueError("Error in schedule(): curTime is invalid - " + str(curTime))
 
         # The following is to accommodate coordinated routing
-        if len(self.upcomingTaskQueue) > 0:
+        if len(self.upcomingTaskQueue[core_indx]) > 0:
             new_addition = False
-            self.upcomingTaskQueue = sorted(self.upcomingTaskQueue, key=lambda x: x.arrivalTime)
-            for task in self.upcomingTaskQueue[:]:
+            self.upcomingTaskQueue[core_indx] = sorted(self.upcomingTaskQueue[core_indx], key=lambda x: x.arrivalTime)
+            for task in self.upcomingTaskQueue[core_indx][:]:
                 if curTime < task.arrivalTime:
                     continue
-                self.upcomingTaskQueue.remove(task)
-                self.addToTaskQueue(task, curTime, False)
+                self.upcomingTaskQueue[core_indx].remove(task)
+                self.addToTaskQueue(task, curTime, core_indx, False)
                 new_addition = True
 
-        for aTask in upcomingVMStartEvents[:]:
-            if aTask.completionTime <= curTime:
-                service = aTask.serviceToInstantiate
-                numVMs[service] += 1
-                numStartingVMs[service] -= 1
-                heapq.heappop(upcomingVMStartEvents)
-            else:
-                break
+        # for aTask in upcomingVMStartEvents[:]:
+        #     if aTask.completionTime <= curTime:
+        #         service = aTask.serviceToInstantiate
+        #         numVMs[service] += 1
+        #         numStartingVMs[service] -= 1
+        #         heapq.heappop(upcomingVMStartEvents)
+        #     else:
+        #         break
 
-        if (len(self._taskQueue) > 0) and (core_indx is not None):
+        if (core_indx is not None) and (len(self._taskQueue[core_indx]) > 0):
             runningServices = self.runningServices
             runningTasks = self.runningTasks
-            for aTask in self._taskQueue[:]:
-                serv_count = runningServices.count(aTask.service)
-                number_of_vms = numVMs[aTask.service]
-                if number_of_vms > 0:
-                    available_vms = number_of_vms - serv_count
-                    if available_vms > 0:
-                        # self.taskQueue.remove(aTask)
-                        self.removeFromTaskQueue(aTask)
-                        aTask.completionTime = curTime + aTask.exec_time
-                        if debug:
-                            print("Schedule_without_vm_allocation: Task is scheduled to run:")
-                            aTask.print_task()
+            for aTask in self._taskQueue[core_indx][:]:
+                # FIXME:
+                #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                #  THIS IS THE PART THAT NEEDS MODIFICATIONS, TO *ACTUALLY* WORK WITHOUT VMs!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                #  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!(as it says on the cover)!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                # serv_count = runningServices.count(aTask.service)
+                # number_of_vms = numVMs[aTask.service]
+                # if number_of_vms > 0:
+                #     available_vms = number_of_vms - serv_count
+                #     if available_vms > 0:
+                if self.try_task_schedule(curTime, aTask):
+                    # self._taskQueue.remove(aTask)
+                    # self.removeFromTaskQueue(aTask)
+                    if debug:
+                        print("Schedule_without_vm_allocation: Task is scheduled to run:")
+                        aTask.print_task()
 
-                        if aTask.taskType == Task.TASK_TYPE_VM_START:
-                            heapq.heappush(upcomingVMStartEvents, aTask)
-                            newService = aTask.serviceToInstantiate
-                            oldService = aTask.service
-                            numStartingVMs[newService] += 1
-                            numVMs[oldService] -= 1
-                            if aTask.arrivalTime <= curTime:
-                                self.assign_task_to_cpu_core(core_indx, aTask, curTime)
-                            else:
-                                self._taskQueue.append(aTask)
+                        # if aTask.taskType == Task.TASK_TYPE_VM_START:
+                        #     heapq.heappush(upcomingVMStartEvents, aTask)
+                        #     newService = aTask.serviceToInstantiate
+                        #     oldService = aTask.service
+                        #     numStartingVMs[newService] += 1
+                        #     numVMs[oldService] -= 1
+                        #     if aTask.arrivalTime <= curTime:
+                        #         self.assign_task_to_cpu_core(core_indx, aTask, curTime)
+                        #     else:
+                        #         self._taskQueue.append(aTask)
 
-                        elif aTask.taskType == Task.TASK_TYPE_SERVICE:
-                            self.assign_task_to_cpu_core(core_indx, aTask, curTime)
+                    # if aTask.taskType == Task.TASK_TYPE_SERVICE:
+                    #     self.assign_task_to_cpu_core(core_indx, aTask, curTime)
 
-                        return aTask
-                    else:
-                        if debug:
-                            print("No idle VMs for service: " + str(aTask.service))
-                else:
-                    if fail_if_no_vm is True:
+                    return aTask
+                    # else:
+                    #     if debug:
+                    #         print("No idle VMs for service: " + str(aTask.service))
+                # else:
+                    # if fail_if_no_vm is True:
                         # Under strange circumstances where one service is both being replaced and added
                         # there may be no instances available for a task that is being considered.
                         # print ("This should not happen in schedule_without_vm_allocation(): no instances")
@@ -444,11 +469,11 @@ class Scheduler(object):
                         # for task in self.cs.scheduler._taskQueue:
                         #    task.print_task()
                         # raise ValueError("Error in schedule_without_vm_allocation(): unable to find a VM for a service: " + str(aTask.service))
-                        aTask.completionTime = float('inf')
-                        return aTask
-                    else:
-                        aTask.completionTime = float('inf')
-                        return aTask
+                        # aTask.completionTime = float('inf')
+                        # return aTask
+                    # else:
+                    #     aTask.completionTime = float('inf')
+                    #     return aTask
         return None
 
     def try_task_schedule(self, curTime, task):
@@ -459,21 +484,21 @@ class Scheduler(object):
         if core_indx is None:
             return False
 
-        if task not in self._taskQueue:
+        if task not in self._taskQueue[core_indx]:
             raise ValueError("This should not happen in try_task_schedule(): task to schedule is not in taskQ")
 
         # The following is to accommodate coordinated routing
-        if len(self.upcomingTaskQueue) > 0:
-            self.upcomingTaskQueue = sorted(self.upcomingTaskQueue, key=lambda x: x.arrivalTime)
-            for aTask in self.upcomingTaskQueue[:]:
+        if len(self.upcomingTaskQueue[core_indx]) > 0:
+            self.upcomingTaskQueue[core_indx] = sorted(self.upcomingTaskQueue[core_indx], key=lambda x: x.arrivalTime)
+            for aTask in self.upcomingTaskQueue[core_indx][:]:
                 if curTime < aTask.arrivalTime:
                     continue
-                self.upcomingTaskQueue.remove(aTask)
-                self.addToTaskQueue(aTask, curTime)
+                self.upcomingTaskQueue[core_indx].remove(aTask)
+                self.addToTaskQueue(aTask, curTime, core_indx)
 
-        aTask = self._taskQueue[0]
-        if aTask == task and len(self.idleVMs[aTask.service]) > 0:
-            self.removeFromTaskQueue(task)
+        aTask = self._taskQueue[core_indx][0]
+        if aTask == task:
+            self.removeFromTaskQueue(task, core_indx)
             task.completionTime = curTime + task.exec_time
             self.cs.run_task(core_indx, task, curTime)
             return True
@@ -494,35 +519,35 @@ class Scheduler(object):
             return None
 
         # The following is to accommodate coordinated routing
-        if len(self.upcomingTaskQueue) > 0:
-            self.upcomingTaskQueue = sorted(self.upcomingTaskQueue, key=lambda x: x.arrivalTime)
-            for task in self.upcomingTaskQueue[:]:
+        if len(self.upcomingTaskQueue[core_indx]) > 0:
+            self.upcomingTaskQueue[core_indx] = sorted(self.upcomingTaskQueue[core_indx], key=lambda x: x.arrivalTime)
+            for task in self.upcomingTaskQueue[core_indx][:]:
                 if curTime < task.arrivalTime:
                     continue
-                self.upcomingTaskQueue.remove(task)
-                self.addToTaskQueue(task, curTime)
+                self.upcomingTaskQueue[core_indx].remove(task)
+                self.addToTaskQueue(task, curTime, core_indx)
 
-        if (len(self._taskQueue) > 0) and (core_indx is not None):
-            for aTask in self._taskQueue[:]:
-                if len(self.idleVMs[aTask.service]) > 0:
-                    self.removeFromTaskQueue(aTask)
-                    aTask.completionTime = curTime + aTask.exec_time
-                    self.cs.run_task(core_indx, aTask, curTime)
-                    if debug:
-                        print("Schedule: Task is scheduled to run:")
-                        aTask.print_task()
-                    if len(aTask.nextTask) > 0:
-                        for nTask in aTask.nextTask:
-                            nTask.arrivalTime = aTask.completionTime
-                    return aTask
-                else:
-                    if debug:
-                        print("No idle VMs for service: " + str(aTask.service))
-                    if (len(self.idleVMs[aTask.service]) + len(self.busyVMs[aTask.service])) <= 0:
-                        print("This should not happen in scheduler: no instances, task:")
-                        aTask.print_task()
-                    #                        raise ValueError("Error in schedule(): unable to find a VM for a service" + str(aTask.service))
-                    self.cs.insufficientVMEvents[aTask.service] += 1
+        if (core_indx is not None) and (len(self._taskQueue[core_indx]) > 0):
+            for aTask in self._taskQueue[core_indx][:]:
+                # if len(self.idleVMs[aTask.service]) > 0:
+                self.removeFromTaskQueue(aTask, core_indx)
+                aTask.completionTime = curTime + aTask.exec_time
+                self.cs.run_task(core_indx, aTask, curTime)
+                if debug:
+                    print("Schedule: Task is scheduled to run:")
+                    aTask.print_task()
+                if len(aTask.nextTask) > 0:
+                    for nTask in aTask.nextTask:
+                        nTask.arrivalTime = aTask.completionTime
+                return aTask
+                # else:
+                #     if debug:
+                #         print("No idle VMs for service: " + str(aTask.service))
+                #     if (len(self.idleVMs[aTask.service]) + len(self.busyVMs[aTask.service])) <= 0:
+                #         print("This should not happen in scheduler: no instances, task:")
+                #         aTask.print_task()
+                #     #                        raise ValueError("Error in schedule(): unable to find a VM for a service" + str(aTask.service))
+                #     self.cs.insufficientVMEvents[aTask.service] += 1
         return None
 
     def print_core_status(self):
@@ -620,45 +645,45 @@ class ComputationSpot(object):
                 self.allVMs.append(aVM)
                 self.scheduler.idleVMs[service_index].append(aVM)
                 evicted = self.model.cache[node].put(service_index)  # HACK: should use controller here
-        if self.is_cloud == False:
-            for service in range(len(ComputationSpot.services)):
-                if self.numberOfVMInstances[service] != len(self.scheduler.idleVMs[service]) + len(
-                        self.scheduler.busyVMs[service]) + len(self.scheduler.startingVMs[service]):
-                    print("Error in setting up the VMs at node: " + str(self.node))
-                    print("numberOfInstances = " + str(self.numberOfVMInstances[service]))
-                    print("Total VMs: " + str(
-                        len(self.scheduler.idleVMs[service]) + len(self.scheduler.busyVMs[service]) + len(
-                            self.scheduler.startingVMs[service])))
-                    print("\t Idle: " + str(len(self.scheduler.idleVMs[service])) + " Busy: " + str(
-                        len(self.scheduler.busyVMs[service])) + " Starting: " + str(
-                        len(self.scheduler.startingVMs[service])))
-                    raise ValueError("Error in setting up the VMs")
+        # if self.is_cloud == False:
+        #     for service in range(len(ComputationSpot.services)):
+                # if self.numberOfVMInstances[service] != len(self.scheduler.idleVMs[service]) + len(
+                #         self.scheduler.busyVMs[service]) + len(self.scheduler.startingVMs[service]):
+                #     print("Error in setting up the VMs at node: " + str(self.node))
+                #     print("numberOfInstances = " + str(self.numberOfVMInstances[service]))
+                #     print("Total VMs: " + str(
+                #         len(self.scheduler.idleVMs[service]) + len(self.scheduler.busyVMs[service]) + len(
+                #             self.scheduler.startingVMs[service])))
+                #     print("\t Idle: " + str(len(self.scheduler.idleVMs[service])) + " Busy: " + str(
+                #         len(self.scheduler.busyVMs[service])) + " Starting: " + str(
+                #         len(self.scheduler.startingVMs[service])))
+                #     raise ValueError("Error in setting up the VMs")
 
-    def complete_VM_start(self, controller, task, curTime):
-        service = task.serviceToInstantiate
-        if service is None:
-            print("Error in complete_VM_start(): service to instantiate is not specified")
-            raise ValueError("missing task field service to instantiate")
-        if len(self.scheduler.startingVMs[service]) <= 0:
-            print("Error in complete_VM_start(): No VM instance to start for service: " + str(service))
-            raise ValueError("No VM instance to start")
-        vm = self.scheduler.startingVMs[service].pop(0)
-        self.scheduler.idleVMs[service].append(vm)
-        vm.set_service(service)
+    # def complete_VM_start(self, controller, task, curTime):
+    #     service = task.serviceToInstantiate
+    #     if service is None:
+    #         print("Error in complete_VM_start(): service to instantiate is not specified")
+    #         raise ValueError("missing task field service to instantiate")
+    #     if len(self.scheduler.startingVMs[service]) <= 0:
+    #         print("Error in complete_VM_start(): No VM instance to start for service: " + str(service))
+    #         raise ValueError("No VM instance to start")
+    #     vm = self.scheduler.startingVMs[service].pop(0)
+    #     self.scheduler.idleVMs[service].append(vm)
+    #     vm.set_service(service)
 
     def complete_service_task(self, controller, task, curTime):
-        vm = task.getVM()
-        if vm is None:
-            print("Error in complete_service_task(): completed service task is missing a VM")
-            raise ValueError("invalid task")
+        # vm = task.getVM()
+        # if vm is None:
+        #     print("Error in complete_service_task(): completed service task is missing a VM")
+        #     raise ValueError("invalid task")
 
-        self.scheduler.busyVMs[task.service].remove(vm)
-        self.scheduler.idleVMs[task.service].append(vm)
+        # self.scheduler.busyVMs[task.service].remove(vm)
+        # self.scheduler.idleVMs[task.service].append(vm)
 
         if len(task.nextTask) > 0:
-            self.scheduler.addVMStartToTaskQ(task, curTime, curTime)
+            # self.scheduler.addVMStartToTaskQ(task, curTime, curTime)
             while True:
-                newTask = self.scheduler.schedule(curTime)
+                newTask = self.scheduler.schedule_without_vm_allocation(curTime, [], self.allVMs, [], False, False)
                 if newTask is not None:
                     # print("In complete_service_task(): scheduling a VM reassign: " + str(newTask.service) + " to " + str(newTask.serviceToInstantiate))
                     controller.add_event(newTask.completionTime, newTask.receiver, newTask.service, newTask.labels,
@@ -668,27 +693,27 @@ class ComputationSpot(object):
                     break
 
     def complete_task(self, controller, task, curTime):
-        if task.taskType == Task.TASK_TYPE_VM_START:
-            self.complete_VM_start(controller, task, curTime)
-        elif task.taskType == Task.TASK_TYPE_SERVICE:
+        # if task.taskType == Task.TASK_TYPE_VM_START:
+        #     self.complete_VM_start(controller, task, curTime)
+        if task.taskType == Task.TASK_TYPE_SERVICE:
             self.complete_service_task(controller, task, curTime)
         else:
             raise ValueError("Error in complete_task(): Invalid taskType " + str(task.taskType))
 
     def run_task(self, core_indx, aTask, curTime):
         self.scheduler.assign_task_to_cpu_core(core_indx, aTask, curTime)
-        self.assign_task_to_vm(aTask)
+        # self.assign_task_to_vm(aTask)
 
-    def assign_task_to_vm(self, aTask):
-        aVM = self.scheduler.idleVMs[aTask.service].pop(0)
-        if aTask.taskType == Task.TASK_TYPE_VM_START:
-            self.scheduler.startingVMs[aTask.serviceToInstantiate].append(aVM)
-        elif aTask.taskType == Task.TASK_TYPE_SERVICE:
-            self.scheduler.busyVMs[aTask.service].append(aVM)
-        else:
-            raise ValueError("Invalid TaskType: " + str(aTask.taskType))
-        aTask.setVM(aVM)
-        aVM.setTask(aTask)
+    # def assign_task_to_vm(self, aTask):
+    #     aVM = self.scheduler.idleVMs[aTask.service].pop(0)
+    #     if aTask.taskType == Task.TASK_TYPE_VM_START:
+    #         self.scheduler.startingVMs[aTask.serviceToInstantiate].append(aVM)
+    #     elif aTask.taskType == Task.TASK_TYPE_SERVICE:
+    #         self.scheduler.busyVMs[aTask.service].append(aVM)
+    #     else:
+    #         raise ValueError("Invalid TaskType: " + str(aTask.taskType))
+    #     aTask.setVM(aVM)
+    #     aVM.setTask(aTask)
 
     def get_latest_service_task(self):
         """ Return the task with the largest expiry for any service task
@@ -696,27 +721,28 @@ class ComputationSpot(object):
         latest_time = 0.0
         task = None
 
-        # To accommodate coordinated strategy which schedules future service tasks to arrive.
-        for aTask in self.scheduler.upcomingTaskQueue:
-            if aTask.taskType == Task.TASK_TYPE_SERVICE and aTask.arrivalTime > latest_time:
-                latest_time = aTask.arrivalTime
-                task = aTask
-
-        if task is not None:
-            return task
-
-        for aTask in self.scheduler._taskQueue:
-            if self.scheduler.sched_policy == 'EDF':
-                if aTask.taskType == Task.TASK_TYPE_SERVICE and aTask.expiry > latest_time:
-                    latest_time = aTask.expiry
-                    task = aTask
-            elif self.scheduler.sched_policy == 'FIFO':
+        for core in range(self.numOfCores):
+            # To accommodate coordinated strategy which schedules future service tasks to arrive.
+            for aTask in self.scheduler.upcomingTaskQueue[core]:
                 if aTask.taskType == Task.TASK_TYPE_SERVICE and aTask.arrivalTime > latest_time:
                     latest_time = aTask.arrivalTime
                     task = aTask
-            else:
-                raise ValueError(
-                    "In get_latest_service_task(): invalid schedule policy: " + str(self.scheduler.sched_policy))
+
+            if task is not None:
+                return task
+
+            for aTask in self.scheduler._taskQueue[core]:
+                if self.scheduler.sched_policy == 'EDF':
+                    if aTask.taskType == Task.TASK_TYPE_SERVICE and aTask.expiry > latest_time:
+                        latest_time = aTask.expiry
+                        task = aTask
+                elif self.scheduler.sched_policy == 'FIFO':
+                    if aTask.taskType == Task.TASK_TYPE_SERVICE and aTask.arrivalTime > latest_time:
+                        latest_time = aTask.arrivalTime
+                        task = aTask
+                else:
+                    raise ValueError(
+                        "In get_latest_service_task(): invalid schedule policy: " + str(self.scheduler.sched_policy))
 
         return task
 
@@ -726,18 +752,19 @@ class ComputationSpot(object):
 
         latest_deadline = 0.0
         task = None
-        for aTask in self.scheduler._taskQueue:
-            if aTask.taskType == Task.TASK_TYPE_SERVICE and aTask.service == service and aTask.expiry > latest_deadline:
-                latest_deadline = aTask.expiry
-                task = aTask
+        for core in range(self.numOfCores):
+            for aTask in self.scheduler._taskQueue[core]:
+                if aTask.taskType == Task.TASK_TYPE_SERVICE and aTask.service == service and aTask.expiry > latest_deadline:
+                    latest_deadline = aTask.expiry
+                    task = aTask
 
-        # Below is added to accommodate coordinated strategy
-        for aTask in self.scheduler.upcomingTaskQueue:
-            if aTask.taskType == Task.TASK_TYPE_SERVICE and aTask.service == service and aTask.expiry > latest_deadline:
-                latest_deadline = aTask.expiry
-                task = aTask
-                print("In get_latest_task(): task selected from upcomingTaskQueue:")
-                task.print_task()
+            # Below is added to accommodate coordinated strategy
+            for aTask in self.scheduler.upcomingTaskQueue[core]:
+                if aTask.taskType == Task.TASK_TYPE_SERVICE and aTask.service == service and aTask.expiry > latest_deadline:
+                    latest_deadline = aTask.expiry
+                    task = aTask
+                    print("In get_latest_task(): task selected from upcomingTaskQueue:")
+                    task.print_task()
 
         return task
 
@@ -756,80 +783,84 @@ class ComputationSpot(object):
         # The below copy operations are necessary as copy.copy only makes
         # a shallow copy, which simply copies references of the following two
         # lists in scheduler to schedulerCopy.
-        self.schedulerCopy._taskQueue = copy.copy(self.scheduler._taskQueue)
-        self.schedulerCopy.upcomingTaskQueue = copy.copy(self.scheduler.upcomingTaskQueue)
+        for core in range(self.numOfCores):
+            self.schedulerCopy._taskQueue[core] = copy.copy(self.scheduler._taskQueue[core])
+        self.schedulerCopy.upcomingTaskQueue[core] = copy.copy(self.scheduler.upcomingTaskQueue[core])
         self.schedulerCopy.coreFinishTime = copy.copy(self.scheduler.coreFinishTime)
         self.schedulerCopy.runningServices = copy.copy(self.scheduler.runningServices)
+        self.schedulerCopy.runningTasks = copy.copy(self.scheduler.runningTasks)
 
-        numVMs = {x: len(self.scheduler.idleVMs[x]) + len(self.scheduler.busyVMs[x]) for x in range(len(self.services))}
+        # numVMs = {x: len(self.scheduler.idleVMs[x]) + len(self.scheduler.busyVMs[x]) for x in range(len(self.services))}
         # Copy on read/write
-        numStartingVMs = {x: len(self.scheduler.startingVMs[x]) for x in range(len(self.services))}
-        upcomingVMStartEvents = []
-        for service in range(self.service_population_size):
-            for aVM in self.scheduler.startingVMs[service]:
-                heapq.heappush(upcomingVMStartEvents, aVM.runningTask)
+        # numStartingVMs = {x: len(self.scheduler.startingVMs[x]) for x in range(len(self.services))}
+        # upcomingVMStartEvents = []
+        # for service in range(self.service_population_size):
+        #     for aVM in self.scheduler.startingVMs[service]:
+        #         heapq.heappush(upcomingVMStartEvents, aVM.runningTask)
 
-        numRunning = self.schedulerCopy.update_state(curTime, False)
+        # numRunning = self.schedulerCopy.update_state(curTime, False)
 
         if debug:
             print("Time = " + str(curTime))
             print("\tNumber of VMs for node: " + str(self.node))
-            print(numVMs)
+            # print(numVMs)
             print("\tPrinting task queue for node: " + str(self.node))
-            for task_indx in range(0, len(self.schedulerCopy._taskQueue)):
-                self.schedulerCopy._taskQueue[task_indx].print_task()
+            for core in range(self.numOfCores):
+                for task_indx in range(0, len(self.schedulerCopy._taskQueue[core])):
+                    self.schedulerCopy._taskQueue[core][task_indx].print_task()
             print("\tPrinting upcoming task queue for node: " + str(self.node))
-            for task_indx in range(0, len(self.schedulerCopy.upcomingTaskQueue)):
-                self.schedulerCopy.upcomingTaskQueue[task_indx].print_task()
+            for task_indx in range(0, len(self.schedulerCopy.upcomingTaskQueue[core])):
+                self.schedulerCopy.upcomingTaskQueue[core][task_indx].print_task()
             self.schedulerCopy.print_core_status()
 
-        while len(self.schedulerCopy._taskQueue) > 0 or len(self.schedulerCopy.upcomingTaskQueue) > 0:
-            taskToExecute = self.schedulerCopy.schedule_without_vm_allocation(curTime, upcomingVMStartEvents, numVMs,
-                                                                              numStartingVMs, fail_if_no_vm, debug)
-            # if fail_if_no_vm is False and taskToExecute is not None and taskToExecute.completionTime == float('inf'):
-            if taskToExecute is not None and taskToExecute.completionTime == float('inf'):
-                break
-            if debug:
-                print("Time = " + str(curTime))
-                if taskToExecute is not None:
-                    print("\tTask to execute for flow: " + str(taskToExecute.flow_id))
-                else:
-                    print("\tNo task to execute")
-                    print("Current curTime: " + str(curTime))
-                    if len(self.schedulerCopy.upcomingTaskQueue) > 0:
-                        print("Upcoming task queue not empty: " + str(len(self.schedulerCopy.upcomingTaskQueue)))
-                        for task in self.schedulerCopy.upcomingTaskQueue:
-                            task.print_task()
-                    if len(self.schedulerCopy._taskQueue) > 0:
-                        print("task queue not empty: " + str(len(self.schedulerCopy._taskQueue)))
-                        for task in self.schedulerCopy._taskQueue:
-                            task.print_task()
+        for core in range(self.numOfCores):
+            while len(self.schedulerCopy._taskQueue[core]) > 0 or len(self.schedulerCopy.upcomingTaskQueue[core]) > 0:
+                taskToExecute = self.schedulerCopy.schedule_without_vm_allocation(curTime, [], self.allVMs, [], False, debug)
+                # if fail_if_no_vm is False and taskToExecute is not None and taskToExecute.completionTime == float('inf'):
+                if taskToExecute is not None and taskToExecute.completionTime == float('inf'):
+                    break
+                if debug:
+                    print("Time = " + str(curTime))
+                    if taskToExecute is not None:
+                        print("\tTask to execute for flow: " + str(taskToExecute.flow_id))
+                    else:
+                        print("\tNo task to execute")
+                        print("Current curTime: " + str(curTime))
+                        if len(self.schedulerCopy.upcomingTaskQueue[core]) > 0:
+                            print("Upcoming task queue not empty: " + str(len(self.schedulerCopy.upcomingTaskQueue[core])))
+                            for task in self.schedulerCopy.upcomingTaskQueue[core]:
+                                task.print_task()
+                        if len(self.schedulerCopy._taskQueue[core]) > 0:
+                            print("task queue not empty: " + str(len(self.schedulerCopy._taskQueue[core])))
+                            for task in self.schedulerCopy._taskQueue[core]:
+                                task.print_task()
 
-            # add nextTask to the taskQ
-            if taskToExecute is not None and len(taskToExecute.nextTask) > 0:
-                self.schedulerCopy.addVMStartToTaskQ(taskToExecute, curTime, taskToExecute.completionTime, False)
+                # add nextTask to the taskQ
+                # if taskToExecute is not None and len(taskToExecute.nextTask) > 0:
+                #     self.schedulerCopy.addVMStartToTaskQ(taskToExecute, curTime, taskToExecute.completionTime, False)
 
-            next_time = self.schedulerCopy.get_next_task_admit_time(curTime)
+                indx, next_time = self.schedulerCopy.get_next_task_admit_time(curTime, core)
 
-            if taskToExecute is None and next_time <= curTime:
-                if len(self.schedulerCopy._taskQueue) == 0 and len(self.schedulerCopy.upcomingTaskQueue) > 0:
-                    # if nothing left in the taskQueue but there are tasks
-                    # in the upcomingTaskQueue, then fast-forward curTime
-                    next_time = self.schedulerCopy.upcomingTaskQueue[0].arrivalTime
-                elif len(self.schedulerCopy._taskQueue) > 0:
-                    # it may happen that scheduler fails to execute
-                    # a task because of VM unavailability
-                    # and not due to computational resource unavailability.
-                    # In that case, fast-forward curTime.
-                    next_time = self.schedulerCopy.get_next_finish_time(curTime)
-            # print "Scheduling: " + repr(taskToExecute)
-            curTime = next_time
-            if curTime == float('inf'):
-                print("Error: Time is infinite!")
-                break
-            numRunning = self.schedulerCopy.update_state(curTime, False)
-            if debug:
-                print("NumRunning: " + str(numRunning))
+                if taskToExecute is None and next_time <= curTime:
+                    if len(self.schedulerCopy._taskQueue[core]) == 0 and len(self.schedulerCopy.upcomingTaskQueue[core]) > 0:
+                        # if nothing left in the taskQueue but there are tasks
+                        # in the upcomingTaskQueue[core], then fast-forward curTime
+                        next_time = self.schedulerCopy.upcomingTaskQueue[core][0].arrivalTime
+                    elif len(self.schedulerCopy._taskQueue) > 0:
+                        # it may happen that scheduler fails to execute
+                        # a task because of VM unavailability
+                        # and not due to computational resource unavailability.
+                        # In that case, fast-forward curTime.
+                        next_time = self.schedulerCopy.get_next_finish_time(curTime)
+                # print "Scheduling: " + repr(taskToExecute)
+                curTime = next_time
+                if curTime == float('inf'):
+                    print("Error: Time is infinite!")
+                    break
+                numRunning = self.schedulerCopy.update_state(curTime, core, False)
+                if debug:
+                    print("NumRunning: " + str(numRunning))
+                return taskToExecute
 
     def admit_task_FIFO(self, service, labels, h_spaces, curTime, flow_id, deadline, receiver, rtt_delay, controller,
                         debug):
@@ -872,13 +903,13 @@ class ComputationSpot(object):
         aTask = Task(curTime, Task.TASK_TYPE_SERVICE, deadline, rtt_delay, self.node, service, labels, h_spaces,
                      serviceTime, flow_id, receiver)
         self.scheduler.addToTaskQueue(aTask, curTime)
-        self.compute_completion_times(curTime, True, debug)
+        self.compute_completion_times(curTime, False, debug)
         for task in self.scheduler._taskQueue[:]:
             if debug:
                 print("After simulate:")
                 task.print_task()
-            if task.taskType == Task.TASK_TYPE_VM_START:
-                continue
+            # if task.taskType == Task.TASK_TYPE_VM_START:
+            #     continue
             if task.completionTime is None:
                 print("Error: a task with invalid completion curTime: " + repr(task.completionTime))
                 raise ValueError("Task completion curTime is invalid")
@@ -941,11 +972,11 @@ class ComputationSpot(object):
         self.allVMs.append(aVM)
         self.scheduler.idleVMs[service].append(aVM)
 
-        if self.numberOfVMInstances[service] == 0:
-            return [False, NO_INSTANCES]
-
-        if len(self.scheduler.busyVMs[service]) + len(self.scheduler.idleVMs[service]) <= 0:
-            return [False, NO_INSTANCES]
+        # if self.numberOfVMInstances[service] == 0:
+        #     return [False, NO_INSTANCES]
+        #
+        # if len(self.scheduler.busyVMs[service]) + len(self.scheduler.idleVMs[service]) <= 0:
+        #     return [False, NO_INSTANCES]
 
         if deadline - curTime - rtt_delay - serviceTime < 0:
             if debug:
@@ -955,34 +986,63 @@ class ComputationSpot(object):
         # check if there is a VM that already up; otherwise, reject.
         # NOTE: numberOfVMInstances variable provides a count of VMs per services at steady state.
         # It doesn't provide the actual count during VM instantiation (i.e., transition) period
-        numVMs = len(self.scheduler.idleVMs[service]) + len(self.scheduler.busyVMs[service])
-        if numVMs <= 0:
-            return [False, NO_INSTANCES]
+        # numVMs = len(self.scheduler.idleVMs[service]) + len(self.scheduler.busyVMs[service])
+        # if numVMs <= 0:
+        #     return [False, NO_INSTANCES]
 
         aTask = Task(curTime, Task.TASK_TYPE_SERVICE, deadline, rtt_delay, self.node, service, labels, h_spaces,
-                     serviceTime, flow_id, receiver)
-        self.scheduler.addToTaskQueue(aTask, curTime)
-        self.compute_completion_times(curTime, True, debug)
-        for task in self.scheduler._taskQueue[:]:
+                     serviceTime, flow_id, receiver, curTime, self.scheduler.get_next_task_admit_time(curTime)[1] +
+                     serviceTime)
+
+        core_indx = self.scheduler.get_available_core(curTime)
+        if core_indx is None:
+            if curTime + self.scheduler.get_next_task_admit_time(curTime)[1] + serviceTime + rtt_delay < deadline:
+                min_time = float('inf')
+                min_core = 0
+                for core_indx in range(self.numOfCores):
+                    if self.scheduler.upcomingTaskQueue[core_indx] != [] and \
+                            self.scheduler.upcomingTaskQueue[core_indx][-1].completionTime < min_time:
+                        min_time = self.scheduler.upcomingTaskQueue[core_indx][-1].completionTime
+                        min_core = core_indx
+                    elif not self.scheduler.upcomingTaskQueue:
+                        min_time = self.scheduler.coreFinishTime[core_indx]
+                        min_core = core_indx
+                # self.scheduler.coreFinishTime[min_core] += min_time
+                aTask.arrivalTime = self.scheduler.get_next_task_admit_time(curTime, min_core)[1]
+                if type(self.node) is int:
+                    controller.add_hash_queue(self.node, h_spaces[0], serviceTime)
+                self.scheduler.addToUpcomingTaskQueue(aTask, min_core, curTime)
+                return [False, CONGESTION]
+            else:
+                self.missed_requests[service] += 1
+                return [False, DEADLINE_MISSED]
+
+        self.scheduler.addToTaskQueue(aTask, curTime, core_indx)
+        newTask = self.compute_completion_times(curTime, False, debug)
+        controller.update_CPU_perc(self.node, curTime, serviceTime)
+        if type(self.node) is int:
+            controller.add_hash_queue(self.node, h_spaces[0], serviceTime)
+        for task in self.scheduler._taskQueue[core_indx][:]:
             if debug:
                 print("After simulate:")
                 task.print_task()
-            if task.taskType == Task.TASK_TYPE_VM_START:
-                continue
+            # if task.taskType == Task.TASK_TYPE_VM_START:
+            #     continue
             if task.completionTime is None:
                 print("Error: a task with invalid completion curTime: " + repr(task.completionTime))
-                raise ValueError("Task completion curTime is invalid")
-            if (task.expiry - task.rtt_delay) < task.completionTime:
-                self.missed_requests[service] += 1
-                if debug:
-                    print("Refusing TASK: Congestion")
-                self.scheduler.removeFromTaskQueue(aTask)
-                return [False, CONGESTION]
+                raise ValueError("Task completion time is invalid")
+            # if (task.expiry - task.rtt_delay) < task.completionTime:
+            #     self.missed_requests[service] += 1
+            #     if debug:
+            #         print("Refusing TASK: Congestion")
+            #     self.scheduler.removeFromTaskQueue(aTask)
+            #
+            #     return [False, CONGESTION]
 
         # New task can be admitted, add to service Queue
         self.running_requests[service] += 1
         # Run the next task (if there is any)
-        newTask = self.scheduler.schedule(curTime)
+        # newTask = self.scheduler.schedule_without_vm_allocation(curTime, [], self.allVMs, [], False, False)
         if newTask is not None:
             controller.add_event(newTask.completionTime, newTask.receiver, newTask.service, newTask.labels,
                                  newTask.h_spaces, self.node, newTask.flow_id, newTask.expiry, newTask.rtt_delay,
@@ -1018,7 +1078,7 @@ class ComputationSpot(object):
         if availableInstances == 0:
             return False
 
-        # numQueuedAndRunning = self.scheduler.runningServices.count(aTask.service) + self.scheduler.queuedServices[aTask.service]
+        numQueuedAndRunning = self.scheduler.runningServices.count(aTask.service) + self.scheduler.queuedServices[aTask.service]
         numRunning = 0
         for bTask in self.scheduler.runningTasks:
             if bTask is None:
@@ -1041,13 +1101,13 @@ class ComputationSpot(object):
                         perAccessPerNodePerServiceProbability[ap][node][aTask.service]))
                 ### Check if the task will satisfy the deadline
                 self.scheduler.addToTaskQueue(aTask, curTime)
-                self.compute_completion_times(curTime, True, debug)
+                self.compute_completion_times(curTime, False, debug)
                 for task in self.scheduler._taskQueue[:]:
                     if debug:
                         print("After simulate:")
                         task.print_task()
-                    if task.taskType == Task.TASK_TYPE_VM_START:
-                        continue
+                    # if task.taskType == Task.TASK_TYPE_VM_START:
+                    #     continue
                     if task.completionTime is None:
                         print("Error: a task with invalid completion curTime: " + repr(task.completionTime))
                         raise ValueError("Task completion curTime is invalid")
@@ -1060,13 +1120,13 @@ class ComputationSpot(object):
         elif (availableInstances - numQueuedAndRunning) > 1:
             ### Check if the task will satisfy the deadline
             self.scheduler.addToTaskQueue(aTask, curTime)
-            self.compute_completion_times(curTime, True, debug)
+            self.compute_completion_times(curTime, False, debug)
             for task in self.scheduler._taskQueue[:]:
                 if debug:
                     print("After simulate:")
                     task.print_task()
-                if task.taskType == Task.TASK_TYPE_VM_START:
-                    continue
+                # if task.taskType == Task.TASK_TYPE_VM_START:
+                #     continue
                 if task.completionTime is None:
                     print("Error: a task with invalid completion curTime: " + repr(task.completionTime))
                     raise ValueError("Task completion curTime is invalid")
@@ -1082,48 +1142,48 @@ class ComputationSpot(object):
             print("Rejected")
         return False
 
-    def reassign_vm(self, controller, curTime, serviceToReplace, newService, debug):
-        """
-        Instantiate service at the given vm
-        """
-        if self.numberOfVMInstances[serviceToReplace] == 0:
-            raise ValueError("Error in reassign_vm: the service to replace has no instances")
-
-        if debug:
-            print("Replacing service: " + repr(serviceToReplace) + " with: " + repr(newService) + " at node: " + repr(
-                self.node))
-        if self.numberOfVMInstances[serviceToReplace] <= 0:
-            print("Error in reassign_vm(): service to replace has no instances for service:" + str(serviceToReplace))
-            raise ValueError("Invalid number of instances of service: " + str(serviceToReplace) + " has " + str(
-                self.numberOfVMInstances[serviceToReplace]))
-        self.numberOfVMInstances[newService] += 1
-        self.numberOfVMInstances[serviceToReplace] -= 1
-        # if len(self.scheduler.busyVMs[serviceToReplace]) + len(self.scheduler.idleVMs[serviceToReplace])  <= 0:
-        #     print ("Error: No VM instance for the service that is to be replaced")
-        #     print ("Length of the busyVMs is " + str(len(self.scheduler.busyVMs[serviceToReplace])))
-        #     print ("Node: " + str(self.node))
-        #     print ("Service to replace: " + str(serviceToReplace))
-        #     print ("new service: " + str(newService))
-        #     #raise ValueError("Error in reassign_vm(): unable to find a VM instance to replace")
-
-        # lastTask = self.get_latest_task(serviceToReplace)
-        lastTask = self.get_latest_service_task()
-        if lastTask is None:
-            aTask = Task(curTime, Task.TASK_TYPE_VM_START, curTime + VM.instantiationDuration, 0, self.node,
-                         serviceToReplace, [], [], VM.instantiationDuration, None, None)
-            aTask.setServiceToInstantiate(newService)
-            self.scheduler.addToTaskQueue(aTask, curTime)
-            newTask = self.scheduler.schedule(curTime)
-            if newTask is not None:
-                controller.add_event(newTask.completionTime, newTask.receiver, newTask.service, newTask.labels,
-                                     newTask.h_spaces, self.node, newTask.flow_id, newTask.expiry, newTask.rtt_delay,
-                                     TASK_COMPLETE, newTask)
-        else:
-            aTask = Task(curTime, Task.TASK_TYPE_VM_START, float('inf'), 0, self.node, serviceToReplace, [], [],
-                         VM.instantiationDuration, None, None, float('inf'))
-            self.scheduler.addToUpcomingTaskQueue(aTask, curTime)
-            aTask.setServiceToInstantiate(newService)
-            lastTask.setNextTasktoRun(aTask)
+    # def reassign_vm(self, controller, curTime, serviceToReplace, newService, debug):
+    #     """
+    #     Instantiate service at the given vm
+    #     """
+    #     if self.numberOfVMInstances[serviceToReplace] == 0:
+    #         raise ValueError("Error in reassign_vm: the service to replace has no instances")
+    #
+    #     if debug:
+    #         print("Replacing service: " + repr(serviceToReplace) + " with: " + repr(newService) + " at node: " + repr(
+    #             self.node))
+    #     if self.numberOfVMInstances[serviceToReplace] <= 0:
+    #         print("Error in reassign_vm(): service to replace has no instances for service:" + str(serviceToReplace))
+    #         raise ValueError("Invalid number of instances of service: " + str(serviceToReplace) + " has " + str(
+    #             self.numberOfVMInstances[serviceToReplace]))
+    #     self.numberOfVMInstances[newService] += 1
+    #     self.numberOfVMInstances[serviceToReplace] -= 1
+    #     # if len(self.scheduler.busyVMs[serviceToReplace]) + len(self.scheduler.idleVMs[serviceToReplace])  <= 0:
+    #     #     print ("Error: No VM instance for the service that is to be replaced")
+    #     #     print ("Length of the busyVMs is " + str(len(self.scheduler.busyVMs[serviceToReplace])))
+    #     #     print ("Node: " + str(self.node))
+    #     #     print ("Service to replace: " + str(serviceToReplace))
+    #     #     print ("new service: " + str(newService))
+    #     #     #raise ValueError("Error in reassign_vm(): unable to find a VM instance to replace")
+    #
+    #     # lastTask = self.get_latest_task(serviceToReplace)
+    #     lastTask = self.get_latest_service_task()
+    #     if lastTask is None:
+    #         aTask = Task(curTime, Task.TASK_TYPE_VM_START, curTime + VM.instantiationDuration, 0, self.node,
+    #                      serviceToReplace, [], [], VM.instantiationDuration, None, None)
+    #         aTask.setServiceToInstantiate(newService)
+    #         self.scheduler.addToTaskQueue(aTask, curTime)
+    #         newTask = self.scheduler.schedule(curTime)
+    #         if newTask is not None:
+    #             controller.add_event(newTask.completionTime, newTask.receiver, newTask.service, newTask.labels,
+    #                                  newTask.h_spaces, self.node, newTask.flow_id, newTask.expiry, newTask.rtt_delay,
+    #                                  TASK_COMPLETE, newTask)
+    #     else:
+    #         aTask = Task(curTime, Task.TASK_TYPE_VM_START, float('inf'), 0, self.node, serviceToReplace, [], [],
+    #                      VM.instantiationDuration, None, None, float('inf'))
+    #         self.scheduler.addToUpcomingTaskQueue(aTask, curTime)
+    #         aTask.setServiceToInstantiate(newService)
+    #         lastTask.setNextTasktoRun(aTask)
 
     def getIdleTime(self, curTime):
         """

@@ -73,7 +73,7 @@ HASH_FILE = '/img_matches.txt'
 HASH_REUSE_FILE = '/hashes_reuse.txt'
 
 # Number of requests per second (over the whole network)
-NETWORK_REQUEST_RATE = 500.0
+NETWORK_REQUEST_RATE = 1000.0
 
 # Number of cores for each node in the experiment
 NUM_CORES = 4
@@ -107,7 +107,7 @@ WORKLOAD = 'STATIONARY_DATASET_HASH_LABEL_REQS'
 
 # List of caching and routing strategies
 # The code is located in ./icarus/models/strategy.py
-STRATEGIES = ['HASH_REUSE_REPO_APP', 'HASH_PROC_REPO_APP']
+STRATEGIES = ['HASH_REUSE_REPO_APP']
 EPOCH_TICKS = [500, float('inf')]
 HIT_RATE = 0.15
 #STRATEGIES = ['COORDINATED']  # service-based routing

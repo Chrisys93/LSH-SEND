@@ -867,16 +867,16 @@ class HashRepoReuseStorApp(Strategy):
         #     if type(node) is int and self.view.model.avg_CPU_perc[node] > 0.7:
         #         self.trigger_node_CPU_update(curTime, 10)
 
-        # if self.epoch_count >= self.epoch_ticks and type(node) is int:
-        #     if self.view.model.avg_CPU_perc[node] > 0.7:
-        #         self.trigger_node_proc_reuse_update(curTime, 5)
-        #         self.trigger_node_reuse_proc_update(curTime, 5)
+        if self.epoch_count >= self.epoch_ticks and type(node) is int:
+            if self.view.model.avg_CPU_perc[node] > 0.7:
+                self.trigger_node_proc_reuse_update(curTime, 5)
+                self.trigger_node_reuse_proc_update(curTime, 5)
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
         #     self.trigger_node_proc_update(curTime, 20)
 
-        if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > 0.7:
-            self.trigger_node_delay_update(curTime, 20)
+        # if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > 0.7:
+        #     self.trigger_node_delay_update(curTime, 20)
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
         #     self.epoch_node_queue_update(curTime, node, h_spaces, 20)

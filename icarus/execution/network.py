@@ -750,7 +750,7 @@ class NetworkView(object):
                 # node_proc = 0
                 # for h in self.model.busy_proc[n].keys():
                 #     node_proc += self.model.busy_proc[n][h]
-                node_proc = self.model.node_CPU_usage[n]
+                node_proc = self.model.avg_CPU_perc[n]
                 if node_proc >= max_node_proc and type(n) is int and len(self.model.busy_proc[n].keys()) > 0:
                     max_node_proc = node_proc
                     max_node = n
@@ -809,7 +809,7 @@ class NetworkView(object):
                 # node_proc = 0
                 # for h in self.model.busy_proc[n].keys():
                 #     node_proc += self.model.busy_proc[n][h]
-                node_proc = self.model.node_CPU_usage[n]
+                node_proc = self.model.avg_CPU_perc[n]
                 if node_proc <= min_node_proc and type(n) is int:
                     min_node_proc = node_proc
                     if len(self.model.all_node_h_spaces[n].keys()) == 0:
@@ -845,6 +845,85 @@ class NetworkView(object):
             hashes.append(min_hash)
 
         return nodes, hashes
+
+
+
+    def most_CPU_usage(self, exclude):
+        """
+        Parameters
+        ----------
+        list_len: integer
+            The number of nodes with the highest processing power usage
+        nodes: list
+            The list of nodes with the highest procesing power usage
+        """
+
+        max_node_proc = 0
+        max_node = None
+        for n in self.model.busy_proc:
+            if type(n) is str:
+                continue
+            node_proc = self.model.avg_CPU_perc[n]
+            if node_proc >= max_node_proc and type(n) is int and len(self.model.busy_proc[n].keys()) > 0:
+                max_node_proc = node_proc
+                max_node = n
+
+        max_hash = None
+        n = max_node
+        max_proc = 0
+        if self.model.all_node_h_spaces[n]:
+            for h in self.model.all_node_h_spaces[n]:
+                if h in exclude:
+                    continue
+                if h in self.model.bucket_CPU_perc:
+                    proc = self.model.bucket_CPU_perc[h]
+                else:
+                    proc = 0
+                if proc >= max_proc:
+                    max_proc = proc
+                    max_hash = h
+
+        return max_node, max_hash
+
+    def least_CPU_usage(self, exclude):
+        """
+        Parameters
+        ----------
+        list_len: integer
+            The number of nodes with the lowest processing power usage
+        nodes: list
+            The list of nodes with the lowest processing power usage
+        """
+
+        min_node_proc = float('inf')
+        min_node = None
+        for n in self.model.busy_proc:
+            if type(n) is str:
+                continue
+            node_proc = self.model.avg_CPU_perc[n]
+            if node_proc <= min_node_proc and type(n) is int:
+                min_node_proc = node_proc
+                min_node = n
+                if len(self.model.all_node_h_spaces[n].keys()) == 0:
+                    min_node = n
+                    break
+
+        min_hash = None
+        n = min_node
+        min_proc = float('inf')
+        if n in self.model.busy_proc and len(self.model.busy_proc[n]) > 0:
+            for h in self.model.all_node_h_spaces[n]:
+                if h in exclude:
+                    continue
+                if h in self.model.bucket_CPU_perc:
+                    proc = self.model.bucket_CPU_perc[h]
+                else:
+                    proc = 0
+                if proc <= min_proc and h:
+                    min_proc = proc
+                    min_hash = h
+
+        return min_node, min_hash
 
     def high_queue_usage(self, list_len):
         """
@@ -1044,6 +1123,7 @@ class NetworkView(object):
                 node_reuse = self.model.reuse[n]
                 if node_reuse <= min_node_reuse and type(n) is int:
                     min_node_reuse = node_reuse
+                    min_node = n
             if min_node is None:
                 if not first_recall:
                     first_recall = True
@@ -1732,12 +1812,18 @@ class NetworkModel(object):
         self.node_CPU_perc_cumulative = dict()
         self.avg_CPU_perc = dict()
 
+        # Per-bucket associated equivalent CPU usage (needs to be updated with whatever service times are already
+        self.bucket_CPU_perc = dict()
+
         # Cumulative percentage of CPUs (per-node) to be passed into next period
         self.next_node_CPU_cumulative = dict()
 
         # Variables determining the frequency of updating the latter, above.
         self.last_CPU_update_time = 0
         self.CPU_update_period = 0.1
+
+        # Keeping track of all contents/services allocated, via their associated buckets
+        self.h_spaces_contents = dict()
 
         # Dictionary of link types (internal/external)
         self.link_type = nx.get_edge_attributes(topology, 'type')
@@ -1832,6 +1918,7 @@ class NetworkModel(object):
                             self.hash_reused_count[h] = 0
                             self.hash_new_count[h] = 0
                             self.reused_hash[h] = 0
+                            self.bucket_CPU_perc[h] = 0
                     # print("contents[0] is: ", contents[0], " and its type is: ", type(contents[0]))
                     # TODO: IMPORTANT QUESTION: do sources need to have EDRs or not...?
                     if 'storageSize' in stack_props:
@@ -1849,6 +1936,10 @@ class NetworkModel(object):
                                     self.hash_CPU_usage[node][h_space] = 0
                                     self.missed_hashes[node][h_space] = 0
                                     self.queued_hashes[node][h_space] = 0
+                                    if h_space not in self.h_spaces_contents:
+                                        self.h_spaces_contents[h_space] = [c]
+                                    else:
+                                        self.h_spaces_contents[h_space].append(c)
 
                             self.source_node[node] = self.contents[node].keys()
                             for content in self.contents[node]:
@@ -1971,8 +2062,8 @@ class NetworkModel(object):
         self.n_services = n_services
         internal_link_delay = 0.001  # This is the delay from receiver to router
 
-        service_time_min = 0.01  # used to be 0.10 # used to be 0.001, 0.03 for Multi, 0.01 for MNIST
-        service_time_max = 0.015 # used to be 0.10  # used to be 0.1, 0.08 for Multi, 0.015 for MNIST
+        service_time_min = 0.008  # used to be 0.10 # used to be 0.001, 0.03 for Multi, 0.01 for MNIST
+        service_time_max = 0.018  # used to be 0.10  # used to be 0.1, 0.08 for Multi, 0.015 for MNIST
         # delay_min = 0.005
         if 'depth' in topology.graph:
             # delay_min = 2 * topology.graph['receiver_access_delay'] + service_time_max + 2 * topology.graph['link_delay']
@@ -2416,14 +2507,20 @@ class NetworkController(object):
             else:
                 self.model.busy_proc[node][h] = 0
 
-    def update_CPU_perc(self, node, curTime, serviceTime):
-        if type(node) is not str:
-            if curTime + serviceTime > self.model.last_CPU_update_time + self.model.CPU_update_period:
+    def update_CPU_perc(self, node, curTime, serviceTime, bucket, change_update=False, high_repo=None):
+        if type(node) is not str and serviceTime is not None:
+            if curTime + serviceTime > self.model.last_CPU_update_time + self.model.CPU_update_period and not change_update:
                 self.model.node_CPU_perc_cumulative[node] += self.model.last_CPU_update_time + self.model.CPU_update_period - curTime
                 self.model.next_node_CPU_cumulative[node] += serviceTime - (self.model.last_CPU_update_time + self.model.CPU_update_period - curTime)
             else:
                 self.model.node_CPU_perc_cumulative[node] += serviceTime
-        if curTime - self.model.last_CPU_update_time >= self.model.CPU_update_period:
+        elif not serviceTime and change_update and high_repo:
+            self.update_CPU_h_perc(bucket, curTime, serviceTime)
+            self.model.avg_CPU_perc[node] += self.model.bucket_CPU_perc[bucket]
+            self.model.avg_CPU_perc[high_repo] -= self.model.bucket_CPU_perc[bucket]
+            return
+        if curTime - self.model.last_CPU_update_time >= self.model.CPU_update_period and not change_update:
+            self.update_CPU_h_perc(bucket, curTime, serviceTime)
             self.update_CPU_avg_perc(curTime)
 
     def update_CPU_avg_perc(self, update_time):
@@ -2436,6 +2533,23 @@ class NetworkController(object):
             else:
                 self.model.node_CPU_perc_cumulative[node] = 0
         self.model.last_CPU_update_time = update_time
+
+    def update_CPU_h_perc(self, bucket, update_time, serviceTime=None):
+
+        for n in self.model.avg_CPU_perc:
+            if bucket in self.model.all_node_h_spaces[n]:
+                if not serviceTime:
+                    for task in self.model.compSpot[n].scheduler.runningTasks:
+                        if not serviceTime and task:
+                            service = task.service
+                            if service in self.model.h_spaces_contents[bucket]:
+                                serviceTime = self.model.compSpot[n].services[service].service_time
+                                self.model.bucket_CPU_perc[bucket] += serviceTime/\
+                                                    (self.model.comp_size[n]*(update_time - self.model.last_CPU_update_time))
+
+                else:
+                    self.model.bucket_CPU_perc[bucket] = serviceTime /(self.model.comp_size[n] *
+                                                                           (update_time - self.model.last_CPU_update_time))
 
     def update_CPU_usage(self, node, h, node_CPU, hash_CPU, CPUtime):
         self.model.node_CPU_usage[node] = node_CPU/CPUtime

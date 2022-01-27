@@ -63,7 +63,7 @@ ALPHA = 0.75 #0.75
 NETWORK_CACHE = 0.05
 
 # Number of content objects
-N_CONTENTS = 3000
+N_CONTENTS = 2000
 #N_CONTENTS = 1000
 
 N_SERVICES = N_CONTENTS
@@ -109,7 +109,7 @@ WORKLOAD = 'STATIONARY_DATASET_HASH_LABEL_REQS'
 # The code is located in ./icarus/models/strategy.py
 STRATEGIES = ['HASH_REUSE_REPO_APP', 'HASH_PROC_REPO_APP']
 EPOCH_TICKS = [500, float('inf')]
-HIT_RATE = 0.15
+HIT_RATE = 0.5
 #STRATEGIES = ['COORDINATED']  # service-based routing
 
 # Cache replacement policy used by the network caches.

@@ -863,7 +863,7 @@ class NetworkView(object):
         for n in self.model.busy_proc:
             if type(n) is str:
                 continue
-            if all(h in exclude for h in self.model.all_node_h_spaces[n]):
+            if (len(exclude) > 0 and all(h in exclude for h in self.model.all_node_h_spaces[n])) or len(self.model.all_node_h_spaces[n]) == 0:
                 continue
             node_proc = self.model.avg_CPU_perc[n]
             if node_proc >= max_node_proc and type(n) is int and len(self.model.busy_proc[n].keys()) > 0:
@@ -884,7 +884,6 @@ class NetworkView(object):
                 if proc >= max_proc:
                     max_proc = proc
                     max_hash = h
-
 
         return max_node, max_hash
 

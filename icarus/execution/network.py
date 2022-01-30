@@ -863,6 +863,8 @@ class NetworkView(object):
         for n in self.model.busy_proc:
             if type(n) is str:
                 continue
+            if all(h in exclude for h in self.model.all_node_h_spaces[n]):
+                continue
             node_proc = self.model.avg_CPU_perc[n]
             if node_proc >= max_node_proc and type(n) is int and len(self.model.busy_proc[n].keys()) > 0:
                 max_node_proc = node_proc
@@ -883,6 +885,7 @@ class NetworkView(object):
                     max_proc = proc
                     max_hash = h
 
+
         return max_node, max_hash
 
     def least_CPU_usage(self, exclude):
@@ -899,6 +902,8 @@ class NetworkView(object):
         min_node = None
         for n in self.model.busy_proc:
             if type(n) is str:
+                continue
+            if all(h in exclude for h in self.model.all_node_h_spaces[n]):
                 continue
             node_proc = self.model.avg_CPU_perc[n]
             if node_proc <= min_node_proc and type(n) is int:

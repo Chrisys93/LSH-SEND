@@ -659,27 +659,31 @@ class HashRepoReuseStorApp(Strategy):
         # Find highest and lowest processing buckets and nodes
         # FIXME: This is not high-proc to low-proc anymore, but for doing it fast and simple, I'll just keep the
         #  terminology the same
-        high_proc = self.view.most_proc_usage(max_count)
         low_proc = self.view.high_reuse(max_count)
 
+        exclude_h = []
         for i in range(max_count):
+            high_proc = self.view.most_CPU_usage(exclude_h)
             low_repo = low_proc[0][i]
             l = low_proc[1][i]
-            high_repo = high_proc[0][i]
-            h = high_proc[1][i]
-            # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
-            new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
-            h_l_path_delay = self.view.path_delay(high_repo, low_repo)
-            rtt_delay_h = 2 * h_l_path_delay
-            # l_h_path_delay = self.view.path_delay(low_repo, node)
-            # rtt_delay_l = 2 * l_h_path_delay
-            if new_content_h is not None:
-                if 'shelf_life' in new_content_h:
-                    self.view.storage_nodes()[high_repo].deleteMessage(new_content_h['content'])
-                    self.controller.add_event(curTime + h_l_path_delay, low_repo, new_content_h, new_content_h['labels'],
-                                              new_content_h['h_space'], low_repo,
-                                              None, curTime + new_content_h['shelf_life'], rtt_delay_h, STORE)
-                    self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
+            high_repo = high_proc[0]
+            h = high_proc[1]
+            exclude_h.append(h)
+            if h:
+                # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
+                new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
+                h_l_path_delay = self.view.path_delay(high_repo, low_repo)
+                rtt_delay_h = 2 * h_l_path_delay
+                # l_h_path_delay = self.view.path_delay(low_repo, node)
+                # rtt_delay_l = 2 * l_h_path_delay
+                self.controller.update_CPU_perc(low_repo, curTime, None, h, True, high_repo)
+                self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
+                if new_content_h is not None:
+                    if 'shelf_life' in new_content_h:
+                        self.view.storage_nodes()[high_repo].deleteMessage(new_content_h['content'])
+                        self.controller.add_event(curTime + h_l_path_delay, low_repo, new_content_h, new_content_h['labels'],
+                                                  new_content_h['h_space'], low_repo,
+                                                  None, curTime + new_content_h['shelf_life'], rtt_delay_h, STORE)
 
         self.epoch_count = 0
         self.controller.simil_miss_update(self.epoch_miss_count, self.epoch_ticks)
@@ -721,26 +725,32 @@ class HashRepoReuseStorApp(Strategy):
         # FIXME: This is not high-proc to low-proc anymore, but for doing it fast and simple, I'll just keep the
         #  terminology the same
         high_proc = self.view.low_reuse(max_count)
-        low_proc = self.view.least_proc_usage(max_count)
 
+        exclude_l = []
         for i in range(max_count):
-            low_repo = low_proc[0][i]
-            l = low_proc[1][i]
+            low_proc = self.view.least_CPU_usage(exclude_l)
+            low_repo = low_proc[0]
             high_repo = high_proc[0][i]
             h = high_proc[1][i]
             # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
-            new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
-            h_l_path_delay = self.view.path_delay(high_repo, low_repo)
-            rtt_delay_h = 2 * h_l_path_delay
-            # l_h_path_delay = self.view.path_delay(low_repo, node)
-            # rtt_delay_l = 2 * l_h_path_delay
-            if new_content_h is not None:
-                if 'shelf_life' in new_content_h:
-                    self.view.storage_nodes()[high_repo].deleteMessage(new_content_h['content'])
-                    self.controller.add_event(curTime + h_l_path_delay, low_repo, new_content_h, new_content_h['labels'],
-                                              new_content_h['h_space'], low_repo,
-                                              None, curTime + new_content_h['shelf_life'], rtt_delay_h, STORE)
-                    self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
+            l = low_proc[1]
+            exclude_l.append(l)
+            if h:
+                # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
+                new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
+                h_l_path_delay = self.view.path_delay(high_repo, low_repo)
+                rtt_delay_h = 2 * h_l_path_delay
+                # l_h_path_delay = self.view.path_delay(low_repo, node)
+                # rtt_delay_l = 2 * l_h_path_delay
+                self.controller.update_CPU_perc(low_repo, curTime, None, h, True, high_repo)
+                self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
+                if new_content_h is not None:
+                    if 'shelf_life' in new_content_h:
+                        self.view.storage_nodes()[high_repo].deleteMessage(new_content_h['content'])
+                        self.controller.add_event(curTime + h_l_path_delay, low_repo, new_content_h,
+                                                  new_content_h['labels'],
+                                                  new_content_h['h_space'], low_repo,
+                                                  None, curTime + new_content_h['shelf_life'], rtt_delay_h, STORE)
 
         self.epoch_count = 0
         self.controller.simil_miss_update(self.epoch_miss_count, self.epoch_ticks)

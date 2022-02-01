@@ -584,6 +584,7 @@ class HashRepoReuseStorApp(Strategy):
 
         exclude_l = []
         exclude_h = []
+        updated_nodes = []
         for i in range(max_count):
             # FIXME: Maybe include a bucket exclusion list for both high and low, to not take buckets twice instead!!!!!
             # Find highest and lowest processing buckets and nodes
@@ -595,6 +596,10 @@ class HashRepoReuseStorApp(Strategy):
             high_repo = high_proc[0]
             h = high_proc[1]
             exclude_h.append(h)
+            if high_repo not in updated_nodes:
+                updated_nodes.append(high_repo)
+            if low_repo not in updated_nodes:
+                updated_nodes.append(low_repo)
             if h:
                 # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
                 new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
@@ -645,6 +650,7 @@ class HashRepoReuseStorApp(Strategy):
             self.last_CPU_time = curTime
             # self.node_CPU_usage[n] = 0
             # self.hash_CPU_usage[n][h_spaces[0]] = 0
+        return updated_nodes
 
 
 
@@ -662,6 +668,7 @@ class HashRepoReuseStorApp(Strategy):
         low_proc = self.view.high_reuse(max_count)
 
         exclude_h = []
+        updated_nodes = []
         for i in range(max_count):
             high_proc = self.view.most_CPU_usage(exclude_h)
             low_repo = low_proc[0][i]
@@ -669,6 +676,8 @@ class HashRepoReuseStorApp(Strategy):
             high_repo = high_proc[0]
             h = high_proc[1]
             exclude_h.append(h)
+            if high_repo not in updated_nodes:
+                updated_nodes.append(high_repo)
             if h:
                 # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
                 new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
@@ -712,6 +721,7 @@ class HashRepoReuseStorApp(Strategy):
             self.last_CPU_time = curTime
             # self.node_CPU_usage[n] = 0
             # self.hash_CPU_usage[n][h_spaces[0]] = 0
+        return updated_nodes
 
     def trigger_node_reuse_proc_update(self, curTime, max_count):
         """
@@ -727,6 +737,7 @@ class HashRepoReuseStorApp(Strategy):
         high_proc = self.view.low_reuse(max_count)
 
         exclude_l = []
+        updated_nodes = []
         for i in range(max_count):
             low_proc = self.view.least_CPU_usage(exclude_l)
             low_repo = low_proc[0]
@@ -735,6 +746,8 @@ class HashRepoReuseStorApp(Strategy):
             # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
             l = low_proc[1]
             exclude_l.append(l)
+            if low_repo not in updated_nodes:
+                updated_nodes.append(low_repo)
             if h:
                 # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
                 new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
@@ -779,6 +792,7 @@ class HashRepoReuseStorApp(Strategy):
             self.last_CPU_time = curTime
             # self.node_CPU_usage[n] = 0
             # self.hash_CPU_usage[n][h_spaces[0]] = 0
+        return updated_nodes
 
 
 
@@ -889,8 +903,9 @@ class HashRepoReuseStorApp(Strategy):
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
         #     if self.view.model.avg_CPU_perc[node] > 0.7:
-        #         self.trigger_node_proc_reuse_update(curTime, 5)
-        #         self.trigger_node_reuse_proc_update(curTime, 5)
+        #         updated_nodes = self.trigger_node_proc_reuse_update(curTime, 5)
+        #         updated_nodes += self.trigger_node_reuse_proc_update(curTime, 5)
+        #         self.view.reset_update_CPU_perc(updated_nodes)
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
         #     self.trigger_node_proc_update(curTime, 20)
@@ -899,8 +914,9 @@ class HashRepoReuseStorApp(Strategy):
         #     self.trigger_node_proc_update(curTime, 20)
 
         if type(self.epoch_count) is int and type(node) is int and self.view.model.avg_CPU_perc[node] > 0.7 and self.epoch_count >= self.epoch_ticks:
-            self.trigger_node_CPU_update(curTime, 20)
+            updated_nodes = self.trigger_node_CPU_update(curTime, 20)
             self.epoch_count = 0
+            self.view.reset_update_CPU_perc(updated_nodes)
 
         # if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > 0.7:
         #     self.trigger_node_delay_update(curTime, 20)

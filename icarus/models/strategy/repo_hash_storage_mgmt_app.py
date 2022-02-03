@@ -905,7 +905,7 @@ class HashRepoReuseStorApp(Strategy):
         #     if self.view.model.avg_CPU_perc[node] > 0.7:
         #         updated_nodes = self.trigger_node_proc_reuse_update(curTime, 5)
         #         updated_nodes += self.trigger_node_reuse_proc_update(curTime, 5)
-        #         self.view.reset_update_CPU_perc(updated_nodes)
+        #         self.controller.reset_update_CPU_perc(updated_nodes)
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
         #     self.trigger_node_proc_update(curTime, 20)
@@ -916,7 +916,7 @@ class HashRepoReuseStorApp(Strategy):
         if type(self.epoch_count) is int and type(node) is int and self.view.model.avg_CPU_perc[node] > 0.7 and self.epoch_count >= self.epoch_ticks:
             updated_nodes = self.trigger_node_CPU_update(curTime, 20)
             self.epoch_count = 0
-            self.view.reset_update_CPU_perc(updated_nodes)
+            self.controller.reset_update_CPU_perc(updated_nodes)
 
         # if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > 0.7:
         #     self.trigger_node_delay_update(curTime, 20)
@@ -2578,6 +2578,7 @@ class HashRepoProcStorApp(Strategy):
 
         exclude_l = []
         exclude_h = []
+        updated_nodes = []
         for i in range(max_count):
             # FIXME: Maybe include a bucket exclusion list for both high and low, to not take buckets twice instead!!!!!
             # Find highest and lowest processing buckets and nodes
@@ -2589,28 +2590,33 @@ class HashRepoProcStorApp(Strategy):
             high_repo = high_proc[0]
             h = high_proc[1]
             exclude_h.append(h)
-            # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
-            new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
-            h_l_path_delay = self.view.path_delay(high_repo, low_repo)
-            rtt_delay_h = 2 * h_l_path_delay
-            # l_h_path_delay = self.view.path_delay(low_repo, node)
-            # rtt_delay_l = 2 * l_h_path_delay
-            self.controller.update_CPU_perc(low_repo, curTime, None, h, True, high_repo)
-            self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
-            if new_content_h is not None:
-                if 'shelf_life' in new_content_h:
-                    self.view.storage_nodes()[high_repo].deleteMessage(new_content_h['content'])
-                    self.controller.add_event(curTime + h_l_path_delay, low_repo, new_content_h,
-                                              new_content_h['labels'],
-                                              new_content_h['h_space'], low_repo,
-                                              None, curTime + new_content_h['shelf_life'], rtt_delay_h, STORE)
-            # if new_content_l is not None:
-            #     if 'shelf_life' in new_content_l:
-            #         self.view.storage_nodes()[low_repo].deleteMessage(new_content_l['content'])
-            #         self.controller.add_event(curTime + l_h_path_delay, node, new_content_l, new_content_l['labels'],
-            #                                   new_content_l['h_space'], node,
-            #                                   None, curTime + new_content_l['shelf_life'], rtt_delay_l, STORE)
-            #         self.controller.move_h_space_proc_low_high(node, low_repo, h_space, l)
+            if high_repo not in updated_nodes:
+                updated_nodes.append(high_repo)
+            if low_repo not in updated_nodes:
+                updated_nodes.append(low_repo)
+            if h:
+                # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
+                new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
+                h_l_path_delay = self.view.path_delay(high_repo, low_repo)
+                rtt_delay_h = 2 * h_l_path_delay
+                # l_h_path_delay = self.view.path_delay(low_repo, node)
+                # rtt_delay_l = 2 * l_h_path_delay
+                self.controller.update_CPU_perc(low_repo, curTime, None, h, True, high_repo)
+                self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
+                if new_content_h is not None:
+                    if 'shelf_life' in new_content_h:
+                        self.view.storage_nodes()[high_repo].deleteMessage(new_content_h['content'])
+                        self.controller.add_event(curTime + h_l_path_delay, low_repo, new_content_h,
+                                                  new_content_h['labels'],
+                                                  new_content_h['h_space'], low_repo,
+                                                  None, curTime + new_content_h['shelf_life'], rtt_delay_h, STORE)
+                # if new_content_l is not None:
+                #     if 'shelf_life' in new_content_l:
+                #         self.view.storage_nodes()[low_repo].deleteMessage(new_content_l['content'])
+                #         self.controller.add_event(curTime + l_h_path_delay, node, new_content_l, new_content_l['labels'],
+                #                                   new_content_l['h_space'], node,
+                #                                   None, curTime + new_content_l['shelf_life'], rtt_delay_l, STORE)
+                #         self.controller.move_h_space_proc_low_high(node, low_repo, h_space, l)
 
         self.epoch_count = 0
         self.controller.simil_miss_update(self.epoch_miss_count, self.epoch_ticks)
@@ -2639,6 +2645,7 @@ class HashRepoProcStorApp(Strategy):
             self.last_CPU_time = curTime
             # self.node_CPU_usage[n] = 0
             # self.hash_CPU_usage[n][h_spaces[0]] = 0
+        return updated_nodes
 
 
     def trigger_node_delay_update(self, curTime, max_count):
@@ -2769,9 +2776,11 @@ class HashRepoProcStorApp(Strategy):
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
         #     self.epoch_node_proc_update(curTime, node, h_spaces, 30)
 
-        if type(self.epoch_count) is int and type(node) is int and self.view.model.avg_CPU_perc[node] > 0.7 and self.epoch_count >= self.epoch_ticks:
-            self.trigger_node_CPU_update(curTime, 20)
+        if type(self.epoch_count) is int and type(node) is int and self.view.model.avg_CPU_perc[
+            node] > 0.7 and self.epoch_count >= self.epoch_ticks:
+            updated_nodes = self.trigger_node_CPU_update(curTime, 20)
             self.epoch_count = 0
+            self.controller.reset_update_CPU_perc(updated_nodes)
 
         # if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > 0.7:
         #     self.trigger_node_delay_update(curTime, 20)

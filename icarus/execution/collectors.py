@@ -1478,6 +1478,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             queued_node_reqs = open("hash_proc_queued_node_reqs.txt", 'a')
             repo_queue_delays = open("hash_proc_queue_node_delays.txt", 'a')
             repo_CPU_perc = open("hash_proc_node_CPU_perc.txt", 'a')
+            avg_requests_per_bucket = open("hash_proc_avg_req_per_bucket.txt", 'a')
         if self.cdf:
             self.results['CDF'] = cdf(self.latency_data)
         results = Tree({'SATISFACTION': 1.0 * self.n_satisfied / self.sess_count})
@@ -1565,6 +1566,14 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                     node_misses += self.view.model.queued_hashes[node][h]
                 queued_node_reqs.write(str(node_misses) + ', ')
             queued_node_reqs.write('\n')
+
+            total_req_per_bucket = 0
+            bucket_num = len(self.view.model.requested_buckets)
+            for bucket in self.view.model.requested_buckets:
+                total_req_per_bucket += self.view.model.requested_buckets[bucket]
+            avg_req_per_bucket = total_req_per_bucket/bucket_num
+            queued_node_reqs.write(str(avg_req_per_bucket) + '\n')
+
 
             total_delays = 0
             for service in self.rtt_delays_overall:

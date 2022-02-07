@@ -1832,6 +1832,9 @@ class NetworkModel(object):
         # Keeping track of all contents/services allocated, via their associated buckets
         self.h_spaces_contents = dict()
 
+        # Keeping track of requests per bucket
+        self.requested_buckets = Counter()
+
         # Dictionary of link types (internal/external)
         self.link_type = nx.get_edge_attributes(topology, 'type')
         self.link_delay = fnss.get_delays(topology)
@@ -2588,6 +2591,9 @@ class NetworkController(object):
 
     def reset_max_queue_delay(self, node):
         self.model.max_queue_delay[node] = 0
+
+    def add_request_to_bucket(self, bucket):
+        self.model.requested_buckets.update(bucket)
 
     def add_request_labels_to_node(self, s, service_request):
         """Forward a request from node *s* to node *t* over the provided path.

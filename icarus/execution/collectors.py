@@ -1631,6 +1631,8 @@ class RepoStatsOutputLatencyCollector(DataCollector):
         edge_delay_averages.close()
         cloud_delay_averages.close()
         repo_CPU_perc.close()
+        avg_requests_per_bucket.close()
+        number_of_buckets.close()
 
 
         if self.view.model.strategy != 'HYBRID':

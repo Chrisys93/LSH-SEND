@@ -2745,6 +2745,8 @@ class HashRepoProcStorApp(Strategy):
         if status == REQUEST:
             if type(node) is not int and 'rec' in node:
                 self.epoch_count += 1
+                for h in h_spaces:
+                    self.controller.add_request_to_bucket(h)
             if flow_id not in self.view.model.cloud_admissions:
                 self.controller.cloud_admission_update(False, flow_id)
 

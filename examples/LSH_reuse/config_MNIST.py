@@ -16,7 +16,7 @@ LOG_LEVEL = 'INFO'
 
 # If True, executes simulations in parallel using multiple processes
 # to take advantage of multicore CPUs
-PARALLEL_EXECUTION = False
+PARALLEL_EXECUTION = True
 
 # Number of processes used to run simulations in parallel.
 # This option is ignored if PARALLEL_EXECUTION = False
@@ -107,7 +107,7 @@ WORKLOAD = 'STATIONARY_DATASET_HASH_LABEL_REQS'
 
 # List of caching and routing strategies
 # The code is located in ./icarus/models/strategy.py
-STRATEGIES = ['HASH_PROC_REPO_APP']
+STRATEGIES = ['HASH_REUSE_REPO_APP', 'HASH_PROC_REPO_APP']
 EPOCH_TICKS = [500, float('inf')]
 HIT_RATE = 0.15
 #STRATEGIES = ['COORDINATED']  # service-based routing

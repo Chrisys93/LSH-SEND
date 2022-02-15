@@ -866,9 +866,19 @@ class NetworkView(object):
             if (len(exclude) > 0 and all(h in exclude for h in self.model.all_node_h_spaces[n])) or len(self.model.all_node_h_spaces[n]) == 0:
                 continue
             node_proc = self.model.avg_CPU_perc[n] + self.model.update_CPU_perc[n]
-            if node_proc >= max_node_proc and node_proc > 0 and type(n) is int and len(self.model.busy_proc[n].keys()) > 0:
+            if node_proc >= max_node_proc and node_proc > 0 and len(self.model.all_node_h_spaces[n]) > 0:
                 max_node_proc = node_proc
                 max_node = n
+        if max_node is None:
+            for n in self.model.all_node_h_spaces:
+                if type(n) is str:
+                    continue
+                node_proc = self.model.avg_CPU_perc[n] + self.model.update_CPU_perc[n]
+                if node_proc >= max_node_proc and node_proc > 0 and len(self.model.all_node_h_spaces[n]) > 0:
+                    max_node_proc = node_proc
+                    max_node = n
+
+
 
         max_hash = None
         n = max_node
@@ -1827,7 +1837,7 @@ class NetworkModel(object):
 
         # Variables determining the frequency of updating the latter, above.
         self.last_CPU_update_time = 0
-        self.CPU_update_period = 0.5
+        self.CPU_update_period = 1
 
         # Keeping track of all contents/services allocated, via their associated buckets
         self.h_spaces_contents = dict()

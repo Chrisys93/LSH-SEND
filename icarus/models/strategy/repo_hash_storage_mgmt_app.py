@@ -2785,7 +2785,7 @@ class HashRepoProcStorApp(Strategy):
             updated_nodes = self.trigger_node_CPU_update(curTime, 20)
             self.epoch_count = 0
             self.controller.reset_update_CPU_perc(updated_nodes)
-
+ 
         # if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > 0.7:
         #     self.trigger_node_delay_update(curTime, 20)
 

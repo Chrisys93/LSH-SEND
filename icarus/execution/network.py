@@ -2549,7 +2549,7 @@ class NetworkController(object):
             self.model.update_CPU_perc[high_repo] -= self.model.bucket_CPU_perc[bucket]
             return
         if not change_update:
-            self.update_CPU_h_perc(bucket, curTime, serviceTime/self.model.comp_size[node])
+            self.update_CPU_h_perc(bucket, curTime, serviceTime)
             self.update_CPU_avg_perc(curTime, node)
 
     def update_CPU_avg_perc(self, update_time, node):

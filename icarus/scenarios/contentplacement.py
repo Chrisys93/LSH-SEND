@@ -127,6 +127,8 @@ def uniform_content_placement(topology, contents, seed=None):
     A deterministic placement of objects (e.g., for reproducing results) can be
     achieved by using a fix seed value
     """
+    if seed is None:
+        seed = 4353
     random.seed(seed)
     source_nodes = get_sources(topology)
     content_placement = collections.defaultdict(set)
@@ -155,6 +157,8 @@ def uniform_repo_content_placement(topology, contents, seed=None):
     A deterministic placement of objects (e.g., for reproducing results) can be
     achieved by using a fix seed value
     """
+    if seed is None:
+        seed = 4353
     random.seed(seed)
     source_nodes = get_sources_repos(topology)
     content_placement = collections.defaultdict(dict)
@@ -187,6 +191,8 @@ def weighted_content_placement(topology, contents, source_weights, seed=None):
     A deterministic placement of objects (e.g., for reproducing results) can be
     achieved by using a fix seed value
     """
+    if seed is None:
+        seed = 4353
     random.seed(seed)
     norm_factor = float(sum(source_weights.values()))
     source_pdf = dict((k, v / norm_factor) for k, v in source_weights.items())
@@ -236,6 +242,8 @@ def weighted_repo_content_placement(topology, contents, freshness_per, shelf_lif
     #                       shelf_life, msg_size}
 
     placed_data = dict()
+    if seed is None:
+        seed = 4353
     random.seed(seed)
     norm_factor = float(sum(source_weights.values()))
     # TODO: These ^\/^\/^ might need redefining, to make label-specific
@@ -347,6 +355,8 @@ def weighted_repo_hash_placement(topology, contents, freshness_per, shelf_life, 
     #                       shelf_life, msg_size}
 
     placed_data = dict()
+    if seed is None:
+        seed = 4353
     random.seed(seed)
     norm_factor = float(sum(source_weights.values()))
     # TODO: These ^\/^\/^ might need redefining, to make label-specific
@@ -484,6 +494,8 @@ def weighted_repo_bucket_placement(topology, contents, freshness_per, shelf_life
     #                       shelf_life, msg_size}
 
     placed_data = dict()
+    if seed is None:
+        seed = 4353
     random.seed(seed)
     norm_factor = float(sum(source_weights.values()))
     # TODO: These ^\/^\/^ might need redefining, to make label-specific
@@ -648,6 +660,8 @@ def dataset_repo_bucket_placement(topology, contents, freshness_per, shelf_life,
     #                       shelf_life, msg_size}
 
     placed_data = dict()
+    if seed is None:
+        seed = 4353
     random.seed(seed)
     norm_factor = float(sum(source_weights.values()))
     # TODO: These ^\/^\/^ might need redefining, to make label-specific
@@ -823,6 +837,8 @@ def dataset_random_repo_bucket_placement(topology, contents, freshness_per, shel
     #                       shelf_life, msg_size}
 
     placed_data = dict()
+    if seed is None:
+        seed = 4353
     random.seed(seed)
     # norm_factor = float(sum(source_weights.values()))
     # TODO: These ^\/^\/^ might need redefining, to make label-specific

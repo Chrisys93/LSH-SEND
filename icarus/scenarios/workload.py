@@ -96,7 +96,7 @@ class StationaryWorkload(object):
     """
 
     def __init__(self, topology, n_contents, alpha, beta=0, rate=1.0,
-                 n_warmup=10 ** 5, n_measured=4 * 10 ** 5, seed=0,
+                 n_warmup=10 ** 5, n_measured=4 * 10 ** 5, seed=4353,
                  n_services=10, **kwargs):
         if alpha < 0:
             raise ValueError('alpha must be positive')
@@ -230,7 +230,7 @@ class RepoStationaryWorkload(object):
     """
 
     def __init__(self, topology, n_contents, alpha, beta=0, rate=1.0,
-                 n_warmup=10 ** 5, n_measured=4 * 10 ** 5, seed=0,
+                 n_warmup=10 ** 5, n_measured=4 * 10 ** 5, seed=4353,
                  n_services=10, **kwargs):
         if alpha < 0:
             raise ValueError('alpha must be positive')
@@ -590,7 +590,7 @@ class StationaryRepoWorkload(object):
 
     def __init__(self, topology, n_contents, alpha, beta=0,
                  label_ex=False, alpha_labels=0, rate=1.0,
-                 n_warmup=10 ** 5, n_measured=4 * 10 ** 5, seed=0,
+                 n_warmup=10 ** 5, n_measured=4 * 10 ** 5, seed=4353,
                  n_services=10, topics=None, types=None, max_labels=1,
                  freshness_pers=0, shelf_lives=0, msg_sizes=1000000, **kwargs):
         if types is None:
@@ -836,7 +836,7 @@ class StationaryHashRepoWorkload(object):
 
     def __init__(self, topology, n_contents, alpha, beta=0,
                  label_ex=False, alpha_labels=0, alpha_spaces=0, rate=1.0,
-                 n_warmup=10 ** 5, n_measured=4 * 10 ** 5, seed=0,
+                 n_warmup=10 ** 5, n_measured=4 * 10 ** 5, seed=4353,
                  n_services=10, spaces=None, topics=None, types=None, max_labels=1, max_spaces=1,
                  freshness_pers=0, shelf_lives=0, msg_sizes=1000000, **kwargs):
         if types is None:
@@ -1097,7 +1097,7 @@ class StationaryDatasetHashRepoWorkload(object):
 
     def __init__(self, topology, content_hashes_file, n_contents, alpha, beta=0,
                  label_ex=False, alpha_labels=0, rate=1.0,
-                 n_warmup=10 ** 5, n_measured=4 * 10 ** 5, seed=0,
+                 n_warmup=10 ** 5, n_measured=4 * 10 ** 5, seed=4353,
                  n_services=10, topics=None, max_labels=1,
                  freshness_pers=0, shelf_lives=0, msg_sizes=1000000, **kwargs):
         types = []
@@ -1362,7 +1362,7 @@ class BurstyRepoWorkload(object):
     """
 
     def __init__(self, topology, n_contents, alpha, max_on=0, max_off=0, disrupt_mode=None, disrupt_weights=None,
-                 beta=0, label_ex=False, alpha_labels=0, rate=1.0, n_warmup=10 ** 5, n_measured=4 * 10 ** 5, seed=0,
+                 beta=0, label_ex=False, alpha_labels=0, rate=1.0, n_warmup=10 ** 5, n_measured=4 * 10 ** 5, seed=4353,
                  n_services=10, topics=None, types=None, max_labels=1, freshness_pers=0, shelf_lives=0,
                  msg_sizes=1000000, **kwargs):
         if types is None:
@@ -1661,7 +1661,7 @@ class TraceDrivenRepoWorkload(object):
 
     def __init__(self, topology, rates_file, contents_file, labels_file, content_locations, n_contents,
                  n_warmup, n_measured, n_services=10, max_labels=1, msg_sizes=1000000, freshness_pers=0.2,
-                 shelf_lives=5, rate=1.0, label_ex=False, alpha_labels=0, beta=0, seed=0, **kwargs):
+                 shelf_lives=5, rate=1.0, label_ex=False, alpha_labels=0, beta=0, seed=4353, **kwargs):
         """Constructor"""
 
         if alpha_labels < 0:
@@ -2000,7 +2000,7 @@ class TraceDrivenHashRepoWorkload(object):
 
     def __init__(self, topology, rates_file, contents_file, labels_file, spaces_file, content_locations, n_contents,
                  n_warmup, n_measured, n_services=10, max_labels=1, max_spaces=1, msg_sizes=1000000, freshness_pers=0.2,
-                 shelf_lives=5, rate=1.0, label_ex=False, alpha_labels=0, beta=0, seed=0, **kwargs):
+                 shelf_lives=5, rate=1.0, label_ex=False, alpha_labels=0, beta=0, seed=4353, **kwargs):
         """Constructor"""
 
         if alpha_labels < 0:
@@ -2384,7 +2384,7 @@ class BurstyTraceRepoWorkload(object):
     def __init__(self, topology, rates_file, contents_file, labels_file, content_locations, n_contents,
                  n_warmup, n_measured, max_on=0, max_off=0, disrupt_mode=None, disrupt_weights=None, n_services=10,
                  max_labels=1, msg_sizes=1000000, freshness_pers=0.2, shelf_lives=5, rate=1.0, label_ex=False,
-                 alpha_labels=0, beta=0, seed=0, mu=0, sigma=0, **kwargs):
+                 alpha_labels=0, beta=0, seed=4353, mu=0, sigma=0, **kwargs):
         """Constructor"""
 
         if alpha_labels < 0:
@@ -2708,7 +2708,7 @@ class BurstyRepoDataAndWorkload(object):
 
     def __init__(self, topology, n_contents, alpha, max_on=0, max_off=0, disrupt_mode=None, disrupt_weights=None,
                  beta=0, label_ex=False, alpha_labels=0, rate=100, n_warmup=10 ** 5,
-                 n_measured=4 * 10 ** 5, seed=0, n_services=10, topics=None, types=None, max_labels=1, freshness_pers=0,
+                 n_measured=4 * 10 ** 5, seed=4353, n_services=10, topics=None, types=None, max_labels=1, freshness_pers=0,
                  shelf_lives=0, msg_sizes=1000000, data_gen_dist_mode=None, data_gen_dist=None, data_rate=0,
                  stor_shelf=0, stor_scope=0, n_stor_warmup=0, n_stor_measured=0, mu=0, sigma=0, **kwargs):
         if types is None:

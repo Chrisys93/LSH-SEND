@@ -284,7 +284,7 @@ __init__	execution/network.py	/^    def __init__(self, model):$/;"	m	class:Netwo
 __init__	execution/network.py	/^    def __init__(self, model):$/;"	m	class:NetworkView
 __init__	execution/network.py	/^    def __init__(self, service_time=None, deadline=None):$/;"	m	class:Service
 __init__	execution/network.py	/^    def __init__(self, time, receiver, service, node, flow_id, deadline, rtt_delay, status, task=None):$/;"	m	class:Event
-__init__	execution/network.py	/^    def __init__(self, topology, cache_policy, sched_policy, n_services, rate, seed=0, shortest_path=None):$/;"	m	class:NetworkModel
+__init__	execution/network.py	/^    def __init__(self, topology, cache_policy, sched_policy, n_services, rate, seed=4353, shortest_path=None):$/;"	m	class:NetworkModel
 __init__	models/cache/policies.py	/^        def __init__(self, val, up=None, down=None):$/;"	m	class:LinkedSet._Node
 __init__	models/cache/policies.py	/^    def __init__(self, iterable=[]):$/;"	m	class:LinkedSet
 __init__	models/cache/policies.py	/^    def __init__(self, maxlen, **kwargs):$/;"	m	class:LruCache

@@ -123,7 +123,7 @@ default['workload'] = {'name':       'STATIONARY',
                        'n_warmup':   N_WARMUP_REQUESTS,
                        'n_measured': N_MEASURED_REQUESTS,
                        'rate':       NETWORK_REQUEST_RATE,
-                       'seed':  0,
+                       'seed':  4353,
                        'n_services': N_SERVICES,
                        'alpha' : ALPHA
                       }

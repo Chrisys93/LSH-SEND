@@ -830,10 +830,10 @@ class TestRandInsert(unittest.TestCase):
     def test_constant_seed(self):
         n = 10000
         p = 0.1
-        rc1 = cache.rand_insert_cache(cache.LruCache(n), p, seed=0)
+        rc1 = cache.rand_insert_cache(cache.LruCache(n), p, seed=4353)
         for i in range(n):
             rc1.put(i)
-        rc2 = cache.rand_insert_cache(cache.LruCache(n), p, seed=0)
+        rc2 = cache.rand_insert_cache(cache.LruCache(n), p, seed=4353)
         for i in range(n):
             rc2.put(i)
         self.assertEqual(rc1.dump(), rc2.dump())

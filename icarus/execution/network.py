@@ -2535,7 +2535,7 @@ class NetworkController(object):
     # TODO: CHECK THE BELOW LOGIC AGAIN!
 
     def update_CPU_perc(self, node, curTime, serviceTime, bucket, core=None, change_update=False, high_repo=None):
-        if type(node) is not str and serviceTime is not None and not change_update and core:
+        if type(node) is not str and serviceTime is not None and not change_update and core is not None:
             if curTime + serviceTime > self.model.last_CPU_update_time[node] + self.model.CPU_update_period:
                 self.model.node_CPU_perc_cumulative[node][core] += self.model.last_CPU_update_time[node] + self.model.CPU_update_period - curTime
                 self.model.next_node_CPU_cumulative[node][core] += serviceTime - (self.model.last_CPU_update_time[node] + self.model.CPU_update_period - curTime)

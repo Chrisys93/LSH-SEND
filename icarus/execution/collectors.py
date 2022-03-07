@@ -1377,6 +1377,8 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                 self.latency_interval += timestamp - self.flow_start[flow_id]
                 self.deadline_metric_interval += self.flow_deadline[flow_id] - timestamp
 
+            #TODO: CHANGE THIS TO GETTING AVERAGE RTT FOR ALL REQUESTS!
+
             if service['content'] not in self.service_requests.keys():
                 self.service_requests[service['content']] = 1
                 self.service_satisfied[service['content']] = 0

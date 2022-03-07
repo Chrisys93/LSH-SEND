@@ -1184,6 +1184,9 @@ class RepoStatsOutputLatencyCollector(DataCollector):
         self.n_satisfied_interval = 0.0
         self.n_sat_cloud_interval = 0
         self.n_instantiations_interval = 0
+        self.avg_RTT = 0
+        self.RTT_total = 0
+        self.sessions_ended = 0
 
         # Cache and storage
         self.cache_hits = 0
@@ -1333,6 +1336,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
     def end_session(self, success=True, timestamp=0, flow_id=0):
         self.latest_end_session = flow_id
         sat = False
+        self.sessions_ended += 1
         if flow_id in self.flow_deadline:
             service = self.flow_service[flow_id]
             if self.view.model.cloud_admissions[flow_id]:
@@ -1378,6 +1382,9 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                 self.deadline_metric_interval += self.flow_deadline[flow_id] - timestamp
 
             #TODO: CHANGE THIS TO GETTING AVERAGE RTT FOR ALL REQUESTS!
+
+            self.RTT_total += timestamp - self.flow_start[flow_id]
+            self.avg_RTT = self.RTT_total/self.sessions_ended
 
             if service['content'] not in self.service_requests.keys():
                 self.service_requests[service['content']] = 1
@@ -1478,7 +1485,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             cpu_load_averages = open("hash_proc_cpu_load_avg.txt", 'a')
             missed_node_reqs = open("hash_proc_missed_node_reqs.txt", 'a')
             queued_node_reqs = open("hash_proc_queued_node_reqs.txt", 'a')
-            repo_queue_delays = open("hash_proc_queue_node_delays.txt", 'a')
+            delays = open("hash_proc_delays.txt", 'a')
             repo_CPU_perc = open("hash_proc_node_CPU_perc.txt", 'a')
             avg_requests_per_bucket = open("hash_proc_avg_req_per_bucket.txt", 'a')
             number_of_buckets = open("hash_proc_number_of_buckets.txt", 'w')
@@ -1553,9 +1560,8 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                 repo_CPU_perc.write(str(self.view.model.avg_CPU_perc[node]) + ', ')
             repo_CPU_perc.write('\n')
 
-            for node in self.view.model.max_queue_delay:
-                repo_queue_delays.write(str(self.view.model.max_queue_delay[node]) + ', ')
-            repo_queue_delays.write('\n')
+            delays.write(str(self.avg_RTT) + ', ')
+            delays.write('\n')
 
             for node in self.view.model.missed_hashes:
                 node_misses = 0

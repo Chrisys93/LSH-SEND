@@ -73,7 +73,7 @@ HASH_FILE = '/img_matches.txt'
 HASH_REUSE_FILE = '/hashes_reuse.txt'
 
 # Number of requests per second (over the whole network)
-NETWORK_REQUEST_RATE = 500.0
+NETWORK_REQUEST_RATE = 1000.0
 
 # Number of cores for each node in the experiment
 NUM_CORES = 4
@@ -87,7 +87,7 @@ N_WARMUP_REQUESTS = 0 #30000
 #N_MEASURED_REQUESTS = 1000 #60*30000 #100000
 
 SECS = 60 #do not change
-MINS = 2 #5.5
+MINS = 5 #5.5
 N_MEASURED_REQUESTS = NETWORK_REQUEST_RATE*SECS*MINS
 
 # List of all implemented topologies

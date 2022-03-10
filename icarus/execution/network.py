@@ -2532,15 +2532,15 @@ class NetworkController(object):
             else:
                 self.model.busy_proc[node][h] = 0
 
-    # TODO: CHECK THE BELOW LOGIC AGAIN!
+    # TODO: CHECK THE BELOW LOGIC AGAIN! Let's eliminate the CPU_update_period! (mostly)
 
     def update_CPU_perc(self, node, curTime, serviceTime, bucket, core=None, change_update=False, high_repo=None):
         if type(node) is not str and serviceTime is not None and not change_update and core is not None:
-            if curTime + serviceTime > self.model.last_CPU_update_time[node] + self.model.CPU_update_period:
-                self.model.node_CPU_perc_cumulative[node][core] += self.model.last_CPU_update_time[node] + self.model.CPU_update_period - curTime
-                self.model.next_node_CPU_cumulative[node][core] += serviceTime - (self.model.last_CPU_update_time[node] + self.model.CPU_update_period - curTime)
-            else:
-                self.model.node_CPU_perc_cumulative[node][core] += serviceTime
+            # if curTime + serviceTime > self.model.last_CPU_update_time[node] + self.model.CPU_update_period:
+            #     self.model.node_CPU_perc_cumulative[node][core] += self.model.last_CPU_update_time[node] + self.model.CPU_update_period - curTime
+            #     self.model.next_node_CPU_cumulative[node][core] += serviceTime - (self.model.last_CPU_update_time[node] + self.model.CPU_update_period - curTime)
+            # else:
+            self.model.node_CPU_perc_cumulative[node][core] += serviceTime
 
 
         elif not serviceTime and change_update and high_repo:
@@ -2548,7 +2548,11 @@ class NetworkController(object):
             self.model.update_CPU_perc[node] += self.model.bucket_CPU_perc[bucket]
             self.model.update_CPU_perc[high_repo] -= self.model.bucket_CPU_perc[bucket]
             return
-        if not change_update:
+        if not change_update and curTime >= self.model.last_CPU_update_time[node] + self.model.CPU_update_period:
+            for core in range(self.model.comp_size[node]):
+                if curTime - self.model.last_CPU_update_time[node] <= self.model.node_CPU_perc_cumulative[node][core]:
+                    self.model.next_node_CPU_cumulative[node][core] = self.model.node_CPU_perc_cumulative[node][core] - (curTime - self.model.last_CPU_update_time[node])
+                    self.model.node_CPU_perc_cumulative[node][core] = curTime - self.model.last_CPU_update_time[node]
             self.update_CPU_h_perc(bucket, curTime, serviceTime)
             self.update_CPU_avg_perc(curTime, node)
 
@@ -2563,16 +2567,14 @@ class NetworkController(object):
         self.model.avg_CPU_perc[node] = node_CPU_cumulative/\
                                         (self.model.comp_size[node]* (update_time - self.model.last_CPU_update_time[node]))
         for core in range(self.model.comp_size[node]):
-            if update_time >= self.model.last_CPU_update_time[node] + self.model.CPU_update_period:
-                self.model.last_CPU_update_time[node] += self.model.CPU_update_period
-                if self.model.next_node_CPU_cumulative[node][core] > 0 and self.model.next_node_CPU_cumulative[node][core] > self.model.CPU_update_period:
-                    self.model.node_CPU_perc_cumulative[node][core] = self.model.next_node_CPU_cumulative[node][core] - self.model.CPU_update_period
-                    self.model.next_node_CPU_cumulative[node][core] -= self.model.CPU_update_period
-                elif self.model.next_node_CPU_cumulative[node][core] > 0:
-                    self.model.node_CPU_perc_cumulative[node][core] = self.model.next_node_CPU_cumulative[node][core]
-                    self.model.next_node_CPU_cumulative[node][core] = 0
-                else:
-                    self.model.node_CPU_perc_cumulative[node][core] = 0
+            # if update_time >= self.model.last_CPU_update_time[node] + self.model.CPU_update_period:
+            #     self.model.last_CPU_update_time[node] += self.model.CPU_update_period
+            if self.model.next_node_CPU_cumulative[node][core] > 0:
+                self.model.node_CPU_perc_cumulative[node][core] = self.model.next_node_CPU_cumulative[node][core]
+                self.model.next_node_CPU_cumulative[node][core] = 0
+            else:
+                self.model.node_CPU_perc_cumulative[node][core] = 0
+        self.model.last_CPU_update_time[node] = update_time
 
     def update_CPU_h_perc(self, bucket, update_time, serviceTime=None):
 

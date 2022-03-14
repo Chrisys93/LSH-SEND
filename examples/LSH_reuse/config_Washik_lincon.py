@@ -243,8 +243,8 @@ for strategy in ['LRU']: # STRATEGIES:
 #"""
 # TODO: Add workloads - Furthermore, we don't need service budget variations here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SERVICE_BUDGET = NUM_CORES*NUM_NODES*3
-index = 0
 for rate in NETWORK_REQUEST_RATE:
+    index = 0
     for strategy in STRATEGIES:
         for EPOCH in EPOCH_TICKS:
             experiment = copy.deepcopy(default)

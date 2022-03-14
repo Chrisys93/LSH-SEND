@@ -20,7 +20,7 @@ PARALLEL_EXECUTION = True
 
 # Number of processes used to run simulations in parallel.
 # This option is ignored if PARALLEL_EXECUTION = False
-N_PROCESSES = 16 #cpu_count()
+N_PROCESSES = 40 #cpu_count()
 
 # Granularity of caching.
 # Currently, only OBJECT is supported
@@ -244,18 +244,22 @@ for strategy in ['LRU']: # STRATEGIES:
 # TODO: Add workloads - Furthermore, we don't need service budget variations here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SERVICE_BUDGET = NUM_CORES*NUM_NODES*3
 index = 0
-for strategy in STRATEGIES:
-    for EPOCH in EPOCH_TICKS:
-        experiment = copy.deepcopy(default)
-        experiment['collector_params']['res_path'] = RESULTS_PATH[index]
-        experiment['computation_placement']['service_budget'] = SERVICE_BUDGET
-        experiment['strategy']['epoch_ticks'] = EPOCH
-        experiment['strategy']['name'] = strategy
-        experiment['warmup_strategy']['name'] = strategy
-        experiment['desc'] = "strategy: %s" \
-                         % (strategy)
-        EXPERIMENT_QUEUE.append(experiment)
-        index += 1
+for rate in NETWORK_REQUEST_RATE:
+    for strategy in STRATEGIES:
+        for EPOCH in EPOCH_TICKS:
+            experiment = copy.deepcopy(default)
+            experiment['collector_params']['res_path'] = RESULTS_PATH[index]
+            experiment['collector_params']['rate'] = rate
+            experiment['workload']['rate'] = rate
+            experiment['workload']['n_measured'] = rate*MINS*SECS
+            experiment['computation_placement']['service_budget'] = SERVICE_BUDGET
+            experiment['strategy']['epoch_ticks'] = EPOCH
+            experiment['strategy']['name'] = strategy
+            experiment['warmup_strategy']['name'] = strategy
+            experiment['desc'] = "strategy: %s" \
+                             % (strategy)
+            EXPERIMENT_QUEUE.append(experiment)
+            index += 1
 #"""
 # Experiment with different budgets
 """

@@ -954,7 +954,7 @@ class RepoStatsLatencyCollector(DataCollector):
             s_labels_dist = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/spec_s_labels.txt", 'a')
             overhead = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/spec_overheads.txt", 'a')
         elif self.view.model.strategy == 'HASH_PROC_REPO_APP':
-            res = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_repo.txt", 'a')
+            # res = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_repo.txt", 'a')
             repo_usage = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_usage.txt", 'a')
             repo_proc_vs_stor = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_proc_vs_stor.txt", 'a')
             repo_overtime = open("/home/chrisys/LSH-Repo/Icarus-LSH-SEND/examples/LSH_reuse/hash_proc_overtime.txt", 'a')
@@ -993,10 +993,10 @@ class RepoStatsLatencyCollector(DataCollector):
         incoming_bw = {}
         per_node_simil_misses = {}
         # res.write(str(100*self.n_satisfied/self.sess_count) + " " + str(self.n_satisfied) + " " + str(self.sess_count) + ": \n")
-        for service in self.service_requests.keys():
-            per_service_sats[service] = 1.0 * self.service_satisfied[service] / self.service_requests[service]
-            res.write(str(100 * self.service_satisfied[service] / self.service_requests[service]) + ", ")
-        res.write("\n")
+        # for service in self.service_requests.keys():
+        #     per_service_sats[service] = 1.0 * self.service_satisfied[service] / self.service_requests[service]
+        #     res.write(str(100 * self.service_satisfied[service] / self.service_requests[service]) + ", ")
+        # res.write("\n")
 
         for content in range(0, 1000):
             # overhead.write(str(content) + ": ")
@@ -1165,7 +1165,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
     content.
     """
 
-    def __init__(self, view, res_path='', sampling_interval=500, cdf=False):
+    def __init__(self, view, res_path='', sampling_interval=500, rate='', cdf=False):
         """Constructor
         Parameters
         ----------
@@ -1187,6 +1187,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
         self.avg_RTT = 0
         self.RTT_total = 0
         self.sessions_ended = 0
+        self.rate = rate
 
         # Cache and storage
         self.cache_hits = 0
@@ -1462,33 +1463,33 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             s_labels_dist = open("spec_s_labels.txt", 'a')
             overhead = open("spec_overheads.txt", 'a')
         elif 'HASH' in self.view.model.strategy:
-            res = open("hash_proc_repo.txt", 'a')
-            repo_usage = open("hash_proc_usage.txt", 'a')
-            repo_proc_vs_stor = open("hash_proc_proc_vs_stor.txt", 'a')
-            repo_overtime = open("hash_proc_overtime.txt", 'a')
-            repo_incoming_BW = open("hash_proc_incoming.txt", 'a')
-            r_replicas = open("hash_proc_r_replicas.txt", 'a')
-            s_replicas = open("hash_proc_s_replicas.txt", 'a')
-            r_labels_dist = open("hash_proc_r_labels.txt", 'a')
-            s_labels_dist = open("hash_proc_s_labels.txt", 'a')
-            overhead = open("hash_proc_overheads.txt", 'a')
-            simil_misses = open("hash_proc_simil_miss.txt", 'a')
-            repo_simil_misses = open("hash_proc_repo_miss.txt", 'a')
-            cloud_proc = open("hash_proc_cloud_proc.txt", 'a')
-            edge_proc = open("hash_proc_edge_proc.txt", 'a')
-            reuse_hits = open("hash_proc_reuse_hits.txt", 'a')
-            in_flight = open("hash_proc_in_flight.txt", 'a')
-            overall_delay_averages = open("hash_proc_overall_delay_avg.txt", 'a')
-            reuse_delay_averages = open("hash_proc_reuse_delay_avg.txt", 'a')
-            edge_delay_averages = open("hash_proc_edge_delay_avg.txt", 'a')
-            cloud_delay_averages = open("hash_proc_cloud_delay_avg.txt", 'a')
-            cpu_load_averages = open("hash_proc_cpu_load_avg.txt", 'a')
-            missed_node_reqs = open("hash_proc_missed_node_reqs.txt", 'a')
-            queued_node_reqs = open("hash_proc_queued_node_reqs.txt", 'a')
-            delays = open("hash_proc_delays.txt", 'a')
-            repo_CPU_perc = open("hash_proc_node_CPU_perc.txt", 'a')
-            avg_requests_per_bucket = open("hash_proc_avg_req_per_bucket.txt", 'a')
-            number_of_buckets = open("hash_proc_number_of_buckets.txt", 'w')
+            res = open("hash_proc_repo.txt" + self.rate, 'a')
+            repo_usage = open("hash_proc_usage.txt" + self.rate, 'a')
+            repo_proc_vs_stor = open("hash_proc_proc_vs_stor.txt" + self.rate, 'a')
+            repo_overtime = open("hash_proc_overtime.txt" + self.rate, 'a')
+            repo_incoming_BW = open("hash_proc_incoming.txt" + self.rate, 'a')
+            r_replicas = open("hash_proc_r_replicas.txt" + self.rate, 'a')
+            s_replicas = open("hash_proc_s_replicas.txt" + self.rate, 'a')
+            r_labels_dist = open("hash_proc_r_labels.txt" + self.rate, 'a')
+            s_labels_dist = open("hash_proc_s_labels.txt" + self.rate, 'a')
+            overhead = open("hash_proc_overheads.txt" + self.rate, 'a')
+            simil_misses = open("hash_proc_simil_miss.txt" + self.rate, 'a')
+            repo_simil_misses = open("hash_proc_repo_miss.txt" + self.rate, 'a')
+            cloud_proc = open("hash_proc_cloud_proc.txt" + self.rate, 'a')
+            edge_proc = open("hash_proc_edge_proc.txt" + self.rate, 'a')
+            reuse_hits = open("hash_proc_reuse_hits.txt" + self.rate, 'a')
+            in_flight = open("hash_proc_in_flight.txt" + self.rate, 'a')
+            overall_delay_averages = open("hash_proc_overall_delay_avg.txt" + self.rate, 'a')
+            reuse_delay_averages = open("hash_proc_reuse_delay_avg.txt" + self.rate, 'a')
+            edge_delay_averages = open("hash_proc_edge_delay_avg.txt" + self.rate, 'a')
+            cloud_delay_averages = open("hash_proc_cloud_delay_avg.txt" + self.rate, 'a')
+            cpu_load_averages = open("hash_proc_cpu_load_avg.txt" + self.rate, 'a')
+            missed_node_reqs = open("hash_proc_missed_node_reqs.txt" + self.rate, 'a')
+            queued_node_reqs = open("hash_proc_queued_node_reqs.txt" + self.rate, 'a')
+            delays = open("hash_proc_delays.txt" + self.rate, 'a')
+            repo_CPU_perc = open("hash_proc_node_CPU_perc.txt" + self.rate, 'a')
+            avg_requests_per_bucket = open("hash_proc_avg_req_per_bucket.txt" + self.rate, 'a')
+            number_of_buckets = open("hash_proc_number_of_buckets.txt" + self.rate, 'w')
         if self.cdf:
             self.results['CDF'] = cdf(self.latency_data)
         results = Tree({'SATISFACTION': 1.0 * self.n_satisfied / self.sess_count})

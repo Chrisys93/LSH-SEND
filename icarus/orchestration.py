@@ -318,6 +318,7 @@ def run_scenario(settings, params, curr_exp, n_exp):
             for collector in collectors:
                 if collector == collect_spec['name']:
                     collectors[collector]['res_path'] = collect_spec['res_path']
+                    collectors[collector]['rate'] = collect_spec['rate']
         # for m in collectors:
         #     if 'REPO' in m:
         #         collectors[m] = dict(collect_spec)

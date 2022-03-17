@@ -73,7 +73,7 @@ HASH_FILE = '/img_matches.txt'
 HASH_REUSE_FILE = '/hashes_reuse.txt'
 
 # Number of requests per second (over the whole network)
-NETWORK_REQUEST_RATE = 1000.0
+NETWORK_REQUEST_RATE = [250.0, 500.0, 1000.0]
 
 # Number of cores for each node in the experiment
 NUM_CORES = 4
@@ -243,8 +243,8 @@ for strategy in ['LRU']: # STRATEGIES:
 #"""
 # TODO: Add workloads - Furthermore, we don't need service budget variations here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SERVICE_BUDGET = NUM_CORES*NUM_NODES*3
-index = 0
 for rate in NETWORK_REQUEST_RATE:
+    index = 0
     for strategy in STRATEGIES:
         for EPOCH in EPOCH_TICKS:
             experiment = copy.deepcopy(default)

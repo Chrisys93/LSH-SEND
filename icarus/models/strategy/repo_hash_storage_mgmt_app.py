@@ -385,7 +385,7 @@ class HashRepoReuseStorApp(Strategy):
 
             # if self.hit_count[node]/self.in_count[node] < self.hit_rate and type(node) is not str:
             if float(self.hash_hit_count[h_spaces[0]]) / float(self.hash_in_count[h_spaces[0]]) < self.view.model.hash_reuse[h_spaces[0]] and type(node) is not str:
-                print("Flow id " + str(flow_id) + " is a reuse case.")
+                # print("Flow id " + str(flow_id) + " is a reuse case.")
                 self.controller.update_node_reuse(node, True)
                 self.controller.update_hash_reuse(h_spaces[0], True)
                 self.hash_hit_count[h_spaces[0]] += 1
@@ -1077,7 +1077,7 @@ class HashRepoReuseStorApp(Strategy):
                                                              self.hash_CPU_usage[node][h_spaces[0]], curTime)
                         self.controller.edge_proc_update(self.edge_proc, self.epoch_ticks)
                         self.first_retry.append(flow_id)
-                        print("Flow id " + str(flow_id) + " will be processed LATER.")
+                        # print("Flow id " + str(flow_id) + " will be processed LATER.")
                         return
                         # if type(service) is dict and self.view.hasStorageCapability(node) and not \
                         #         self.view.storage_nodes()[node].hasMessage(service['content'], service['labels']) \
@@ -1289,7 +1289,7 @@ class HashRepoReuseStorApp(Strategy):
                 if deadline - rtt_delay - curTime - serviceTime > 0:
                     if flow_id not in self.first_retry:
                         self.first_retry.append(flow_id)
-                        print("Flow id " + str(flow_id) + " will be processed LATER.")
+                        # print("Flow id " + str(flow_id) + " will be processed LATER.")
                     if type(service) is dict and self.view.hasStorageCapability(node) and not \
                             self.view.storage_nodes()[node].hasMessage(service['content'], service['labels']) \
                             and not self.controller.has_request_labels(node, labels):
@@ -2942,7 +2942,7 @@ class HashRepoProcStorApp(Strategy):
                                                              self.hash_CPU_usage[node][h_spaces[0]], curTime)
                         self.controller.edge_proc_update(self.edge_proc, self.epoch_ticks)
                         self.first_retry.append(flow_id)
-                        print("Flow id " + str(flow_id) + " will be processed LATER.")
+                        # print("Flow id " + str(flow_id) + " will be processed LATER.")
                         return
                         # if type(service) is dict and self.view.hasStorageCapability(node) and not \
                         #         self.view.storage_nodes()[node].hasMessage(service['content'], service['labels']) \

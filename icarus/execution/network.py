@@ -2589,7 +2589,7 @@ class NetworkController(object):
                                 self.model.bucket_CPU_perc[bucket] += serviceTime/\
                                                     (self.model.comp_size[n]*(update_time - self.model.last_CPU_update_time[n]))
 
-                else:
+                elif update_time - self.model.last_CPU_update_time[n] > 0:
                     self.model.bucket_CPU_perc[bucket] = serviceTime /(self.model.comp_size[n] *
                                                                            (update_time - self.model.last_CPU_update_time[n]))
 

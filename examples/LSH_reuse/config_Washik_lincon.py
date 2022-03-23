@@ -193,9 +193,7 @@ default['workload'] = {'name': WORKLOAD,
                        'content_locations': CONTENT_LOCATIONS
                        }
 
-default['collector_params'] = {'name':      DATA_COLLECTORS[0],
-                               'res_path':  RESULTS_PATH
-                                }
+default['collector_params'] = {'name':      DATA_COLLECTORS[0]}
 
 default['cache_placement']['name'] = 'CONSOLIDATED_REPO_CACHE'
 default['cache_placement']['storage_budget'] = 10000000000

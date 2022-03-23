@@ -1494,7 +1494,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             self.results['CDF'] = cdf(self.latency_data)
         results = Tree({'SATISFACTION': 1.0 * self.n_satisfied / self.sess_count})
 
-        os.chdir(os.getcwd() + '/../..')
+        os.chdir(os.getcwd() + '/../../..')
 
         # TODO: !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         #  Possibly create another file, specifically for tracking edge/cloud processing and reuse hit counts!!!!!!!!!!!

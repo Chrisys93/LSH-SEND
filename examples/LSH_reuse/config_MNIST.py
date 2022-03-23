@@ -126,7 +126,6 @@ REPO_POLICY = 'REPO_STORAGE'
 PROC_TIMES = (0.06, 0.12)
 TRIGGER_THRESH= 0.24
 
-
 # Task scheduling policy used by the cloudlets.
 # Supported policies are: 'EDF' (Earliest Deadline First), 'FIFO'
 SCHED_POLICY = 'EDF'
@@ -222,7 +221,6 @@ default['content_placement'] = {"name":             'DATASET_BUCKET_RAND_REPO_HA
 
 default['cache_policy']['name'] = CACHE_POLICY
 default['repo_policy']['name'] = REPO_POLICY
-default['repo_policy']['proc_time'] = PROC_TIMES
 default['sched_policy']['name'] = SCHED_POLICY
 default['strategy']['replacement_interval'] = REPLACEMENT_INTERVAL
 default['strategy']['epoch_ticks'] = EPOCH_TICKS

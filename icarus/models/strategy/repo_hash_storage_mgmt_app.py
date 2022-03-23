@@ -56,7 +56,7 @@ class HashRepoReuseStorApp(Strategy):
 
     def __init__(self, view, controller, replacement_interval=10, debug=False, n_replacements=1, hit_rate=1,
                  depl_rate=10000000, cloud_lim=20000000, max_stor=9900000000, min_stor=10000000, epoch_ticks=float('inf'),
-                 **kwargs):
+                 trigger_threshold=0.7, orchestration=None, **kwargs):
         super(HashRepoReuseStorApp, self).__init__(view, controller)
 
         self.view.model.strategy = 'HASH_PROC_REPO_APP'
@@ -69,6 +69,8 @@ class HashRepoReuseStorApp(Strategy):
         self.num_services = self.view.num_services()
         self.debug = debug
         self.hit_rate = hit_rate
+        self.orchestration = orchestration
+        self.trigger_threshold = trigger_threshold
         # metric to rank each VM of Comp. Spot
         self.deadline_metric = {x: {} for x in range(0, self.num_nodes)}
         self.cand_deadline_metric = {x: {} for x in range(0, self.num_nodes)}
@@ -94,6 +96,7 @@ class HashRepoReuseStorApp(Strategy):
                 self.serviceNodeUtil[recv][n] = [0.0]*self.num_services
 
         # vars
+
 
         self.lastDepl = 0
 
@@ -198,131 +201,6 @@ class HashRepoReuseStorApp(Strategy):
             for service_indx in range(0, self.num_services):
                 self.cand_deadline_metric[node][service_indx] = 0.0
 
-    # HYBRID
-    # def replace_services1(self, curTime):
-    #     for node, cs in self.compSpots.items():
-    #         n_replacements = 0
-    #         if cs.is_cloud:
-    #             continue
-    #         runningServiceResidualTimes = self.deadline_metric[node]
-    #         missedServiceResidualTimes = self.cand_deadline_metric[node]
-    #         # service_residuals = []
-    #         running_services_utilisation_normalised = []
-    #         missed_services_utilisation = []
-    #         delay = {}
-    #         # runningServicesUtil = {}
-    #         # missedServicesUtil = {}
-    #
-    #         if len(cs.scheduler.upcomingTaskQueue) > 0:
-    #             print("Printing upcoming task queue at node: " + str(cs.node))
-    #             for task in cs.scheduler.upcomingTaskQueue:
-    #                 task.print_task()
-    #
-    #         util = []
-    #         util_normalised = {}
-    #
-    #         if self.debug:
-    #             print("Replacement at node " + repr(node))
-    #         for service in range(0, self.num_services):
-    #             if cs.numberOfVMInstances[service] != len(cs.scheduler.idleVMs[service]) + len(
-    #                     cs.scheduler.busyVMs[service]) + len(cs.scheduler.startingVMs[service]):
-    #                 print("Error: number of vm instances do not match for service: " + str(service) + " node: " + str(
-    #                     cs.node))
-    #                 print("numberOfInstances = " + str(cs.numberOfVMInstances[service]))
-    #                 print("Total VMs: " + str(
-    #                     len(cs.scheduler.idleVMs[service]) + len(cs.scheduler.busyVMs[service]) + len(
-    #                         cs.scheduler.startingVMs[service])))
-    #                 print("\t Idle: " + str(len(cs.scheduler.idleVMs[service])) + " Busy: " + str(
-    #                     len(cs.scheduler.busyVMs[service])) + " Starting: " + str(
-    #                     len(cs.scheduler.startingVMs[service])))
-    #                 if cs.numberOfVMInstances[service] > len(cs.scheduler.idleVMs[service]) + len(
-    #                     cs.scheduler.busyVMs[service]) + len(cs.scheduler.startingVMs[service]):
-    #                     aVM = VM(self, service)
-    #                     cs.scheduler.idleVMs[service].append(aVM)
-    #                 elif cs.numberOfVMInstances[service] < len(cs.scheduler.idleVMs[service]) + len(
-    #                     cs.scheduler.busyVMs[service]) + len(cs.scheduler.startingVMs[service]):
-    #                     cs.numberOfVMInstances[service] = len(cs.scheduler.idleVMs[service]) + len(cs.scheduler.busyVMs[service]) + len(cs.scheduler.startingVMs[service])
-    #
-    #             d_metric = 0.0
-    #             u_metric = 0.0
-    #             util.append([service, (cs.missed_requests[service] + cs.running_requests[service]) * cs.services[
-    #                 service].service_time])
-    #             if cs.numberOfVMInstances[service] == 0:
-    #                 # No instances
-    #                 if cs.missed_requests[service] > 0:
-    #                     d_metric = 1.0 * missedServiceResidualTimes[service] / cs.missed_requests[service]
-    #                 else:
-    #                     d_metric = float('inf')
-    #                 delay[service] = d_metric
-    #                 u_metric = cs.missed_requests[service] * cs.services[service].service_time
-    #                 if u_metric > self.replacement_interval:
-    #                     u_metric = self.replacement_interval
-    #                 # missedServiceResidualTimes[service] = d_metric
-    #                 # missedServicesUtil[service] = u_metric
-    #                 missed_services_utilisation.append([service, u_metric])
-    #                 # service_residuals.append([service, d_metric])
-    #             elif cs.numberOfVMInstances[service] > 0:
-    #                 # At least one instance
-    #                 if cs.running_requests[service] > 0:
-    #                     d_metric = 1.0 * runningServiceResidualTimes[service] / cs.running_requests[service]
-    #                 else:
-    #                     d_metric = float('inf')
-    #                 runningServiceResidualTimes[service] = d_metric
-    #                 u_metric_missed = (cs.missed_requests[service]) * cs.services[service].service_time * 1.0
-    #                 if u_metric_missed > self.replacement_interval:
-    #                     u_metric_missed = self.replacement_interval
-    #                 # missedServicesUtil[service] = u_metric_missed
-    #                 u_metric_served = (1.0 * cs.running_requests[service] * cs.services[service].service_time) / \
-    #                                   cs.numberOfVMInstances[service]
-    #                 # runningServicesUtil[service] = u_metric_served
-    #                 missed_services_utilisation.append([service, u_metric_missed])
-    #                 # running_services_latency.append([service, d_metric])
-    #                 running_services_utilisation_normalised.append(
-    #                     [service, u_metric_served / cs.numberOfVMInstances[service]])
-    #                 # service_residuals.append([service, d_metric])
-    #                 delay[service] = d_metric
-    #             else:
-    #                 print("This should not happen")
-    #         running_services_utilisation_normalised = sorted(running_services_utilisation_normalised,
-    #                                                          key=lambda x: x[1])  # smaller to larger
-    #         missed_services_utilisation = sorted(missed_services_utilisation, key=lambda x: x[1],
-    #                                              reverse=True)  # larger to smaller
-    #         # service_residuals = sorted(service_residuals, key=lambda x: x[1]) #smaller to larger
-    #         exit_loop = False
-    #         for service_missed, missed_util in missed_services_utilisation:
-    #             if exit_loop:
-    #                 break
-    #             for indx in range(len(running_services_utilisation_normalised)):
-    #                 service_running = running_services_utilisation_normalised[indx][0]
-    #                 running_util = running_services_utilisation_normalised[indx][1]
-    #                 if running_util > missed_util:
-    #                     exit_loop = True
-    #                     break
-    #                 if service_running == service_missed:
-    #                     continue
-    #                 if missed_util >= running_util and delay[service_missed] < delay[service_running] and delay[
-    #                     service_missed] > 0:
-    #                     self.controller.reassign_vm(curTime, cs, service_running, service_missed, self.debug)
-    #                     # cs.reassign_vm(self.controller, curTime, service_running, service_missed, self.debug)
-    #                     if self.debug:
-    #                         print("Missed util: " + str(missed_util) + " running util: " + str(
-    #                             running_util) + " Adequate time missed: " + str(
-    #                             delay[service_missed]) + " Adequate time running: " + str(delay[service_running]))
-    #                     del running_services_utilisation_normalised[indx]
-    #                     n_replacements += 1
-    #                     break
-    #         if self.debug:
-    #             print(str(n_replacements) + " replacements at node:" + str(cs.node) + " at time: " + str(curTime))
-    #             for node in self.compSpots.keys():
-    #                 cs = self.compSpots[node]
-    #                 if cs.is_cloud:
-    #                     continue
-    #                 if cs.node != 14 and cs.node != 6:
-    #                     continue
-    #                 for service in range(0, self.num_services):
-    #                     if cs.numberOfVMInstances[service] > 0:
-    #                         print("Node: " + str(node) + " has " + str(
-    #                             cs.numberOfVMInstances[service]) + " instance of " + str(service))
 
     """ 
      * Sets the application ID. Should only set once when the application is
@@ -895,19 +773,17 @@ class HashRepoReuseStorApp(Strategy):
             if flow_id not in self.view.model.cloud_admissions:
                 self.controller.cloud_admission_update(False, flow_id)
 
-
-        # TODO: Need to make sure that triggers don't occur more than once on each update
-
         # if type(self.epoch_ticks) is int and curTime - self.view.model.CPU_update_period > self.last_trigger:
         #     self.last_trigger = curTime
         #     if type(node) is int and self.view.model.avg_CPU_perc[node] > 0.7:
         #         self.trigger_node_CPU_update(curTime, 10)
 
-        if self.epoch_count >= self.epoch_ticks and type(node) is int:
-            if self.view.model.avg_CPU_perc[node] > 0.7:
-                updated_nodes = self.trigger_node_proc_reuse_update(curTime, 5)
-                updated_nodes += self.trigger_node_reuse_proc_update(curTime, 5)
-                self.controller.reset_update_CPU_perc(updated_nodes)
+        if self.orchestration == "CPU-Reuse":
+            if self.epoch_count >= self.epoch_ticks and type(node) is int:
+                if self.view.model.avg_CPU_perc[node] > self.trigger_threshold:
+                    updated_nodes = self.trigger_node_proc_reuse_update(curTime, 5)
+                    updated_nodes += self.trigger_node_reuse_proc_update(curTime, 5)
+                    self.controller.reset_update_CPU_perc(updated_nodes)
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
         #     self.trigger_node_proc_update(curTime, 20)
@@ -915,28 +791,20 @@ class HashRepoReuseStorApp(Strategy):
         # if type(self.epoch_count) is int and type(node) is int and self.view.model.avg_CPU_perc[node] > 0.7:
         #     self.trigger_node_proc_update(curTime, 20)
 
-        # if type(self.epoch_count) is int and type(node) is int and self.view.model.avg_CPU_perc[node] > 0.7 and self.epoch_count >= self.epoch_ticks:
-        #     updated_nodes = self.trigger_node_CPU_update(curTime, 20)
-        #     self.epoch_count = 0
-        #     self.controller.reset_update_CPU_perc(updated_nodes)
+        if self.orchestration == "CPU-usage":
+            if type(self.epoch_count) is int and type(node) is int and self.view.model.avg_CPU_perc[node] > self.trigger_threshold and self.epoch_count >= self.epoch_ticks:
+                updated_nodes = self.trigger_node_CPU_update(curTime, 20)
+                self.epoch_count = 0
+                self.controller.reset_update_CPU_perc(updated_nodes)
 
-        # if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > 0.7:
-        #     self.trigger_node_delay_update(curTime, 20)
+        if self.orchestration == "Queue-based":
+            if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > 0.7:
+                self.trigger_node_delay_update(curTime, 20)
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
         #     self.epoch_node_queue_update(curTime, node, h_spaces, 20)
         #     for n in self.view.model.max_queue_delay:
         #         self.controller.reset_max_queue_delay(n)
-
-        # Highest CPU bucket moved to Highest Reuse
-
-        # if curTime - self.last_replacement > self.replacement_interval:
-        #     # self.print_stats()
-        #     print("Replacement time: " + repr(curTime))
-        #     self.controller.replacement_interval_over(flow_id, self.replacement_interval, curTime)
-        #     # self.replace_services1(curTime)
-        #     self.last_replacement = curTime
-        #     self.initialise_metrics()
 
         if self.view.hasStorageCapability(node):
             feedback = True

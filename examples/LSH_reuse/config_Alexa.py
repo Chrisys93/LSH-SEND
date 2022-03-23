@@ -42,7 +42,8 @@ N_REPLICATIONS = 1
 # List of metrics to be measured in the experiments
 # The implementation of data collectors are located in ./icaurs/execution/collectors.py
 DATA_COLLECTORS = ['REPO_STATS_OUT_H_LATENCY']
-RESULTS_PATH = ['/reuse/orchestration', '/reuse/no_orchestration', '/no_reuse/orchestration', '/no_reuse/no_orchestration']
+RESULTS_PATH = ['/no_reuse/no_orchestration', '/reuse/no_orchestration', '/Queue-based/reuse/orchestration',
+                '/CPU-usage/reuse/orchestration', '/CPU-Reuse/reuse/orchestration']
 
 # Range of alpha values of the Zipf distribution using to generate content requests
 # alpha values must be positive. The greater the value the more skewed is the
@@ -107,7 +108,8 @@ WORKLOAD = 'STATIONARY_DATASET_HASH_LABEL_REQS'
 
 # List of caching and routing strategies
 # The code is located in ./icarus/models/strategy.py
-STRATEGIES = ['HASH_REUSE_REPO_APP', 'HASH_PROC_REPO_APP']
+STRATEGIES = ['HASH_PROC_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP']
+ORCHESTRATIONS = ['Queue-based', 'CPU-usage', 'CPU-Reuse']
 EPOCH_TICKS = [500, float('inf')]
 HIT_RATE = 0.15
 #STRATEGIES = ['COORDINATED']  # service-based routing
@@ -121,6 +123,8 @@ CACHE_POLICY = 'LRU'
 # Supported policy is the normal, demonstrated REPO_STORAGE and NULL_REPO data storage policy
 # Cache policy implmentations are located in ./icarus/models/repo.py
 REPO_POLICY = 'REPO_STORAGE'
+PROC_TIMES = (0.12, 0.6)
+TRIGGER_THRESH = 1.2
 
 # Task scheduling policy used by the cloudlets.
 # Supported policies are: 'EDF' (Earliest Deadline First), 'FIFO'
@@ -246,20 +250,32 @@ SERVICE_BUDGET = NUM_CORES*NUM_NODES*3
 for rate in NETWORK_REQUEST_RATE:
     index = 0
     for strategy in STRATEGIES:
-        for EPOCH in EPOCH_TICKS:
-            experiment = copy.deepcopy(default)
-            experiment['collector_params']['res_path'] = RESULTS_PATH[index]
-            experiment['collector_params']['rate'] = rate
-            experiment['workload']['rate'] = rate
-            experiment['workload']['n_measured'] = rate*MINS*SECS
-            experiment['computation_placement']['service_budget'] = SERVICE_BUDGET
-            experiment['strategy']['epoch_ticks'] = EPOCH
-            experiment['strategy']['name'] = strategy
-            experiment['warmup_strategy']['name'] = strategy
-            experiment['desc'] = "strategy: %s" \
-                             % (strategy)
-            EXPERIMENT_QUEUE.append(experiment)
-            index += 1
+        if index < 2:
+            EPOCH = EPOCH_TICKS[1]
+        else:
+            EPOCH = EPOCH_TICKS[0]
+        experiment = copy.deepcopy(default)
+        if index >= 2:
+            experiment['strategy']['orchestration'] = ORCHESTRATIONS[index - 2]
+        if experiment['strategy']['orchestration'] == "Queue-based":
+            experiment['strategy']['trigger_threshold'] = TRIGGER_THRESH
+            experiment['sched_policy']['proc_time'] = PROC_TIMES
+        else:
+            experiment['strategy']['trigger_threshold'] = 0.7
+            experiment['sched_policy']['proc_time'] = (0.06, 0.12)
+        experiment['collector_params']['res_path'] = RESULTS_PATH[index]
+        experiment['collector_params']['rate'] = rate
+        experiment['workload']['rate'] = rate
+        experiment['workload']['n_measured'] = rate*MINS*SECS
+        experiment['computation_placement']['service_budget'] = SERVICE_BUDGET
+        experiment['strategy']['epoch_ticks'] = EPOCH
+        experiment['strategy']['name'] = strategy
+        experiment['warmup_strategy']['name'] = strategy
+        experiment['desc'] = "strategy: %s" \
+                         % (strategy)
+        EXPERIMENT_QUEUE.append(experiment)
+        index += 1
+
 #"""
 # Experiment with different budgets
 """

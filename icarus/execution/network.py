@@ -1700,7 +1700,7 @@ class NetworkModel(object):
         "instantiated".
     """
 
-    def __init__(self, topology, cache_policy, repo_policy, sched_policy, n_services, rate, seed=4353, shortest_path=None):
+    def __init__(self, topology, cache_policy, repo_policy, sched_policy, n_services, rate, proc_times=(0.12, 0.6), seed=4353, shortest_path=None):
         """
             TODO: Check line 589! That is where the caches are initialised,
                 for each node!
@@ -2087,8 +2087,8 @@ class NetworkModel(object):
         self.n_services = n_services
         internal_link_delay = 0.001  # This is the delay from receiver to router
 
-        service_time_min = 0.12  # used to be 0.10 # used to be 0.001, 0.03 for Multi, 0.01 for MNIST
-        service_time_max = 0.6 # used to be 0.10  # used to be 0.1, 0.08 for Multi, 0.015 for MNIST
+        service_time_min = proc_times[0]  # used to be 0.10 # used to be 0.001, 0.03 for Multi, 0.01 for MNIST
+        service_time_max = proc_times[1] # used to be 0.10  # used to be 0.1, 0.08 for Multi, 0.015 for MNIST
         # delay_min = 0.005
         if 'depth' in topology.graph:
             # delay_min = 2 * topology.graph['receiver_access_delay'] + service_time_max + 2 * topology.graph['link_delay']

@@ -42,7 +42,7 @@ N_REPLICATIONS = 1
 # List of metrics to be measured in the experiments
 # The implementation of data collectors are located in ./icaurs/execution/collectors.py
 DATA_COLLECTORS = ['REPO_STATS_OUT_H_LATENCY']
-RESULTS_PATH = ['/no_reuse/no_orchestration', '/reuse/no_orchestration', '/Queue-based/reuse/orchestration',
+RESULTS_PATH = ['/Repo/no_reuse/no_orchestration', '/Repo/reuse/no_orchestration', '/Queue-based/reuse/orchestration',
                 '/CPU-usage/reuse/orchestration', '/CPU-Reuse/reuse/orchestration']
 
 # Range of alpha values of the Zipf distribution using to generate content requests

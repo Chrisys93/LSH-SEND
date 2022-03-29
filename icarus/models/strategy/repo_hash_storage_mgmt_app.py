@@ -798,7 +798,7 @@ class HashRepoReuseStorApp(Strategy):
                 self.controller.reset_update_CPU_perc(updated_nodes)
 
         if self.orchestration == "Queue-based":
-            if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > 0.7:
+            if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > self.trigger_threshold:
                 self.trigger_node_delay_update(curTime, 20)
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:

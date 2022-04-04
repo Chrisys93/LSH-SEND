@@ -505,7 +505,7 @@ class Scheduler(object):
         else:
             return False
 
-    def schedule(self, curTime, debug=False):
+    def schedule(self, curTime, controller=None, debug=False):
         """
         Return the next task to be executed, if there is any.
         """
@@ -532,6 +532,8 @@ class Scheduler(object):
                 # if len(self.idleVMs[aTask.service]) > 0:
                 self.removeFromTaskQueue(aTask, core_indx)
                 aTask.completionTime = curTime + aTask.exec_time
+                if controller:
+                    controller.update_CPU_perc(self.node, curTime, aTask.exec_time, aTask.h_spaces[0], core_indx)
                 self.cs.run_task(core_indx, aTask, curTime)
                 if debug:
                     print("Schedule: Task is scheduled to run:")
@@ -1009,7 +1011,6 @@ class ComputationSpot(object):
                         min_core = core_indx
                 # self.scheduler.coreFinishTime[min_core] += min_time
                 aTask.arrivalTime = self.scheduler.get_next_task_admit_time(curTime, min_core)[1]
-                # controller.update_CPU_perc(self.node, curTime, serviceTime, h_spaces[0], min_core)
                 if type(self.node) is int:
                     controller.add_hash_queue(self.node, h_spaces[0], serviceTime)
                 self.scheduler.addToUpcomingTaskQueue(aTask, min_core, curTime)

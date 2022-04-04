@@ -2620,15 +2620,15 @@ class NetworkController(object):
 
                 self.model.update_CPU_perc[node][bucket] = self.model.update_CPU_perc_cumulative[node][bucket] / \
                                                            (self.model.comp_size[node] * (update_time - self.model.last_CPU_update_time[node]))
-            self.reset_update_CPU_perc(node)
 
-    def reset_update_CPU_perc(self, n):
-        for h in self.model.update_CPU_perc_cumulative[n]:
-            if self.model.next_update_CPU_cumulative[n][h] > 0:
-                self.model.update_CPU_perc_cumulative[n][h] = self.model.next_update_CPU_cumulative[n][h]
-                self.model.next_update_CPU_cumulative[n][h] = 0
-            else:
-                self.model.update_CPU_perc_cumulative[n][h] = 0
+    def reset_update_CPU_perc(self, node_list):
+        for n in node_list:
+            for h in self.model.update_CPU_perc_cumulative[n]:
+                if self.model.next_update_CPU_cumulative[n][h] > 0:
+                    self.model.update_CPU_perc_cumulative[n][h] = self.model.next_update_CPU_cumulative[n][h]
+                    self.model.next_update_CPU_cumulative[n][h] = 0
+                else:
+                    self.model.update_CPU_perc_cumulative[n][h] = 0
 
     def update_CPU_usage(self, node, h, node_CPU, hash_CPU, CPUtime):
         self.model.node_CPU_usage[node] = node_CPU/CPUtime

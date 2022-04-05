@@ -42,7 +42,8 @@ N_REPLICATIONS = 1
 # List of metrics to be measured in the experiments
 # The implementation of data collectors are located in ./icaurs/execution/collectors.py
 DATA_COLLECTORS = ['REPO_STATS_OUT_H_LATENCY']
-RESULTS_PATH = ['/Queue-based/reuse/orchestration',]
+RESULTS_PATH = ['/Repo/no_reuse/no_orchestration', '/Repo/reuse/no_orchestration',
+                '/CPU-usage/reuse/orchestration', '/CPU-Reuse/reuse/orchestration']
 
 # Range of alpha values of the Zipf distribution using to generate content requests
 # alpha values must be positive. The greater the value the more skewed is the
@@ -107,8 +108,8 @@ WORKLOAD = 'STATIONARY_DATASET_HASH_LABEL_REQS'
 
 # List of caching and routing strategies
 # The code is located in ./icarus/models/strategy.py
-STRATEGIES = ['HASH_REUSE_REPO_APP']
-ORCHESTRATIONS = ['Queue-based']
+STRATEGIES = ['HASH_PROC_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP']
+ORCHESTRATIONS = ['CPU-usage', 'CPU-Reuse']
 EPOCH_TICKS = [500, float('inf')]
 HIT_RATE = 0.15
 #STRATEGIES = ['COORDINATED']  # service-based routing
@@ -254,7 +255,8 @@ for rate in NETWORK_REQUEST_RATE:
         else:
             EPOCH = EPOCH_TICKS[0]
         experiment = copy.deepcopy(default)
-        experiment['strategy']['orchestration'] = ORCHESTRATIONS[index]
+        if index >= 2:
+            experiment['strategy']['orchestration'] = ORCHESTRATIONS[index - 2]
         if experiment['strategy']['orchestration'] == "Queue-based":
             experiment['strategy']['trigger_threshold'] = TRIGGER_THRESH
             experiment['sched_policy']['proc_time'] = PROC_TIMES

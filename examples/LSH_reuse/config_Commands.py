@@ -259,10 +259,9 @@ for rate in NETWORK_REQUEST_RATE:
             experiment['strategy']['orchestration'] = ORCHESTRATIONS[index - 2]
         if experiment['strategy']['orchestration'] == "Queue-based":
             experiment['strategy']['trigger_threshold'] = TRIGGER_THRESH
-            experiment['sched_policy']['proc_time'] = PROC_TIMES
         else:
             experiment['strategy']['trigger_threshold'] = 0.7
-            experiment['sched_policy']['proc_time'] = (0.06, 0.12)
+        experiment['sched_policy']['proc_time'] = PROC_TIMES
         experiment['collector_params']['res_path'] = RESULTS_PATH[index]
         experiment['collector_params']['rate'] = rate
         experiment['workload']['rate'] = rate

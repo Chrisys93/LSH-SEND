@@ -874,29 +874,31 @@ class NetworkView(object):
             total_update = 0
             for h in self.model.update_CPU_perc[n]:
                 total_update += self.model.update_CPU_perc[n][h]
-            node_proc = self.model.avg_CPU_perc[n] + total_update
-            if node_proc >= max_node_proc and node_proc > 0 and len(self.model.all_node_h_spaces[n]) > 0:
+            node_proc = total_update
+            if node_proc >= max_node_proc and node_proc > 0:
                 max_node_proc = node_proc
                 max_node = n
         if max_node is None:
-            for n in self.model.all_node_h_spaces:
-                if type(n) is str:
-                    continue
-                total_update = 0
-                for h in self.model.update_CPU_perc[n]:
-                    total_update += self.model.update_CPU_perc[n][h]
-                node_proc = self.model.avg_CPU_perc[n] + total_update
-                if node_proc >= max_node_proc and node_proc > 0 and len(self.model.all_node_h_spaces[n]) > 0:
-                    max_node_proc = node_proc
-                    max_node = n
+            return None, None
+        # if max_node is None:
+        #     for n in self.model.avg_CPU_perc:
+        #         if type(n) is str:
+        #             continue
+        #         total_update = 0
+        #         for h in self.model.update_CPU_perc[n]:
+        #             total_update += self.model.update_CPU_perc[n][h]
+        #         node_proc = total_update
+        #         if node_proc >= max_node_proc and node_proc > 0:
+        #             max_node_proc = node_proc
+        #             max_node = n
 
 
 
         max_hash = None
         n = max_node
         max_proc = 0
-        if self.model.all_node_h_spaces[n]:
-            for h in self.model.all_node_h_spaces[n]:
+        if self.model.update_CPU_perc[n]:
+            for h in self.model.update_CPU_perc[n]:
                 if h in exclude:
                     continue
                 if h in self.model.update_CPU_perc[n]:
@@ -929,7 +931,7 @@ class NetworkView(object):
             total_update = 0
             for h in self.model.update_CPU_perc[n]:
                 total_update += self.model.update_CPU_perc[n][h]
-            node_proc = self.model.avg_CPU_perc[n] + total_update
+            node_proc = total_update
             if node_proc <= min_node_proc and type(n) is int:
                 min_node_proc = node_proc
                 min_node = n
@@ -2460,8 +2462,9 @@ class NetworkController(object):
             self.model.all_node_h_spaces[high_proc] = Counter()
         if h_h not in self.model.h_space_sources or type(self.model.h_space_sources[h_h]) is not Counter:
             self.model.h_space_sources[h_h] = Counter()
-        if h_l and h_l not in self.model.h_space_sources or type(self.model.h_space_sources[h_l]) is not Counter:
-            self.model.h_space_sources[h_l] = Counter()
+        if h_l:
+            if h_l not in self.model.h_space_sources or type(self.model.h_space_sources[h_l]) is not Counter:
+                self.model.h_space_sources[h_l] = Counter()
 
         if low_proc in self.model.all_node_h_spaces:
             self.model.all_node_h_spaces[low_proc].update([h_h])
@@ -2577,6 +2580,8 @@ class NetworkController(object):
 
 
         elif not serviceTime and change_update and high_repo:
+            if bucket not in self.model.update_CPU_perc[node]:
+                self.model.update_CPU_perc[node][bucket] = 0
             self.model.update_CPU_perc[node][bucket] += self.model.update_CPU_perc[high_repo][bucket]
             self.model.update_CPU_perc[high_repo][bucket] = 0
             return

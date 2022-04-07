@@ -466,8 +466,11 @@ class HashRepoReuseStorApp(Strategy):
         for i in range(max_count):
             # FIXME: Maybe include a bucket exclusion list for both high and low, to not take buckets twice instead!!!!!
             # Find highest and lowest processing buckets and nodes
-            low_proc = self.view.least_CPU_usage(exclude_l)
-            high_proc = self.view.most_CPU_usage(exclude_h)
+            if any(elem is None for elem in self.view.most_CPU_usage(exclude_h)):
+                continue
+            else:
+                high_proc = self.view.most_CPU_usage(exclude_h)
+                low_proc = self.view.least_CPU_usage(exclude_l)
             low_repo = low_proc[0]
             l = low_proc[1]
             exclude_l.append(l)
@@ -553,6 +556,8 @@ class HashRepoReuseStorApp(Strategy):
             high_repo = high_proc[0]
             h = high_proc[1]
             exclude_h.append(h)
+            if high_repo is None or low_repo is None or h is None:
+                continue
             if high_repo not in updated_nodes:
                 updated_nodes.append(high_repo)
             # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
@@ -621,6 +626,8 @@ class HashRepoReuseStorApp(Strategy):
             h = high_proc[1][i]
             # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
             l = low_proc[1]
+            if high_repo is None or low_repo is None or h is None:
+                continue
             exclude_l.append(l)
             if low_repo not in updated_nodes:
                 updated_nodes.append(low_repo)
@@ -693,6 +700,9 @@ class HashRepoReuseStorApp(Strategy):
             l = low_proc[1][i]
             high_repo = high_proc[0][i]
             h = high_proc[1][i]
+            if self.view.model.max_queue_delay[high_repo] == 0 or h not in self.view.model.queued_hashes[high_repo] or \
+                    not self.view.model.queued_hashes[high_repo][h]:
+                continue
             # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
             new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
             h_l_path_delay = self.view.path_delay(high_repo, low_repo)

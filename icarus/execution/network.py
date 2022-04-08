@@ -2578,10 +2578,10 @@ class NetworkController(object):
                     self.model.update_CPU_perc_cumulative[node][bucket] += serviceTime
                     self.model.node_CPU_perc_cumulative[node][core] += serviceTime
                 else:
-                    self.model.update_CPU_perc_cumulative[node][bucket] += self.model.last_CPU_update_time + self.model.CPU_update_period - (self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core])
-                    self.model.next_update_CPU_cumulative[node][bucket] += serviceTime + self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core] - (self.model.last_CPU_update_time + self.model.CPU_update_period)
-                    self.model.node_CPU_perc_cumulative[node][core] += self.model.last_CPU_update_time + self.model.CPU_update_period - (self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core])
-                    self.model.next_node_CPU_cumulative[node][core] += serviceTime + self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core] - (self.model.last_CPU_update_time + self.model.CPU_update_period)
+                    self.model.update_CPU_perc_cumulative[node][bucket] += self.model.last_CPU_update_time[node] + self.model.CPU_update_period - (self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core])
+                    self.model.next_update_CPU_cumulative[node][bucket] += serviceTime + self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core] - (self.model.last_CPU_update_time[node] + self.model.CPU_update_period)
+                    self.model.node_CPU_perc_cumulative[node][core] += self.model.last_CPU_update_time[node] + self.model.CPU_update_period - (self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core])
+                    self.model.next_node_CPU_cumulative[node][core] += serviceTime + self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core] - (self.model.last_CPU_update_time[node] + self.model.CPU_update_period)
 
 
             # TODO: I need to do something with flow IDs, to track the tasks that are/were already executed and not count them more than once for each update.
@@ -2650,13 +2650,15 @@ class NetworkController(object):
 
 
     def restore_orch_CPU_perc(self, nodes=None):
-        for node in nodes:
-            for h in self.model.update_CPU_perc_cumulative[node]:
-                self.model.orchestration_CPU_perc[node][h] = self.model.update_CPU_perc_cumulative[node][h]
+
         if nodes is None:
             for n in self.model.update_CPU_perc_cumulative:
                 for h in self.model.update_CPU_perc_cumulative[n]:
-                    self.model.orchestration_CPU_perc[n][h] = self.model.update_CPU_perc_cumulative[n][h]
+                    self.model.orchestration_CPU_perc[n][h] = self.model.update_CPU_perc[n][h]
+            return
+        for node in nodes:
+            for h in self.model.update_CPU_perc_cumulative[node]:
+                self.model.orchestration_CPU_perc[node][h] = self.model.update_CPU_perc[node][h]
 
     def update_CPU_usage(self, node, h, node_CPU, hash_CPU, CPUtime):
         self.model.node_CPU_usage[node] = node_CPU/CPUtime

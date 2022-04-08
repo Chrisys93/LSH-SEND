@@ -786,11 +786,13 @@ class HashRepoReuseStorApp(Strategy):
         #         self.trigger_node_CPU_update(curTime, 10)
 
         if self.orchestration == "CPU-Reuse":
+            self.view.model.orch_calls += 1
             if self.epoch_count >= self.epoch_ticks and type(node) is int:
                 if self.view.model.avg_CPU_perc[node] > self.trigger_threshold:
+                    self.controller.restore_orch_CPU_perc()
                     updated_nodes = self.trigger_node_proc_reuse_update(curTime, 5)
                     updated_nodes += self.trigger_node_reuse_proc_update(curTime, 5)
-                    self.controller.reset_update_CPU_perc(updated_nodes)
+                    self.controller.restore_orch_CPU_perc(updated_nodes)
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
         #     self.trigger_node_proc_update(curTime, 20)
@@ -799,12 +801,15 @@ class HashRepoReuseStorApp(Strategy):
         #     self.trigger_node_proc_update(curTime, 20)
 
         if self.orchestration == "CPU-usage":
+            self.view.model.orch_calls += 1
             if type(self.epoch_count) is int and type(node) is int and self.view.model.avg_CPU_perc[node] > self.trigger_threshold and self.epoch_count >= self.epoch_ticks:
-                updated_nodes = self.trigger_node_CPU_update(curTime, 20)
+                self.controller.restore_orch_CPU_perc()
+                updated_nodes = self.trigger_node_CPU_update(curTime, 50)
                 self.epoch_count = 0
-                self.controller.reset_update_CPU_perc(updated_nodes)
+                self.controller.restore_orch_CPU_perc(updated_nodes)
 
         if self.orchestration == "Queue-based":
+            self.view.model.orch_calls += 1
             if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > self.trigger_threshold:
                 self.trigger_node_delay_update(curTime, 20)
 
@@ -2260,335 +2265,6 @@ class HashRepoProcStorApp(Strategy):
 
         return msg, new_status
 
-    def epoch_node_proc_update(self, curTime, node, h_spaces, max_count=5):
-        """
-        This method updates the repo-associated hash spaces based on the reuse performance of each repo (and potentially
-        ranking hash spaces based on the reuse quotes they need.
-        max_count: integer (optional)
-            Maximum amount of moves between higher and lower CPU-usage nodes
-        """
-
-        high_proc = self.view.most_proc_usage(max_count)
-        low_proc = self.view.least_proc_usage(max_count)
-
-        count = 0
-        for n_h, h, n_l, l in zip(high_proc[0], high_proc[1], low_proc[0], low_proc[1]):
-            if count < max_count:
-                low_repo = n_l
-                high_repo = n_h
-                # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
-                new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
-                h_l_path_delay = self.view.path_delay(n_h, n_l)
-                rtt_delay_h = 2 * h_l_path_delay
-                # l_h_path_delay = self.view.path_delay(n_l, n_h)
-                # rtt_delay_l = 2 * l_h_path_delay
-                if new_content_h is not None:
-                    if 'shelf_life' in new_content_h:
-                        self.view.storage_nodes()[n_h].deleteMessage(new_content_h['content'])
-                        self.controller.add_event(curTime + h_l_path_delay, n_l, new_content_h, new_content_h['labels'], new_content_h['h_space'], n_l,
-                                              None, curTime + new_content_h['shelf_life'], rtt_delay_h, STORE)
-                        self.controller.move_h_space_proc_high_low(n_h, n_l, h, l)
-                # if new_content_l is not None:
-                #     if 'shelf_life' in new_content_l:
-                #         self.view.storage_nodes()[n_l].deleteMessage(new_content_l['content'])
-                #         self.controller.add_event(curTime + l_h_path_delay, n_h, new_content_l, new_content_l['labels'], new_content_l['h_space'], n_h,
-                #                               None, curTime + new_content_l['shelf_life'], rtt_delay_l, STORE)
-                #         self.controller.move_h_space_proc_low_high(n_h, n_l, h, l)
-                count += 1
-        self.epoch_count = 0
-        self.controller.simil_miss_update(self.epoch_miss_count, self.epoch_ticks)
-        self.controller.edge_proc_update(self.edge_proc, self.epoch_ticks)
-        self.controller.cloud_proc_update(self.cloud_proc, self.epoch_ticks)
-        self.controller.reuse_hits_update(self.reuse_hits, self.epoch_ticks)
-        self.controller.repo_miss_update(self.repo_misses, self.epoch_ticks)
-        self.epoch_miss_count = 0
-        # self.cloud_proc = 0
-        # self.edge_proc = 0
-        # self.reuse_hits = 0
-        for n in self.view.model.repoStorage:
-            self.in_count[n] = 0
-            self.hit_count[n] = 0
-            self.repo_misses[n] = 0
-        for h in self.view.model.hash_reuse:
-            self.hash_in_count[h] = 0
-            self.hash_hit_count[h] = 0
-
-        if curTime - self.last_CPU_time >= 1:
-            for n in self.hash_CPU_usage:
-                if type(n) is int:
-                    for h in self.hash_CPU_usage[n]:
-                        self.controller.update_CPU_usage(n, h, self.node_CPU_usage[n],
-                                                         self.hash_CPU_usage[n][h], curTime)
-            self.last_CPU_time = curTime
-            # self.node_CPU_usage[n] = 0
-            # self.hash_CPU_usage[n][h_spaces[0]] = 0
-
-    def epoch_node_queue_update(self, curTime, node, h_spaces, max_count=5):
-        """
-        This method updates the repo-associated hash spaces based on the reuse performance of each repo (and potentially
-        ranking hash spaces based on the reuse quotes they need.
-        max_count: integer (optional)
-            Maximum amount of moves between higher and lower CPU-usage nodes
-        """
-
-        high_proc = self.view.high_queue_usage(max_count)
-        low_proc = self.view.low_queue_usage(max_count)
-
-        count = 0
-        for n_h, h, n_l, l in zip(high_proc[0], high_proc[1], low_proc[0], low_proc[1]):
-            if count < max_count:
-                low_repo = n_l
-                high_repo = n_h
-                # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
-                new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
-                h_l_path_delay = self.view.path_delay(n_h, n_l)
-                rtt_delay_h = 2 * h_l_path_delay
-                # l_h_path_delay = self.view.path_delay(n_l, n_h)
-                # rtt_delay_l = 2 * l_h_path_delay
-                if new_content_h is not None:
-                    if 'shelf_life' in new_content_h:
-                        self.view.storage_nodes()[n_h].deleteMessage(new_content_h['content'])
-                        self.controller.add_event(curTime + h_l_path_delay, n_l, new_content_h, new_content_h['labels'], new_content_h['h_space'], n_l,
-                                              None, curTime + new_content_h['shelf_life'], rtt_delay_h, STORE)
-                        self.controller.move_h_space_proc_high_low(n_h, n_l, h, l)
-                # if new_content_l is not None:
-                #     if 'shelf_life' in new_content_l:
-                #         self.view.storage_nodes()[n_l].deleteMessage(new_content_l['content'])
-                #         self.controller.add_event(curTime + l_h_path_delay, n_h, new_content_l, new_content_l['labels'], new_content_l['h_space'], n_h,
-                #                               None, curTime + new_content_l['shelf_life'], rtt_delay_l, STORE)
-                #         self.controller.move_h_space_proc_low_high(n_h, n_l, h, l)
-                count += 1
-        self.epoch_count = 0
-        self.controller.simil_miss_update(self.epoch_miss_count, self.epoch_ticks)
-        self.controller.edge_proc_update(self.edge_proc, self.epoch_ticks)
-        self.controller.cloud_proc_update(self.cloud_proc, self.epoch_ticks)
-        self.controller.reuse_hits_update(self.reuse_hits, self.epoch_ticks)
-        self.controller.repo_miss_update(self.repo_misses, self.epoch_ticks)
-        self.epoch_miss_count = 0
-        # self.cloud_proc = 0
-        # self.edge_proc = 0
-        # self.reuse_hits = 0
-        for n in self.view.model.repoStorage:
-            self.in_count[n] = 0
-            self.hit_count[n] = 0
-            self.repo_misses[n] = 0
-        for h in self.view.model.hash_reuse:
-            self.hash_in_count[h] = 0
-            self.hash_hit_count[h] = 0
-
-        if curTime - self.last_CPU_time >= 1:
-            for n in self.hash_CPU_usage:
-                if type(n) is int:
-                    for h in self.hash_CPU_usage[n]:
-                        self.controller.update_CPU_usage(n, h, self.node_CPU_usage[n],
-                                                         self.hash_CPU_usage[n][h], curTime)
-            self.last_CPU_time = curTime
-            # self.node_CPU_usage[n] = 0
-            # self.hash_CPU_usage[n][h_spaces[0]] = 0
-
-    def trigger_node_proc_update(self, curTime, node, h_space):
-        """
-        This method updates the repo-associated hash spaces based on the reuse performance of each repo (and potentially
-        ranking hash spaces based on the reuse quotes they need.
-        max_count: integer (optional)
-            Maximum amount of moves between higher and lower CPU-usage nodes
-        """
-
-        # Find highest and lowest processing buckets and nodes
-        # high_proc = self.view.most_proc_usage(max_count)
-        low_proc = self.view.least_proc_usage(1)
-
-        # Move all buckets from one (highest processing) nodes to the others (low processing),
-        # and the other way around
-        # TODO: At the same time, also move relevant data, with the buckets, HERE
-        #  (as this is where the main data movement tools are)
-
-        low_repo = low_proc[0][0]
-        l = low_proc[1][0]
-        # high_repo = n_h
-        new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
-        new_content_h = self.controller.get_processed_message(node, [h_space], [], True)
-        h_l_path_delay = self.view.path_delay(node, low_repo)
-        rtt_delay_h = 2 * h_l_path_delay
-        # l_h_path_delay = self.view.path_delay(low_repo, node)
-        # rtt_delay_l = 2 * l_h_path_delay
-        if new_content_h is not None:
-            if 'shelf_life' in new_content_h:
-                self.view.storage_nodes()[node].deleteMessage(new_content_h['content'])
-                self.controller.add_event(curTime + h_l_path_delay, low_repo, new_content_h, new_content_h['labels'],
-                                          new_content_h['h_space'], low_repo,
-                                          None, curTime + new_content_h['shelf_life'], rtt_delay_h, STORE)
-                self.controller.move_h_space_proc_high_low(node, low_repo, h_space, l)
-        # if new_content_l is not None:
-        #     if 'shelf_life' in new_content_l:
-        #         self.view.storage_nodes()[low_repo].deleteMessage(new_content_l['content'])
-        #         self.controller.add_event(curTime + l_h_path_delay, node, new_content_l, new_content_l['labels'],
-        #                                   new_content_l['h_space'], node,
-        #                                   None, curTime + new_content_l['shelf_life'], rtt_delay_l, STORE)
-        #         self.controller.move_h_space_proc_low_high(node, low_repo, h_space, l)
-
-        # Update all relevant metrics and reset some of the counters
-        self.controller.simil_miss_update(self.epoch_miss_count, self.epoch_ticks)
-        self.controller.edge_proc_update(self.edge_proc, self.epoch_ticks)
-        self.controller.cloud_proc_update(self.cloud_proc, self.epoch_ticks)
-        self.controller.reuse_hits_update(self.reuse_hits, self.epoch_ticks)
-        self.controller.repo_miss_update(self.repo_misses, self.epoch_ticks)
-        self.epoch_miss_count = 0
-        # self.cloud_proc = 0
-        # self.edge_proc = 0
-        # self.reuse_hits = 0
-        for n in self.view.model.repoStorage:
-            self.in_count[n] = 0
-            self.hit_count[n] = 0
-            self.repo_misses[n] = 0
-        for h in self.view.model.hash_reuse:
-            self.hash_in_count[h] = 0
-            self.hash_hit_count[h] = 0
-
-    def trigger_node_CPU_update(self, curTime, max_count):
-        """
-        This method updates the repo-associated hash spaces based on the reuse performance of each repo (and potentially
-        ranking hash spaces based on the reuse quotes they need.
-        max_count: integer (optional)
-            Maximum amount of moves between higher and lower CPU-usage nodes
-        """
-
-        exclude_l = []
-        exclude_h = []
-        updated_nodes = []
-        for i in range(max_count):
-            # FIXME: Maybe include a bucket exclusion list for both high and low, to not take buckets twice instead!!!!!
-            # Find highest and lowest processing buckets and nodes
-            low_proc = self.view.least_CPU_usage(exclude_l)
-            high_proc = self.view.most_CPU_usage(exclude_h)
-            low_repo = low_proc[0]
-            l = low_proc[1]
-            exclude_l.append(l)
-            high_repo = high_proc[0]
-            h = high_proc[1]
-            exclude_h.append(h)
-            if high_repo not in updated_nodes:
-                updated_nodes.append(high_repo)
-            if low_repo not in updated_nodes:
-                updated_nodes.append(low_repo)
-            if h:
-                # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
-                new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
-                h_l_path_delay = self.view.path_delay(high_repo, low_repo)
-                rtt_delay_h = 2 * h_l_path_delay
-                # l_h_path_delay = self.view.path_delay(low_repo, node)
-                # rtt_delay_l = 2 * l_h_path_delay
-                self.controller.update_CPU_perc(low_repo, curTime, None, h, True, high_repo)
-                self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
-                if new_content_h is not None:
-                    if 'shelf_life' in new_content_h:
-                        self.view.storage_nodes()[high_repo].deleteMessage(new_content_h['content'])
-                        self.controller.add_event(curTime + h_l_path_delay, low_repo, new_content_h,
-                                                  new_content_h['labels'],
-                                                  new_content_h['h_space'], low_repo,
-                                                  None, curTime + new_content_h['shelf_life'], rtt_delay_h, STORE)
-                # if new_content_l is not None:
-                #     if 'shelf_life' in new_content_l:
-                #         self.view.storage_nodes()[low_repo].deleteMessage(new_content_l['content'])
-                #         self.controller.add_event(curTime + l_h_path_delay, node, new_content_l, new_content_l['labels'],
-                #                                   new_content_l['h_space'], node,
-                #                                   None, curTime + new_content_l['shelf_life'], rtt_delay_l, STORE)
-                #         self.controller.move_h_space_proc_low_high(node, low_repo, h_space, l)
-
-        self.epoch_count = 0
-        self.controller.simil_miss_update(self.epoch_miss_count, self.epoch_ticks)
-        self.controller.edge_proc_update(self.edge_proc, self.epoch_ticks)
-        self.controller.cloud_proc_update(self.cloud_proc, self.epoch_ticks)
-        self.controller.reuse_hits_update(self.reuse_hits, self.epoch_ticks)
-        self.controller.repo_miss_update(self.repo_misses, self.epoch_ticks)
-        self.epoch_miss_count = 0
-        # self.cloud_proc = 0
-        # self.edge_proc = 0
-        # self.reuse_hits = 0
-        for n in self.view.model.repoStorage:
-            self.in_count[n] = 0
-            self.hit_count[n] = 0
-            self.repo_misses[n] = 0
-        for h in self.view.model.hash_reuse:
-            self.hash_in_count[h] = 0
-            self.hash_hit_count[h] = 0
-
-        if curTime - self.last_CPU_time >= 1:
-            for n in self.hash_CPU_usage:
-                if type(n) is int:
-                    for h in self.hash_CPU_usage[n]:
-                        self.controller.update_CPU_usage(n, h, self.node_CPU_usage[n],
-                                                         self.hash_CPU_usage[n][h], curTime)
-            self.last_CPU_time = curTime
-            # self.node_CPU_usage[n] = 0
-            # self.hash_CPU_usage[n][h_spaces[0]] = 0
-        return updated_nodes
-
-
-    def trigger_node_delay_update(self, curTime, max_count):
-        """
-        This method updates the repo-associated hash spaces based on the reuse performance of each repo (and potentially
-        ranking hash spaces based on the reuse quotes they need.
-        max_count: integer (optional)
-            Maximum amount of moves between higher and lower CPU-usage nodes
-        """
-
-        # Find highest and lowest processing buckets and nodes
-        high_proc = self.view.high_queue_usage(max_count)
-        low_proc = self.view.low_queue_usage(max_count)
-
-        # Move all buckets from one (highest processing) nodes to the others (low processing),
-        # and the other way around
-        # TODO: At the same time, also move relevant data, with the buckets, HERE
-        #  (as this is where the main data movement tools are)
-
-        for i in range(max_count):
-            low_repo = low_proc[0][i]
-            l = low_proc[1][i]
-            high_repo = high_proc[0][i]
-            h = high_proc[1][i]
-            # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
-            new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
-            h_l_path_delay = self.view.path_delay(high_repo, low_repo)
-            rtt_delay_h = 2 * h_l_path_delay
-            # l_h_path_delay = self.view.path_delay(low_repo, node)
-            # rtt_delay_l = 2 * l_h_path_delay
-            if new_content_h is not None:
-                if 'shelf_life' in new_content_h:
-                    self.view.storage_nodes()[high_repo].deleteMessage(new_content_h['content'])
-                    self.controller.add_event(curTime + h_l_path_delay, low_repo, new_content_h,
-                                              new_content_h['labels'],
-                                              new_content_h['h_space'], low_repo,
-                                              None, curTime + new_content_h['shelf_life'], rtt_delay_h, STORE)
-                    self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
-                    self.controller.reset_max_queue_delay(high_repo)
-                    self.controller.reset_max_queue_delay(low_repo)
-            # if new_content_l is not None:
-            #     if 'shelf_life' in new_content_l:
-            #         self.view.storage_nodes()[low_repo].deleteMessage(new_content_l['content'])
-            #         self.controller.add_event(curTime + l_h_path_delay, node, new_content_l, new_content_l['labels'],
-            #                                   new_content_l['h_space'], node,
-            #                                   None, curTime + new_content_l['shelf_life'], rtt_delay_l, STORE)
-            #         self.controller.move_h_space_proc_low_high(node, low_repo, h_space, l)
-
-        # Update all relevant metrics and reset some of the counters
-        self.controller.simil_miss_update(self.epoch_miss_count, self.epoch_ticks)
-        self.controller.edge_proc_update(self.edge_proc, self.epoch_ticks)
-        self.controller.cloud_proc_update(self.cloud_proc, self.epoch_ticks)
-        self.controller.reuse_hits_update(self.reuse_hits, self.epoch_ticks)
-        self.controller.repo_miss_update(self.repo_misses, self.epoch_ticks)
-        self.epoch_miss_count = 0
-        # self.cloud_proc = 0
-        # self.edge_proc = 0
-        # self.reuse_hits = 0
-        for n in self.view.model.repoStorage:
-            self.in_count[n] = 0
-            self.hit_count[n] = 0
-            self.repo_misses[n] = 0
-        for h in self.view.model.hash_reuse:
-            self.hash_in_count[h] = 0
-            self.hash_hit_count[h] = 0
-
 
     @inheritdoc(Strategy)
     # @profile
@@ -2624,50 +2300,6 @@ class HashRepoProcStorApp(Strategy):
                     self.controller.add_request_to_bucket(h)
             if flow_id not in self.view.model.cloud_admissions:
                 self.controller.cloud_admission_update(False, flow_id)
-
-        # no_buckets = 5
-        count = 0
-        # if type(self.epoch_ticks) is int:
-        #     for n in self.hash_CPU_usage:
-        #         if type(n) is int:
-        #             for h in self.hash_CPU_usage[n]:
-        #                 # if count == no_buckets:
-        #                 #     break
-        #                 if self.view.model.node_CPU_usage[n] > 0.8 and type(self.epoch_ticks) is int:
-        #                     self.trigger_node_proc_update(curTime, n, h)
-        #                     break
-                    # if count == no_buckets:
-                    #     break
-
-        # if type(self.epoch_ticks) is int and curTime - self.view.model.CPU_update_period > self.last_trigger:
-        #     self.last_trigger = curTime
-        #     for n in self.view.model.avg_CPU_perc:
-        #         if type(n) is int:
-        #             if self.view.model.avg_CPU_perc[n] > 0.7:
-        #                 for h in self.hash_CPU_usage[n]:
-        #                     self.trigger_node_CPU_update(curTime, n, h)
-        #                     break
-
-        # if self.epoch_count >= self.epoch_ticks and type(node) is int:
-        #     if self.view.model.node_CPU_usage[node] > 0.5:
-        #         self.epoch_node_proc_update(curTime, node, h_spaces, 30)
-
-        # if self.epoch_count >= self.epoch_ticks and type(node) is int:
-        #     self.epoch_node_proc_update(curTime, node, h_spaces, 30)
-
-        if type(self.epoch_count) is int and type(node) is int and self.view.model.avg_CPU_perc[
-            node] > 0.7 and self.epoch_count >= self.epoch_ticks:
-            updated_nodes = self.trigger_node_CPU_update(curTime, 20)
-            self.epoch_count = 0
-            self.controller.reset_update_CPU_perc(updated_nodes)
-
-        # if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > 0.7:
-        #     self.trigger_node_delay_update(curTime, 20)
-
-        # if self.epoch_count >= self.epoch_ticks and type(node) is int:
-        #     self.epoch_node_queue_update(curTime, node, h_spaces, 30)
-        #     for n in self.view.model.max_queue_delay:
-        #         self.controller.reset_max_queue_delay(n)
 
         if curTime - self.last_replacement > self.replacement_interval:
             # self.print_stats()

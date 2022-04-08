@@ -1186,6 +1186,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
         self.n_instantiations_interval = 0
         self.avg_RTT = 0
         self.RTT_total = 0
+        self.throughput = 0
         self.sessions_ended = 0
         self.rate = rate
 
@@ -1386,6 +1387,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
 
             self.RTT_total += timestamp - self.flow_start[flow_id]
             self.avg_RTT = self.RTT_total/self.sessions_ended
+            self.throughput = self.sessions_ended/timestamp
 
             if service['content'] not in self.service_requests.keys():
                 self.service_requests[service['content']] = 1
@@ -1489,6 +1491,8 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             delays = open("hash_proc_delays" + str(self.rate) + ".txt", 'a')
             repo_CPU_perc = open("hash_proc_node_CPU_perc" + str(self.rate) + ".txt", 'a')
             avg_requests_per_bucket = open("hash_proc_avg_req_per_bucket" + str(self.rate) + ".txt", 'a')
+            orchestrator_calls = open("hash_proc_orchestrator_calls" + str(self.rate) + ".txt", 'a')
+            throughput = open("hash_proc_throughput" + str(self.rate) + ".txt", 'a')
             number_of_buckets = open("hash_proc_number_of_buckets" + str(self.rate) + ".txt", 'w')
         if self.cdf:
             self.results['CDF'] = cdf(self.latency_data)
@@ -1628,6 +1632,12 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                 avg_cloud_delay = 0
             cloud_delay_averages.write(str(avg_cloud_delay) + "\n")
 
+            orchestrator_calls.write(str(self.view.model.orch_calls) + "\n")
+
+            throughput.write(str(self.throughput) + "\n")
+
+
+
         overhead.close()
         simil_misses.close()
         repo_simil_misses.close()
@@ -1642,6 +1652,8 @@ class RepoStatsOutputLatencyCollector(DataCollector):
         repo_CPU_perc.close()
         avg_requests_per_bucket.close()
         number_of_buckets.close()
+        orchestrator_calls.close()
+        throughput.close()
 
 
         if self.view.model.strategy != 'HYBRID':

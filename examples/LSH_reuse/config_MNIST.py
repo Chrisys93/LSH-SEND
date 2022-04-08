@@ -223,7 +223,6 @@ default['cache_policy']['name'] = CACHE_POLICY
 default['repo_policy']['name'] = REPO_POLICY
 default['sched_policy']['name'] = SCHED_POLICY
 default['strategy']['replacement_interval'] = REPLACEMENT_INTERVAL
-default['strategy']['epoch_ticks'] = EPOCH_TICKS
 default['strategy']['hit_rate'] = HIT_RATE
 default['strategy']['n_replacements'] = NUM_REPLACEMENTS
 default['topology']['name'] = TOPOLOGIES

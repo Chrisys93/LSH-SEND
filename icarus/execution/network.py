@@ -2574,15 +2574,16 @@ class NetworkController(object):
             if bucket not in self.model.update_CPU_perc[node]:
                 self.model.update_CPU_perc[node][bucket] = 0
             for core in range(self.model.comp_size[node]):
-                if self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core] + serviceTime <= self.model.last_CPU_update_time[node] + self.model.CPU_update_period:
+                if self.model.node_CPU_perc_cumulative[node][core] + serviceTime <= self.model.CPU_update_period:
                     self.model.update_CPU_perc_cumulative[node][bucket] += serviceTime
                     self.model.node_CPU_perc_cumulative[node][core] += serviceTime
-                else:
-                    self.model.update_CPU_perc_cumulative[node][bucket] += self.model.last_CPU_update_time[node] + self.model.CPU_update_period - (self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core])
+                    break
+                elif self.model.node_CPU_perc_cumulative[node][core] < 1:
+                    self.model.update_CPU_perc_cumulative[node][bucket] += self.model.CPU_update_period - self.model.node_CPU_perc_cumulative[node][core]
                     self.model.next_update_CPU_cumulative[node][bucket] += serviceTime + self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core] - (self.model.last_CPU_update_time[node] + self.model.CPU_update_period)
                     self.model.node_CPU_perc_cumulative[node][core] += self.model.last_CPU_update_time[node] + self.model.CPU_update_period - (self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core])
                     self.model.next_node_CPU_cumulative[node][core] += serviceTime + self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core] - (self.model.last_CPU_update_time[node] + self.model.CPU_update_period)
-
+                    break
 
             # TODO: I need to do something with flow IDs, to track the tasks that are/were already executed and not count them more than once for each update.
             # FIXME: THE BEST WAY TO DO THIS IS TO JUST ADD A PER-BUCKET (INSTEAD OF A PER-CORE) TALLY AND DO IT AS IN THE PER-CORE CASE, BUT ONLY PER-BUCKET!
@@ -2598,11 +2599,11 @@ class NetworkController(object):
             return
 
         if not change_update and curTime >= self.model.last_CPU_update_time[node] + self.model.CPU_update_period:
-            for core in range(self.model.comp_size[node]):
-                if curTime - self.model.last_CPU_update_time[node] <= self.model.node_CPU_perc_cumulative[node][core]:
-                    self.model.next_node_CPU_cumulative[node][core] = self.model.node_CPU_perc_cumulative[node][core] - (curTime - self.model.last_CPU_update_time[node])
-                    self.model.node_CPU_perc_cumulative[node][core] = curTime - self.model.last_CPU_update_time[node]
-            self.update_CPU(node, curTime)
+            # for core in range(self.model.comp_size[node]):
+            #     if curTime - self.model.last_CPU_update_time[node] <= self.model.node_CPU_perc_cumulative[node][core]:
+            #         self.model.next_node_CPU_cumulative[node][core] = self.model.node_CPU_perc_cumulative[node][core] - (curTime - self.model.last_CPU_update_time[node])
+            #         self.model.node_CPU_perc_cumulative[node][core] = curTime - self.model.last_CPU_update_time[node]
+            self.update_CPU(curTime, node)
             self.reset_update_CPU_perc(node)
             self.update_CPU_avg_perc(curTime, node)
             self.reset_node_CPU_perc(node)
@@ -2616,7 +2617,7 @@ class NetworkController(object):
             else:
                 node_CPU_cumulative += update_time - self.model.last_CPU_update_time[node]
         self.model.avg_CPU_perc[node] = node_CPU_cumulative/\
-                                        (self.model.comp_size[node]* (update_time - self.model.last_CPU_update_time[node]))
+                                        (self.model.comp_size[node] * (update_time - self.model.last_CPU_update_time[node]))
 
     def reset_node_CPU_perc(self, node):
         for core in range(self.model.comp_size[node]):
@@ -2630,14 +2631,10 @@ class NetworkController(object):
 
 
 
-    def update_CPU(self, node, update_time):
+    def update_CPU(self, update_time, node):
         if update_time - self.model.last_CPU_update_time[node] > 0:
             for bucket in self.model.update_CPU_perc_cumulative[node]:
-                if self.model.update_CPU_perc_cumulative[node][bucket] <= update_time - self.model.last_CPU_update_time[node]:
-                    bucket_CPU_cumulative = self.model.update_CPU_perc_cumulative[node][bucket]
-                else:
-                    bucket_CPU_cumulative = update_time - self.model.last_CPU_update_time[node]
-                self.model.update_CPU_perc[node][bucket] = bucket_CPU_cumulative/\
+                self.model.update_CPU_perc[node][bucket] = self.model.update_CPU_perc_cumulative[node][bucket]/\
                                                 (self.model.comp_size[node]* (update_time - self.model.last_CPU_update_time[node]))
 
     def reset_update_CPU_perc(self, node):

@@ -1465,7 +1465,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             s_labels_dist = open("spec_s_labels.txt", 'a')
             overhead = open("spec_overheads.txt", 'a')
         elif 'HASH' in self.view.model.strategy:
-            res = open("hash_proc_repo" + str(self.rate) + ".txt", 'a')
+            # res = open("hash_proc_repo" + str(self.rate) + ".txt", 'a')
             repo_usage = open("hash_proc_usage" + str(self.rate) + ".txt", 'a')
             repo_proc_vs_stor = open("hash_proc_proc_vs_stor" + str(self.rate) + ".txt", 'a')
             repo_overtime = open("hash_proc_overtime" + str(self.rate) + ".txt", 'a')
@@ -1516,10 +1516,10 @@ class RepoStatsOutputLatencyCollector(DataCollector):
         per_node_simil_misses = {}
         first_hash_repo = True
         # res.write(str(100*self.n_satisfied/self.sess_count) + " " + str(self.n_satisfied) + " " + str(self.sess_count) + ": \n")
-        for service in self.service_requests.keys():
-            per_service_sats[service] = 1.0 * self.service_satisfied[service] / self.service_requests[service]
-            res.write(str(100 * self.service_satisfied[service] / self.service_requests[service]) + ", ")
-        res.write("\n")
+        # for service in self.service_requests.keys():
+        #     per_service_sats[service] = 1.0 * self.service_satisfied[service] / self.service_requests[service]
+        #     res.write(str(100 * self.service_satisfied[service] / self.service_requests[service]) + ", ")
+        # res.write("\n")
 
         for content in range(0, 1000):
             # overhead.write(str(content) + ": ")
@@ -1731,7 +1731,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
         for key in sorted(self.idle_times):
             print (repr(key) + " " + repr(self.idle_times[key]))
         # results['VMS_PER_SERVICE'] = self.vms_per_service
-        res.close()
+        # res.close()
 
         self.last_res_call_flow_no = self.res_call_flow_no
 

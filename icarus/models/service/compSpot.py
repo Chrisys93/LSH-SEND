@@ -1021,8 +1021,8 @@ class ComputationSpot(object):
         self.scheduler.addToTaskQueue(aTask, curTime, core_indx)
         newTask = self.compute_completion_times(curTime, False, debug)
         controller.update_CPU_perc(self.node, curTime, serviceTime, h_spaces[0], core_indx)
-        if type(self.node) is int:
-            controller.add_hash_queue(self.node, h_spaces[0], serviceTime)
+        # if type(self.node) is int:
+        #     controller.add_hash_queue(self.node, h_spaces[0], serviceTime)
         for task in self.scheduler._taskQueue[core_indx][:]:
             if debug:
                 print("After simulate:")

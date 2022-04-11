@@ -2678,7 +2678,8 @@ class NetworkController(object):
             self.model.max_queue_delay[node] += delay
 
     def sub_hash_queue(self, node, h):
-        self.model.queued_hashes[node][h] -= 1
+        if h in self.model.queued_hashes[node]:
+            self.model.queued_hashes[node][h] -= 1
 
     def reset_max_queue_delay(self, node):
         self.model.max_queue_delay[node] = 0

@@ -74,7 +74,7 @@ HASH_FILE = '/img_matches.txt'
 HASH_REUSE_FILE = '/hashes_reuse.txt'
 
 # Number of requests per second (over the whole network)
-NETWORK_REQUEST_RATE = [1000, 2000, 5000]
+NETWORK_REQUEST_RATE = [1000, 2000, 3000]
 
 # Number of cores for each node in the experiment
 NUM_CORES = 4

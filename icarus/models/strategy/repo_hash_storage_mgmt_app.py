@@ -786,13 +786,12 @@ class HashRepoReuseStorApp(Strategy):
         #         self.trigger_node_CPU_update(curTime, 10)
 
         if self.orchestration == "CPU-Reuse":
-            if self.epoch_count >= self.epoch_ticks and type(node) is int:
+            if self.epoch_count >= self.epoch_ticks and type(node) is int and self.view.model.avg_CPU_perc[node] > self.trigger_threshold:
                 self.view.model.orch_calls += 1
-                if self.view.model.avg_CPU_perc[node] > self.trigger_threshold:
-                    self.controller.restore_orch_CPU_perc()
-                    updated_nodes = self.trigger_node_proc_reuse_update(curTime, 5)
-                    updated_nodes += self.trigger_node_reuse_proc_update(curTime, 5)
-                    self.controller.restore_orch_CPU_perc(updated_nodes)
+                self.controller.restore_orch_CPU_perc()
+                updated_nodes = self.trigger_node_proc_reuse_update(curTime, 5)
+                updated_nodes += self.trigger_node_reuse_proc_update(curTime, 5)
+                self.controller.restore_orch_CPU_perc(updated_nodes)
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
         #     self.trigger_node_proc_update(curTime, 20)
@@ -809,7 +808,7 @@ class HashRepoReuseStorApp(Strategy):
                 self.controller.restore_orch_CPU_perc(updated_nodes)
 
         if self.orchestration == "Queue-based":
-            if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > self.trigger_threshold:
+            if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > self.trigger_threshold and self.epoch_count >= self.epoch_ticks:
                 self.view.model.orch_calls += 1
                 self.trigger_node_delay_update(curTime, 20)
 

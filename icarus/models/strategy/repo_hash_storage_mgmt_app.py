@@ -811,6 +811,7 @@ class HashRepoReuseStorApp(Strategy):
             if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > self.trigger_threshold and self.epoch_count >= self.epoch_ticks:
                 self.view.model.orch_calls += 1
                 self.trigger_node_delay_update(curTime, 20)
+                self.epoch_count = 0
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
         #     self.epoch_node_queue_update(curTime, node, h_spaces, 20)

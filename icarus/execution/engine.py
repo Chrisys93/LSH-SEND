@@ -49,7 +49,11 @@ def exec_experiment(topology, workload, netconf, strategy, cache_policy, repo_po
         proc_times = sched_policy['proc_time']
     else:
         proc_times = (0.06, 0.12)
-    model = NetworkModel(topology, cache_policy, repo_policy, sched_policy['name'], workload.n_services, workload.rate, proc_times, **netconf)
+    if 'update_per' in sched_policy:
+        update_per = sched_policy['update_per']
+    else:
+        update_per = 1
+    model = NetworkModel(topology, cache_policy, repo_policy, sched_policy['name'], workload.n_services, workload.rate, proc_times, update_per, **netconf)
     workload.model = model
     view = NetworkView(model)
     controller = NetworkController(model)

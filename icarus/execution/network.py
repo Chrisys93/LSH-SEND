@@ -1717,7 +1717,7 @@ class NetworkModel(object):
         "instantiated".
     """
 
-    def __init__(self, topology, cache_policy, repo_policy, sched_policy, n_services, rate, proc_times=(0.12, 0.6), seed=4353, shortest_path=None):
+    def __init__(self, topology, cache_policy, repo_policy, sched_policy, n_services, rate, proc_times=(0.12, 0.6), update_per=1, seed=4353, shortest_path=None):
         """
             TODO: Check line 589! That is where the caches are initialised,
                 for each node!
@@ -1861,7 +1861,7 @@ class NetworkModel(object):
 
         # Variables determining the frequency of updating the latter, above.
         self.last_CPU_update_time = dict()
-        self.CPU_update_period = 1
+        self.CPU_update_period = update_per
 
         # Keeping track of all contents/services allocated, via their associated buckets
         self.h_spaces_contents = dict()

@@ -250,7 +250,7 @@ for rate in NETWORK_REQUEST_RATE:
     index = 0
     for strategy in STRATEGIES:
         if index < 2:
-            EPOCH = EPOCH_TICKS[1]
+            EPOCH = rate - 50
         else:
             EPOCH = EPOCH_TICKS[0]
         experiment = copy.deepcopy(default)
@@ -261,6 +261,7 @@ for rate in NETWORK_REQUEST_RATE:
         else:
             experiment['strategy']['trigger_threshold'] = 0.7
         experiment['sched_policy']['proc_time'] = PROC_TIMES
+        experiment['sched_policy']['update_per'] = 1
         experiment['collector_params']['res_path'] = RESULTS_PATH[index]
         experiment['collector_params']['rate'] = rate
         experiment['workload']['rate'] = rate

@@ -251,9 +251,9 @@ for rate in NETWORK_REQUEST_RATE:
     index = 0
     for strategy in STRATEGIES:
         if index < 2:
-            EPOCH = rate - 50
+            EPOCH = EPOCH_TICKS[1]
         else:
-            EPOCH = EPOCH_TICKS[0]
+            EPOCH = rate - 50
         experiment = copy.deepcopy(default)
         if index >= 2:
             experiment['strategy']['orchestration'] = ORCHESTRATIONS[index - 2]

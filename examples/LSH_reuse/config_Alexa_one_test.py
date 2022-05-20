@@ -94,8 +94,8 @@ N_MEASURED_REQUESTS = NETWORK_REQUEST_RATE*SECS*MINS
 # List of all implemented topologies
 # Topology implementations are located in ./icarus/scenarios/topology.py
 TOPOLOGIES = 'EDGE_TREE'
-TREE_DEPTH = 2
-BRANCH_FACTOR = 1
+TREE_DEPTH = 1
+BRANCH_FACTOR = 2
 NUM_NODES = int(pow(BRANCH_FACTOR, TREE_DEPTH+1) - 1)
 
 # Replacement Interval in seconds

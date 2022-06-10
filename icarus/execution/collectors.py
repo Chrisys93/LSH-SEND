@@ -1474,7 +1474,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             s_replicas = open("hash_proc_s_replicas" + str(self.rate) + ".txt", 'a')
             r_labels_dist = open("hash_proc_r_labels" + str(self.rate) + ".txt", 'a')
             s_labels_dist = open("hash_proc_s_labels" + str(self.rate) + ".txt", 'a')
-            overhead = open("hash_proc_overheads" + str(self.rate) + ".txt", 'a')
+            # overhead = open("hash_proc_overheads" + str(self.rate) + ".txt", 'a')
             simil_misses = open("hash_proc_simil_miss" + str(self.rate) + ".txt", 'a')
             repo_simil_misses = open("hash_proc_repo_miss" + str(self.rate) + ".txt", 'a')
             cloud_proc = open("hash_proc_cloud_proc" + str(self.rate) + ".txt", 'a')
@@ -1490,7 +1490,8 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             queued_node_reqs = open("hash_proc_queued_node_reqs" + str(self.rate) + ".txt", 'a')
             delays = open("hash_proc_delays" + str(self.rate) + ".txt", 'a')
             repo_CPU_perc = open("hash_proc_node_CPU_perc" + str(self.rate) + ".txt", 'a')
-            avg_requests_per_bucket = open("hash_proc_avg_req_per_bucket" + str(self.rate) + ".txt", 'a')
+            requests_per_bucket = open("hash_proc_avg_req_per_bucket" + str(self.rate) + ".txt", 'a')
+            buckets_to_EDR = open("hash_proc_bucket_edr" + str(self.rate) + ".txt", 'a')
             orchestrator_calls = open("hash_proc_orchestrator_calls" + str(self.rate) + ".txt", 'a')
             throughput = open("hash_proc_throughput" + str(self.rate) + ".txt", 'a')
             number_of_buckets = open("hash_proc_number_of_buckets" + str(self.rate) + ".txt", 'w')
@@ -1521,22 +1522,22 @@ class RepoStatsOutputLatencyCollector(DataCollector):
         #     res.write(str(100 * self.service_satisfied[service] / self.service_requests[service]) + ", ")
         # res.write("\n")
 
-        for content in range(0, 1000):
-            # overhead.write(str(content) + ": ")
-            msg = dict()
-            msg['content'] = content
-            msg['msg_size'] = 1000000
-            for node in self.view.model.storageSize:
-                if self.view.storage_nodes()[node].hasMessage(content, []):
-                    msg = self.view.storage_nodes()[node].hasMessage(content, [])
-                    break
-            if msg['content'] in self.view.model.replication_overheads:
-                self.view.model.replication_overheads[msg['content']] = self.view.model.replication_overheads[msg['content']] + self.view.model.replication_hops[msg['content']] * msg['msg_size']
-            else:
-                self.view.model.replication_overheads[msg['content']] = self.view.model.replication_hops[msg['content']] * msg['msg_size']
-            overhead.write(str(self.view.replication_overhead(content)) + ", ")
-            self.view.model.replication_hops[msg['content']] = 1
-        overhead.write("\n")
+        # for content in range(0, 1000):
+        #     # overhead.write(str(content) + ": ")
+        #     msg = dict()
+        #     msg['content'] = content
+        #     msg['msg_size'] = 1000000
+        #     for node in self.view.model.storageSize:
+        #         if self.view.storage_nodes()[node].hasMessage(content, []):
+        #             msg = self.view.storage_nodes()[node].hasMessage(content, [])
+        #             break
+            # if msg['content'] in self.view.model.replication_overheads:
+            #     self.view.model.replication_overheads[msg['content']] = self.view.model.replication_overheads[msg['content']] + self.view.model.replication_hops[msg['content']] * msg['msg_size']
+            # else:
+            #     self.view.model.replication_overheads[msg['content']] = self.view.model.replication_hops[msg['content']] * msg['msg_size']
+            # overhead.write(str(self.view.replication_overhead(content)) + ", ")
+        #     self.view.model.replication_hops[msg['content']] = 1
+        # overhead.write("\n")
 
         if self.view.model.strategy == 'HASH_PROC_REPO_APP':
             simil_misses.write(str(self.view.model.last_miss_count))
@@ -1582,14 +1583,18 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                 queued_node_reqs.write(str(node_misses) + ', ')
             queued_node_reqs.write('\n')
 
-            total_req_per_bucket = 0
-            bucket_num = len(self.view.model.requested_buckets)
+
+            # bucket_num = len(self.view.model.requested_buckets)
             for bucket in self.view.model.requested_buckets:
-                total_req_per_bucket += self.view.model.requested_buckets[bucket]
-            avg_req_per_bucket = total_req_per_bucket/bucket_num
-            avg_requests_per_bucket.write(str(avg_req_per_bucket) + '\n')
+                req_per_bucket = self.view.model.requested_buckets[bucket]
+                requests_per_bucket.write(str(req_per_bucket) + ', ')
+            requests_per_bucket.write('\n')
             if first_hash_repo:
-                number_of_buckets.write(str(bucket_num))
+                number_of_buckets.write(str(len(self.view.model.requested_buckets)))
+
+            for bucket in self.view.model.h_space_sources:
+                buckets_to_EDR.write(str(self.view.model.h_space_sources[bucket]) + ', ')
+            buckets_to_EDR.write('\n')
 
 
             total_delays = 0
@@ -1650,7 +1655,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
         edge_delay_averages.close()
         cloud_delay_averages.close()
         repo_CPU_perc.close()
-        avg_requests_per_bucket.close()
+        requests_per_bucket.close()
         number_of_buckets.close()
         orchestrator_calls.close()
         throughput.close()

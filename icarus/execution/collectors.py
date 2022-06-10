@@ -1643,7 +1643,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
 
 
 
-        overhead.close()
+        # overhead.close()
         simil_misses.close()
         repo_simil_misses.close()
         cloud_proc.close()

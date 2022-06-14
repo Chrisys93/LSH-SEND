@@ -1188,7 +1188,7 @@ class StationaryDatasetHashRepoWorkload(object):
         #       rather than just contents (could be either or both, depending on restrictions - maybe create
         #       more strategies in that case, if needed.
 
-        if self.first:  # TODO remove this first variable, this is not necessary here
+        if self.first:
             random.seed(self.seed)
             self.first = False
         # aFile = open('workload.txt', 'w')

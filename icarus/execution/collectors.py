@@ -1491,6 +1491,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             delays = open("hash_proc_delays" + str(self.rate) + ".txt", 'a')
             repo_CPU_perc = open("hash_proc_node_CPU_perc" + str(self.rate) + ".txt", 'a')
             requests_per_bucket = open("hash_proc_avg_req_per_bucket" + str(self.rate) + ".txt", 'a')
+            requests_per_node = open("hash_proc_avg_req_per_node" + str(self.rate) + ".txt", 'a')
             buckets_to_EDR = open("hash_proc_bucket_edr" + str(self.rate) + ".txt", 'a')
             orchestrator_calls = open("hash_proc_orchestrator_calls" + str(self.rate) + ".txt", 'a')
             throughput = open("hash_proc_throughput" + str(self.rate) + ".txt", 'a')
@@ -1591,9 +1592,13 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             requests_per_bucket.write('\n')
             if first_hash_repo:
                 number_of_buckets.write(str(len(self.view.model.requested_buckets)))
+            for edr in self.view.model.requests_per_node:
+                req_per_edr = self.view.model.requests_per_node[edr]
+                requests_per_node.write(str(req_per_edr) + ', ')
+            requests_per_node.write('\n')
 
             for bucket in self.view.model.h_space_sources:
-                buckets_to_EDR.write(str(self.view.model.h_space_sources[bucket]) + ', ')
+                buckets_to_EDR.write(str(self.view.model.h_space_sources[bucket].keys()) + ', ')
             buckets_to_EDR.write('\n')
 
 

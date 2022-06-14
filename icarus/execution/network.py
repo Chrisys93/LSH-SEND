@@ -1869,6 +1869,9 @@ class NetworkModel(object):
         # Keeping track of requests per bucket
         self.requested_buckets = Counter()
 
+        # Keeping track of requests per node
+        self.requests_per_node = Counter()
+
         # Dictionary of link types (internal/external)
         self.link_type = nx.get_edge_attributes(topology, 'type')
         self.link_delay = fnss.get_delays(topology)
@@ -2686,6 +2689,9 @@ class NetworkController(object):
 
     def add_request_to_bucket(self, bucket):
         self.model.requested_buckets.update(bucket)
+
+    def add_request_to_node(self, node):
+        self.model.requests_per_node.update(node)
 
     def add_request_labels_to_node(self, s, service_request):
         """Forward a request from node *s* to node *t* over the provided path.

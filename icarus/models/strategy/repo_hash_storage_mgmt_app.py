@@ -2299,6 +2299,7 @@ class HashRepoProcStorApp(Strategy):
                 self.epoch_count += 1
                 for h in h_spaces:
                     self.controller.add_request_to_bucket(h)
+                self.controller.add_request_to_node([node])
             if flow_id not in self.view.model.cloud_admissions:
                 self.controller.cloud_admission_update(False, flow_id)
 

@@ -1586,18 +1586,18 @@ class RepoStatsOutputLatencyCollector(DataCollector):
 
 
             # bucket_num = len(self.view.model.requested_buckets)
-            for bucket in self.view.model.requested_buckets:
+            for bucket in range(len(self.view.model.requested_buckets)):
                 req_per_bucket = self.view.model.requested_buckets[bucket]
                 requests_per_bucket.write(str(req_per_bucket) + ', ')
             requests_per_bucket.write('\n')
             if first_hash_repo:
                 number_of_buckets.write(str(len(self.view.model.requested_buckets)))
-            for edr in self.view.model.requests_per_node:
+            for edr in range(len(self.view.model.requests_per_node)):
                 req_per_edr = self.view.model.requests_per_node[edr]
                 requests_per_node.write(str(req_per_edr) + ', ')
             requests_per_node.write('\n')
 
-            for bucket in self.view.model.h_space_sources:
+            for bucket in range(len(self.view.model.h_space_sources)):
                 buckets_to_EDR.write(str(self.view.model.h_space_sources[bucket].keys()[0]) + ', ')
             buckets_to_EDR.write('\n')
 

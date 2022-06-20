@@ -1598,7 +1598,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             requests_per_node.write('\n')
 
             for bucket in range(len(self.view.model.h_space_sources)):
-                buckets_to_EDR.write(str(self.view.model.h_space_sources[bucket].keys()[0]) + ', ')
+                buckets_to_EDR.write(str(self.view.model.h_space_sources[str(bucket)].keys()[0]) + ', ')
             buckets_to_EDR.write('\n')
 
 

@@ -1224,6 +1224,9 @@ class RepoStatsOutputLatencyCollector(DataCollector):
         self.in_flight = 0  # In-flight message tracking
 
         self.rel_res_path = res_path
+        self.first_run = True
+        self.requested_buckets = []
+        self.allocated_buckets = []
 
         # Log-specific variables TODO: Maybe set up in the same way that the result output is set up.
         # self.logs_path = self.view.get_logs_path
@@ -1586,9 +1589,20 @@ class RepoStatsOutputLatencyCollector(DataCollector):
 
 
             # bucket_num = len(self.view.model.requested_buckets)
-            for bucket in range(len(self.view.model.requested_buckets)):
-                req_per_bucket = self.view.model.requested_buckets[bucket]
-                requests_per_bucket.write(str(req_per_bucket) + ', ')
+            if len(self.requested_buckets) != len(self.view.model.requested_buckets):
+                for bucket in self.view.model.requested_buckets:
+                    if bucket not in self.requested_buckets:
+                        self.requested_buckets.append(bucket)
+            if self.first_run:
+                for bucket in self.view.model.h_space_sources:
+                    self.allocated_buckets.append(bucket)
+                self.first_run = False
+            for bucket in self.allocated_buckets:
+                if bucket not in self.view.model.requested_buckets[bucket]:
+                    requests_per_bucket.write(str(0) + ', ')
+                else:
+                    req_per_bucket = self.view.model.requested_buckets[bucket]
+                    requests_per_bucket.write(str(req_per_bucket) + ', ')
             requests_per_bucket.write('\n')
             if first_hash_repo:
                 number_of_buckets.write(str(len(self.view.model.requested_buckets)))
@@ -1597,7 +1611,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                 requests_per_node.write(str(req_per_edr) + ', ')
             requests_per_node.write('\n')
 
-            for bucket in range(len(self.view.model.h_space_sources)):
+            for bucket in self.allocated_buckets:
                 buckets_to_EDR.write(str(self.view.model.h_space_sources[str(bucket)].keys()[0]) + ', ')
             buckets_to_EDR.write('\n')
 

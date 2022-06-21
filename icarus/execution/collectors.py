@@ -1606,7 +1606,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             if first_hash_repo:
                 number_of_buckets.write(str(len(self.view.model.requested_buckets)))
             for edr in range(len(self.view.model.requests_per_node)):
-                req_per_edr = self.view.model.requests_per_node["rec_"+edr]
+                req_per_edr = self.view.model.requests_per_node["rec_"+str(edr)]
                 requests_per_node.write(str(req_per_edr) + ', ')
             requests_per_node.write('\n')
 

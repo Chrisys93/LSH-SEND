@@ -1589,23 +1589,26 @@ class RepoStatsOutputLatencyCollector(DataCollector):
 
 
             # bucket_num = len(self.view.model.requested_buckets)
-            if len(self.requested_buckets) != len(self.view.model.requested_buckets):
-                for bucket in self.view.model.requested_buckets:
-                    if bucket not in self.requested_buckets:
-                        self.requested_buckets.append(bucket)
+
             if self.first_run:
                 for bucket in self.view.model.h_space_sources:
                     self.allocated_buckets.append(bucket)
+                for bucket in self.allocated_buckets:
+                    if bucket not in self.requested_buckets:
+                        self.requested_buckets.append(bucket)
                 self.first_run = False
-            for bucket in self.allocated_buckets:
+
+            for bucket in self.requested_buckets:
                 if bucket not in self.view.model.requested_buckets:
                     requests_per_bucket.write(str(0) + ', ')
                 else:
                     requests_per_bucket.write(str(self.view.model.requested_buckets[bucket]) + ', ')
             requests_per_bucket.write('\n')
+
             if first_hash_repo:
-                number_of_buckets.write(str(len(self.view.model.requested_buckets)))
-            for edr in range(len(self.view.model.requests_per_node)):
+                number_of_buckets.write(str(len(self.view.model.h_space_sources)))
+
+            for edr in range(len(self.view.model.source_node)):
                 req_per_edr = self.view.model.requests_per_node["rec_"+str(edr)]
                 requests_per_node.write(str(req_per_edr) + ', ')
             requests_per_node.write('\n')

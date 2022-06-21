@@ -1591,7 +1591,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             # bucket_num = len(self.view.model.requested_buckets)
             if len(self.requested_buckets) != len(self.view.model.requested_buckets):
                 for bucket in self.view.model.requested_buckets:
-                    if bucket not in self.requested_buckets.keys():
+                    if bucket not in self.requested_buckets:
                         self.requested_buckets.append(bucket)
             if self.first_run:
                 for bucket in self.view.model.h_space_sources:

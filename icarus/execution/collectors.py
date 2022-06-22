@@ -1677,6 +1677,8 @@ class RepoStatsOutputLatencyCollector(DataCollector):
 
 
         # overhead.close()
+        requests_per_node.close()
+        requests_per_end_node.close()
         simil_misses.close()
         repo_simil_misses.close()
         cloud_proc.close()

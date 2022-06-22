@@ -1868,12 +1868,18 @@ class NetworkModel(object):
 
         # Keeping track of requests per bucket
         self.requested_buckets = Counter()
+        self.requested_buckets_temp = Counter()
+        self.bucket_req_speed = dict()
 
         # Keeping track of requests per node
         self.requests_per_node = Counter()
+        self.requests_per_node_temp = Counter()
+        self.node_req_speed = dict()
 
         # Keeping track of requests per end-node
         self.requests_per_end_node = Counter()
+        self.requests_per_end_node_temp = Counter()
+        self.end_node_req_speed = dict()
 
         # Dictionary of link types (internal/external)
         self.link_type = nx.get_edge_attributes(topology, 'type')
@@ -2614,6 +2620,9 @@ class NetworkController(object):
             self.update_CPU_avg_perc(curTime, node)
             self.reset_node_CPU_perc(node)
             self.model.last_CPU_update_time[node] = curTime
+            self.calculate_node_req_speed()
+            self.calculate_end_node_req_speed()
+            self.calculate_bucket_req_speed()
 
     def update_CPU_avg_perc(self, update_time, node):
         node_CPU_cumulative = 0
@@ -2693,11 +2702,35 @@ class NetworkController(object):
     def add_request_to_bucket(self, bucket):
         self.model.requested_buckets.update(bucket)
 
+    def add_request_to_bucket_temp(self, bucket):
+        self.model.requested_buckets_temp.update(bucket)
+
+    def calculate_bucket_req_speed(self):
+        for b in self.model.requested_buckets:
+            self.model.bucket_req_speed[b] = self.model.requested_buckets_temp[b]
+            self.model.requested_buckets_temp[b] = 0
+
     def add_request_to_node(self, node):
         self.model.requests_per_node.update(node)
 
     def add_request_to_end_node(self, node):
         self.model.requests_per_end_node.update(node)
+
+    def add_request_to_node_temp(self, node):
+        self.model.requests_per_node_temp.update(node)
+
+    def calculate_node_req_speed(self):
+        for node in self.model.requests_per_node:
+            self.model.node_req_speed[node] = self.model.requests_per_node_temp[node]
+            self.model.requests_per_node_temp[node] = 0
+
+    def add_request_to_end_node_temp(self, node):
+        self.model.requests_per_end_node_temp.update(node)
+
+    def calculate_end_node_req_speed(self):
+        for node in self.model.requests_per_node:
+            self.model.end_node_req_speed[node] = self.model.requests_per_end_node_temp[node]
+            self.model.requests_per_end_node_temp[node] = 0
 
     def add_request_labels_to_node(self, s, service_request):
         """Forward a request from node *s* to node *t* over the provided path.

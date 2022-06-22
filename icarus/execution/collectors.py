@@ -1496,6 +1496,9 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             requests_per_bucket = open("hash_proc_avg_req_per_bucket" + str(self.rate) + ".txt", 'a')
             requests_per_node = open("hash_proc_avg_req_per_node" + str(self.rate) + ".txt", 'a')
             requests_per_end_node = open("hash_proc_avg_req_per_end_node" + str(self.rate) + ".txt", 'a')
+            bucket_req_speed = open("hash_proc_bucket_req_speed" + str(self.rate) + ".txt", 'a')
+            node_req_speed = open("hash_proc_node_req_speed" + str(self.rate) + ".txt", 'a')
+            end_node_req_speed = open("hash_proc_end_node_req_speed" + str(self.rate) + ".txt", 'a')
             buckets_to_EDR = open("hash_proc_bucket_edr" + str(self.rate) + ".txt", 'a')
             orchestrator_calls = open("hash_proc_orchestrator_calls" + str(self.rate) + ".txt", 'a')
             throughput = open("hash_proc_throughput" + str(self.rate) + ".txt", 'a')
@@ -1625,6 +1628,32 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                 requests_per_end_node.write(str(req_per_edr) + ', ')
             requests_per_end_node.write('\n')
 
+            for bucket in self.requested_buckets:
+                if bucket not in self.view.model.requested_buckets:
+                    bucket_req_speed.write(str(0) + ', ')
+                else:
+                    bucket_req_speed.write(str(self.view.model.bucket_req_speed[bucket]) + ', ')
+            bucket_req_speed.write('\n')
+
+            if first_hash_repo:
+                number_of_buckets.write(str(len(self.view.model.h_space_sources)))
+
+            for edr in range(len(self.view.model.source_node)):
+                if str("rec_"+str(edr)) in self.view.model.requests_per_node:
+                    req_per_edr = self.view.model.node_req_speed["rec_" + str(edr)]
+                else:
+                    req_per_edr = 0
+                node_req_speed.write(str(req_per_edr) + ', ')
+            node_req_speed.write('\n')
+
+            for edr in range(len(self.view.model.source_node)):
+                if edr in self.view.model.requests_per_end_node:
+                    req_per_edr = self.view.model.end_node_req_speed[edr]
+                else:
+                    req_per_edr = 0
+                end_node_req_speed.write(str(req_per_edr) + ', ')
+            end_node_req_speed.write('\n')
+
             for bucket in self.allocated_buckets:
                 buckets_to_EDR.write(str(self.view.model.h_space_sources[str(bucket)].keys()[0]) + ', ')
             buckets_to_EDR.write('\n')
@@ -1677,8 +1706,12 @@ class RepoStatsOutputLatencyCollector(DataCollector):
 
 
         # overhead.close()
+        requests_per_bucket.close()
         requests_per_node.close()
         requests_per_end_node.close()
+        bucket_req_speed.close()
+        node_req_speed.close()
+        end_node_req_speed.close()
         simil_misses.close()
         repo_simil_misses.close()
         cloud_proc.close()

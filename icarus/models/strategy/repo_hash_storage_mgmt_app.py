@@ -268,6 +268,7 @@ class HashRepoReuseStorApp(Strategy):
 
                 # TODO: Add (reuse) request destination hit to repo ingress request count
                 self.controller.add_request_to_end_node([node])
+                self.controller.add_request_to_end_node_temp([node])
 
                 # if type(node) is str and 'src' in node:
                 #     self.controller.cloud_admission_update(True, flow_id)
@@ -778,6 +779,7 @@ class HashRepoReuseStorApp(Strategy):
                 for h in h_spaces:
                     self.controller.add_request_to_bucket([h])
                 self.controller.add_request_to_node([node])
+                self.controller.add_request_to_node_temp([node])
             if flow_id not in self.view.model.cloud_admissions:
                 self.controller.cloud_admission_update(False, flow_id)
 
@@ -893,6 +895,7 @@ class HashRepoReuseStorApp(Strategy):
 
                 # TODO: Add (no-reuse) request destination hit to repo ingress request count
                 self.controller.add_request_to_end_node([node])
+                self.controller.add_request_to_end_node_temp([node])
 
                 path = self.view.shortest_path(node, self.source[h_spaces[0]])
                 if len(path) > 1:
@@ -2303,7 +2306,9 @@ class HashRepoProcStorApp(Strategy):
                 self.epoch_count += 1
                 for h in h_spaces:
                     self.controller.add_request_to_bucket([h])
+                    self.controller.add_request_to_bucket_temp([h])
                 self.controller.add_request_to_node([node])
+                self.controller.add_request_to_node_temp([node])
             if flow_id not in self.view.model.cloud_admissions:
                 self.controller.cloud_admission_update(False, flow_id)
 
@@ -2390,6 +2395,7 @@ class HashRepoProcStorApp(Strategy):
 
                 # TODO: Add (no-reuse) request destination hit to repo ingress request count
                 self.controller.add_request_to_end_node([node])
+                self.controller.add_request_to_end_node_temp([node])
 
                 path = self.view.shortest_path(node, self.source[h_spaces[0]])
                 if len(path) > 1:

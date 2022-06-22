@@ -2387,6 +2387,10 @@ class HashRepoProcStorApp(Strategy):
                     raise ValueError("Task should not be rejected at the cloud.")
 
             if self.source[h_spaces[0]] == node and status == REQUEST:
+
+                # TODO: Add (no-reuse) request destination hit to repo ingress request count
+                self.controller.add_request_to_end_node([node])
+
                 path = self.view.shortest_path(node, self.source[h_spaces[0]])
                 if len(path) > 1:
                     delay = 2 * self.view.path_delay(node, self.source[h_spaces[0]])

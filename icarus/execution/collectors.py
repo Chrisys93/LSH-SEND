@@ -1610,7 +1610,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                 number_of_buckets.write(str(len(self.view.model.h_space_sources)))
 
             for edr in range(len(self.view.model.source_node)):
-                if edr in self.view.model.requests_per_node:
+                if str("rec_"+str(edr)) in self.view.model.requests_per_node:
                     req_per_edr = self.view.model.requests_per_node["rec_" + str(edr)]
                 else:
                     req_per_edr = 0
@@ -1619,7 +1619,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
 
             for edr in range(len(self.view.model.source_node)):
                 if edr in self.view.model.requests_per_end_node:
-                    req_per_edr = self.view.model.requests_per_end_node["rec_"+str(edr)]
+                    req_per_edr = self.view.model.requests_per_end_node[edr]
                 else:
                     req_per_edr = 0
                 requests_per_end_node.write(str(req_per_edr) + ', ')

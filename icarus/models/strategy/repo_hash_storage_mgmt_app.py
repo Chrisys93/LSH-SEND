@@ -255,11 +255,7 @@ class HashRepoReuseStorApp(Strategy):
         if self.view.get_node_h_spaces(node) and self.view.hasStorageCapability(node) and \
                 all(elem in self.view.get_node_h_spaces(node) for elem in h_spaces) and status == REQUEST and \
                 self.hash_in_count[h_spaces[0]] and float(self.hash_hit_count[h_spaces[0]])/float(self.hash_in_count[h_spaces[0]]) < self.view.model.hash_reuse[h_spaces[0]] and \
-                status != RESPONSE\
-                and stor_msg is not None:
-
-            # TODO: Here is where the reuse happens, basically, and we only care to basically add the reuse delay to the
-            #  request (if request) execution/RTT and return the SATISFIED request.
+                status != RESPONSE and stor_msg is not None:
 
             # if self.hit_count[node]/self.in_count[node] < self.hit_rate and type(node) is not str:
             if float(self.hash_hit_count[h_spaces[0]]) / float(self.hash_in_count[h_spaces[0]]) < self.view.model.hash_reuse[h_spaces[0]] and type(node) is not str:
@@ -269,6 +265,10 @@ class HashRepoReuseStorApp(Strategy):
                 self.hash_hit_count[h_spaces[0]] += 1
                 self.reuse_hits += 1
                 self.controller.reuse_hits_update(self.reuse_hits)
+
+                # TODO: Add (reuse) request destination hit to repo ingress request count
+                self.controller.add_request_to_end_node([node])
+
                 # if type(node) is str and 'src' in node:
                 #     self.controller.cloud_admission_update(True, flow_id)
                 self.view.storage_nodes()[node].deleteAnyMessage(stor_msg['content'])
@@ -890,6 +890,10 @@ class HashRepoReuseStorApp(Strategy):
                     raise ValueError("Task should not be rejected at the cloud.")
 
             if self.source[h_spaces[0]] == node and status == REQUEST:
+
+                # TODO: Add (no-reuse) request destination hit to repo ingress request count
+                self.controller.add_request_to_end_node([node])
+
                 path = self.view.shortest_path(node, self.source[h_spaces[0]])
                 if len(path) > 1:
                     delay = 2 * self.view.path_delay(node, self.source[h_spaces[0]])

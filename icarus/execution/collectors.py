@@ -1495,6 +1495,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             repo_CPU_perc = open("hash_proc_node_CPU_perc" + str(self.rate) + ".txt", 'a')
             requests_per_bucket = open("hash_proc_avg_req_per_bucket" + str(self.rate) + ".txt", 'a')
             requests_per_node = open("hash_proc_avg_req_per_node" + str(self.rate) + ".txt", 'a')
+            requests_per_end_node = open("hash_proc_avg_req_per_end_node" + str(self.rate) + ".txt", 'a')
             buckets_to_EDR = open("hash_proc_bucket_edr" + str(self.rate) + ".txt", 'a')
             orchestrator_calls = open("hash_proc_orchestrator_calls" + str(self.rate) + ".txt", 'a')
             throughput = open("hash_proc_throughput" + str(self.rate) + ".txt", 'a')
@@ -1609,9 +1610,20 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                 number_of_buckets.write(str(len(self.view.model.h_space_sources)))
 
             for edr in range(len(self.view.model.source_node)):
-                req_per_edr = self.view.model.requests_per_node["rec_"+str(edr)]
+                if edr in self.view.model.requests_per_node:
+                    req_per_edr = self.view.model.requests_per_node["rec_" + str(edr)]
+                else:
+                    req_per_edr = 0
                 requests_per_node.write(str(req_per_edr) + ', ')
             requests_per_node.write('\n')
+
+            for edr in range(len(self.view.model.source_node)):
+                if edr in self.view.model.requests_per_end_node:
+                    req_per_edr = self.view.model.requests_per_end_node["rec_"+str(edr)]
+                else:
+                    req_per_edr = 0
+                requests_per_end_node.write(str(req_per_edr) + ', ')
+            requests_per_end_node.write('\n')
 
             for bucket in self.allocated_buckets:
                 buckets_to_EDR.write(str(self.view.model.h_space_sources[str(bucket)].keys()[0]) + ', ')

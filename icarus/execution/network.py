@@ -2707,7 +2707,7 @@ class NetworkController(object):
 
     def calculate_bucket_req_speed(self):
         for b in self.model.requested_buckets:
-            self.model.bucket_req_speed[b] = self.model.requested_buckets_temp[b]
+            self.model.bucket_req_speed[b] = self.model.requested_buckets_temp[b].copy()
             self.model.requested_buckets_temp[b] = 0
 
     def add_request_to_node(self, node):
@@ -2721,7 +2721,7 @@ class NetworkController(object):
 
     def calculate_node_req_speed(self):
         for node in self.model.requests_per_node:
-            self.model.node_req_speed[node] = self.model.requests_per_node_temp[node]
+            self.model.node_req_speed[node] = self.model.requests_per_node_temp[node].copy()
             self.model.requests_per_node_temp[node] = 0
 
     def add_request_to_end_node_temp(self, node):
@@ -2729,7 +2729,7 @@ class NetworkController(object):
 
     def calculate_end_node_req_speed(self):
         for node in self.model.requests_per_node:
-            self.model.end_node_req_speed[node] = self.model.requests_per_end_node_temp[node]
+            self.model.end_node_req_speed[node] = self.model.requests_per_end_node_temp[node].copy()
             self.model.requests_per_end_node_temp[node] = 0
 
     def add_request_labels_to_node(self, s, service_request):

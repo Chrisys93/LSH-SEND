@@ -778,6 +778,7 @@ class HashRepoReuseStorApp(Strategy):
                 self.epoch_count += 1
                 for h in h_spaces:
                     self.controller.add_request_to_bucket([h])
+                    self.controller.add_request_to_bucket_temp([h])
                 self.controller.add_request_to_node([node])
                 self.controller.add_request_to_node_temp([node])
             if flow_id not in self.view.model.cloud_admissions:

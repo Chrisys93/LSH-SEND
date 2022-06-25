@@ -2707,8 +2707,7 @@ class NetworkController(object):
 
     def calculate_bucket_req_speed(self):
         for b in self.model.requested_buckets_temp:
-            req_count = self.model.requested_buckets_temp[b]
-            self.model.bucket_req_speed[b] = float(req_count)
+            self.model.bucket_req_speed[b] = float(self.model.requested_buckets_temp[b])
             self.model.requested_buckets_temp[b] = 0
 
     def add_request_to_node(self, node):

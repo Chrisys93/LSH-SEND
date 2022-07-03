@@ -1496,6 +1496,8 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             requests_per_bucket = open("hash_proc_avg_req_per_bucket" + str(self.rate) + ".txt", 'a')
             requests_per_node = open("hash_proc_avg_req_per_node" + str(self.rate) + ".txt", 'a')
             requests_per_end_node = open("hash_proc_avg_req_per_end_node" + str(self.rate) + ".txt", 'a')
+            reused_reqs_per_bucket = open("hash_proc_avg_reuse_req_per_bucket" + str(self.rate) + ".txt", 'a')
+            reused_reqs_per_end_node = open("hash_proc_avg_reuse_req_per_end_node" + str(self.rate) + ".txt", 'a')
             bucket_req_speed = open("hash_proc_bucket_req_speed" + str(self.rate) + ".txt", 'a')
             node_req_speed = open("hash_proc_node_req_speed" + str(self.rate) + ".txt", 'a')
             end_node_req_speed = open("hash_proc_end_node_req_speed" + str(self.rate) + ".txt", 'a')
@@ -1626,6 +1628,21 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             requests_per_end_node.write('\n')
 
             for bucket in self.requested_buckets:
+                if bucket not in self.view.model.hash_reused_count:
+                    reused_reqs_per_bucket.write(str(0) + ', ')
+                else:
+                    reused_reqs_per_bucket.write(str(self.view.model.requested_buckets[bucket]) + ', ')
+            reused_reqs_per_bucket.write('\n')
+
+            for edr in range(len(self.view.model.source_node)):
+                if edr in self.view.model.node_reused_count:
+                    req_per_edr = self.view.model.node_reused_count[edr]
+                else:
+                    req_per_edr = 0
+                reused_reqs_per_end_node.write(str(req_per_edr) + ', ')
+            reused_reqs_per_end_node.write('\n')
+
+            for bucket in self.requested_buckets:
                 if bucket not in self.view.model.bucket_req_speed:
                     bucket_req_speed.write(str(0) + ', ')
                 else:
@@ -1703,6 +1720,8 @@ class RepoStatsOutputLatencyCollector(DataCollector):
 
 
         # overhead.close()
+        reused_reqs_per_bucket.close()
+        reused_reqs_per_end_node.close()
         requests_per_bucket.close()
         requests_per_node.close()
         requests_per_end_node.close()
@@ -1720,7 +1739,6 @@ class RepoStatsOutputLatencyCollector(DataCollector):
         edge_delay_averages.close()
         cloud_delay_averages.close()
         repo_CPU_perc.close()
-        requests_per_bucket.close()
         number_of_buckets.close()
         orchestrator_calls.close()
         throughput.close()

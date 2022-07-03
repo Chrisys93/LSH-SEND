@@ -20,7 +20,7 @@ PARALLEL_EXECUTION = True
 
 # Number of processes used to run simulations in parallel.
 # This option is ignored if PARALLEL_EXECUTION = False
-N_PROCESSES = 40 #cpu_count()
+N_PROCESSES = 50 #cpu_count()
 
 # Granularity of caching.
 # Currently, only OBJECT is supported
@@ -43,7 +43,7 @@ N_REPLICATIONS = 1
 # The implementation of data collectors are located in ./icaurs/execution/collectors.py
 DATA_COLLECTORS = ['REPO_STATS_OUT_H_LATENCY']
 RESULTS_PATH = ['/Repo/no_reuse/no_orchestration', '/Repo/reuse/no_orchestration', '/Queue-based/reuse/orchestration',
-                '/CPU-usage/reuse/orchestration', '/CPU-Reuse/reuse/orchestration']
+                '/CPU-usage/reuse/orchestration', '/CPU-Reuse/reuse/orchestration', '/CPU-Workload/reuse/orchestration']
 
 # Range of alpha values of the Zipf distribution using to generate content requests
 # alpha values must be positive. The greater the value the more skewed is the
@@ -108,8 +108,8 @@ WORKLOAD = 'STATIONARY_DATASET_HASH_LABEL_REQS'
 
 # List of caching and routing strategies
 # The code is located in ./icarus/models/strategy.py
-STRATEGIES = ['HASH_PROC_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP']
-ORCHESTRATIONS = ['Queue-based', 'CPU-usage', 'CPU-Reuse']
+STRATEGIES = ['HASH_PROC_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP']
+ORCHESTRATIONS = ['Queue-based', 'CPU-usage', 'CPU-Reuse', 'CPU-Workload']
 EPOCH_TICKS = [500, float('inf')]
 HIT_RATE = 0.15
 #STRATEGIES = ['COORDINATED']  # service-based routing

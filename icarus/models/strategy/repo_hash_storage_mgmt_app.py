@@ -480,8 +480,6 @@ class HashRepoReuseStorApp(Strategy):
             exclude_h.append(h)
             if high_repo not in updated_nodes:
                 updated_nodes.append(high_repo)
-            if low_repo not in updated_nodes:
-                updated_nodes.append(low_repo)
             # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
             new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
             h_l_path_delay = self.view.path_delay(high_repo, low_repo)
@@ -532,6 +530,85 @@ class HashRepoReuseStorApp(Strategy):
             # self.node_CPU_usage[n] = 0
             # self.hash_CPU_usage[n][h_spaces[0]] = 0
         return updated_nodes
+
+
+
+    def epoch_bucket_CPU_workload_update(self, curTime, max_count):
+        """
+        This method updates the repo-associated hash spaces based on the reuse performance of each repo (and potentially
+        ranking hash spaces based on the reuse quotes they need.
+        max_count: integer (optional)
+            Maximum amount of moves between higher and lower CPU-usage nodes
+        """
+
+
+        # exclude_l = []
+        exclude_h = []
+        # updated_nodes = []
+        for i in range(max_count):
+            # FIXME: Maybe include a bucket exclusion list for both high and low, to not take buckets twice instead!!!!!
+            # Find highest and lowest processing buckets and nodes
+            if any(elem is None for elem in self.view.most_update_proc_ingress(exclude_h)):
+                continue
+            else:
+                high_proc = self.view.most_update_proc_ingress(exclude_h)
+                low_proc = self.view.least_orch_proc_ingress(None)
+            low_repo = low_proc[0]
+            l = low_proc[1]
+            high_repo = high_proc[0]
+            h = high_proc[1]
+            exclude_h.append(h)
+            # if high_repo not in updated_nodes:
+            #     updated_nodes.append(high_repo)
+            new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
+            h_l_path_delay = self.view.path_delay(high_repo, low_repo)
+            rtt_delay_h = 2 * h_l_path_delay
+            # l_h_path_delay = self.view.path_delay(low_repo, node)
+            # rtt_delay_l = 2 * l_h_path_delay
+            self.controller.update_CPU_perc(low_repo, curTime, None, h, True, high_repo)
+            self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
+            if new_content_h is not None:
+                if 'shelf_life' in new_content_h:
+                    self.view.storage_nodes()[high_repo].deleteMessage(new_content_h['content'])
+                    self.controller.add_event(curTime + h_l_path_delay, low_repo, new_content_h, new_content_h['labels'],
+                                              new_content_h['h_space'], low_repo,
+                                              None, curTime + new_content_h['shelf_life'], rtt_delay_h, STORE)
+            # if new_content_l is not None:
+            #     if 'shelf_life' in new_content_l:
+            #         self.view.storage_nodes()[low_repo].deleteMessage(new_content_l['content'])
+            #         self.controller.add_event(curTime + l_h_path_delay, node, new_content_l, new_content_l['labels'],
+            #                                   new_content_l['h_space'], node,
+            #                                   None, curTime + new_content_l['shelf_life'], rtt_delay_l, STORE)
+            #         self.controller.move_h_space_proc_low_high(node, low_repo, h_space, l)
+
+        self.epoch_count = 0
+        self.controller.simil_miss_update(self.epoch_miss_count, self.epoch_ticks)
+        self.controller.edge_proc_update(self.edge_proc, self.epoch_ticks)
+        self.controller.cloud_proc_update(self.cloud_proc, self.epoch_ticks)
+        self.controller.reuse_hits_update(self.reuse_hits, self.epoch_ticks)
+        self.controller.repo_miss_update(self.repo_misses, self.epoch_ticks)
+        self.epoch_miss_count = 0
+        # self.cloud_proc = 0
+        # self.edge_proc = 0
+        # self.reuse_hits = 0
+        for n in self.view.model.repoStorage:
+            self.in_count[n] = 0
+            self.hit_count[n] = 0
+            self.repo_misses[n] = 0
+        for h in self.view.model.hash_reuse:
+            self.hash_in_count[h] = 0
+            self.hash_hit_count[h] = 0
+
+        if curTime - self.last_CPU_time >= 1:
+            for n in self.hash_CPU_usage:
+                if type(n) is int:
+                    for h in self.hash_CPU_usage[n]:
+                        self.controller.update_CPU_usage(n, h, self.node_CPU_usage[n],
+                                                         self.hash_CPU_usage[n][h], curTime)
+            self.last_CPU_time = curTime
+            # self.node_CPU_usage[n] = 0
+            # self.hash_CPU_usage[n][h_spaces[0]] = 0
+        # return updated_nodes
 
 
 
@@ -784,10 +861,14 @@ class HashRepoReuseStorApp(Strategy):
             if flow_id not in self.view.model.cloud_admissions:
                 self.controller.cloud_admission_update(False, flow_id)
 
+
         # if type(self.epoch_ticks) is int and curTime - self.view.model.CPU_update_period > self.last_trigger:
         #     self.last_trigger = curTime
         #     if type(node) is int and self.view.model.avg_CPU_perc[node] > 0.7:
         #         self.trigger_node_CPU_update(curTime, 10)
+
+        # TODO: THE CPU AND WORKLOAD orchestration algorithms need REVISION!!!
+        #  (THE RESETTING AND/OR REALLOCATION OF METRICS AFTER THE last "updated_nodes")
 
         if self.orchestration == "CPU-Reuse":
             if self.epoch_count >= self.epoch_ticks and type(node) is int and self.view.model.avg_CPU_perc[node] > self.trigger_threshold:
@@ -796,6 +877,13 @@ class HashRepoReuseStorApp(Strategy):
                 updated_nodes = self.trigger_node_proc_reuse_update(curTime, 5)
                 updated_nodes += self.trigger_node_reuse_proc_update(curTime, 5)
                 self.controller.restore_orch_CPU_perc(updated_nodes)
+
+        if self.orchestration == "CPU-Workload":
+            if self.epoch_count >= 5*self.epoch_ticks and type(node) is int:
+                self.view.model.orch_calls += 1
+                self.controller.restore_orch_proc_workload()
+                self.epoch_bucket_CPU_workload_update(curTime, len(self.view.model.h_space_sources))
+                # self.controller.restore_orch_proc_workload(updated_nodes)
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
         #     self.trigger_node_proc_update(curTime, 20)
@@ -897,6 +985,7 @@ class HashRepoReuseStorApp(Strategy):
                 # TODO: Add (no-reuse) request destination hit to repo ingress request count
                 self.controller.add_request_to_end_node([node])
                 self.controller.add_request_to_end_node_temp([node])
+                self.controller.add_request_to_proc_bucket_temp(node, [h_spaces[0]])
 
                 path = self.view.shortest_path(node, self.source[h_spaces[0]])
                 if len(path) > 1:
@@ -2397,6 +2486,7 @@ class HashRepoProcStorApp(Strategy):
                 # TODO: Add (no-reuse) request destination hit to repo ingress request count
                 self.controller.add_request_to_end_node([node])
                 self.controller.add_request_to_end_node_temp([node])
+                self.controller.add_request_to_proc_bucket_temp(node,[h_spaces[0]])
 
                 path = self.view.shortest_path(node, self.source[h_spaces[0]])
                 if len(path) > 1:

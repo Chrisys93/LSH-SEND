@@ -854,6 +854,136 @@ class NetworkView(object):
 
 
 
+    def most_update_proc_ingress(self, exclude):
+        """
+        Parameters
+        ----------
+        list_len: integer
+            The number of nodes with the highest processing power usage
+        nodes: list
+            The list of nodes with the highest procesing power usage
+        """
+
+        max_hash = None
+        max_proc = 0
+        max_node = None
+        for n in self.model.update_proc_workload:
+            if type(n) is str:
+                continue
+            if (len(exclude) > 0 and all(h in exclude for h in self.model.all_node_h_spaces[n])) or len(self.model.all_node_h_spaces[n]) == 0:
+                continue
+            if self.model.update_proc_workload[n]:
+                for h in self.model.update_proc_workload[n]:
+                    if h in exclude:
+                        continue
+                    if h in self.model.update_proc_workload[n]:
+                        proc = self.model.update_proc_workload[n][h]
+                    else:
+                        proc = 0
+                    if proc >= max_proc:
+                        max_node = n
+                        max_proc = proc
+                        max_hash = h
+
+        return max_node, max_hash
+
+    def least_update_proc_ingress(self, exclude):
+        """
+        Parameters
+        ----------
+        list_len: integer
+            The number of nodes with the lowest processing power usage
+        nodes: list
+            The list of nodes with the lowest processing power usage
+        """
+
+        min_hash = None
+        min_proc = float('inf')
+        min_node = None
+        for n in self.model.update_proc_workload:
+            if type(n) is str:
+                continue
+            if (len(exclude) > 0 and all(h in exclude for h in self.model.all_node_h_spaces[n])) or len(self.model.all_node_h_spaces[n]) == 0:
+                continue
+            if n in self.model.busy_proc and len(self.model.busy_proc[n]) > 0:
+                for h in self.model.update_proc_workload[n]:
+                    if h in exclude:
+                        continue
+                    if h in self.model.update_proc_workload[n]:
+                        proc = self.model.update_proc_workload[n][h]
+                    else:
+                        proc = 0
+                    if proc <= min_proc and h:
+                        min_proc = proc
+                        min_hash = h
+
+        return min_node, min_hash
+
+    def most_orch_proc_ingress(self, exclude):
+        """
+        Parameters
+        ----------
+        list_len: integer
+            The number of nodes with the highest processing power usage
+        nodes: list
+            The list of nodes with the highest procesing power usage
+        """
+
+        max_hash = None
+        max_proc = 0
+        max_node = None
+        for n in self.model.orchestration_proc_workload:
+            if type(n) is str:
+                continue
+            if (len(exclude) > 0 and all(h in exclude for h in self.model.all_node_h_spaces[n])) or len(self.model.all_node_h_spaces[n]) == 0:
+                continue
+            if self.model.orchestration_proc_workload[n]:
+                for h in self.model.orchestration_proc_workload[n]:
+                    if h in exclude:
+                        continue
+                    if h in self.model.orchestration_proc_workload[n]:
+                        proc = self.model.orchestration_proc_workload[n][h]
+                    else:
+                        proc = 0
+                    if proc >= max_proc:
+                        max_node = n
+                        max_proc = proc
+                        max_hash = h
+
+        return max_node, max_hash
+
+    def least_orch_proc_ingress(self, exclude):
+        """
+        Parameters
+        ----------
+        list_len: integer
+            The number of nodes with the lowest processing power usage
+        nodes: list
+            The list of nodes with the lowest processing power usage
+        """
+
+        min_hash = None
+        min_proc = float('inf')
+        min_node = None
+        for n in self.model.orchestration_proc_workload:
+            if type(n) is str:
+                continue
+            if (len(exclude) > 0 and all(h in exclude for h in self.model.all_node_h_spaces[n])) or len(self.model.all_node_h_spaces[n]) == 0:
+                continue
+            if n in self.model.busy_proc and len(self.model.busy_proc[n]) > 0:
+                for h in self.model.orchestration_proc_workload[n]:
+                    if h in exclude:
+                        continue
+                    if h in self.model.orchestration_proc_workload[n]:
+                        proc = self.model.orchestration_proc_workload[n][h]
+                    else:
+                        proc = 0
+                    if proc <= min_proc and h:
+                        min_proc = proc
+                        min_hash = h
+
+        return min_node, min_hash
+
     def most_CPU_usage(self, exclude):
         """
         Parameters
@@ -1859,6 +1989,15 @@ class NetworkModel(object):
         self.next_node_CPU_cumulative = dict()
         self.next_update_CPU_cumulative = dict()
 
+        # Per-bucket CPU percentages
+        self.update_proc_bucket = dict()
+
+        # Per-bucket CPU percentages
+        self.update_proc_workload = dict()
+
+        # Update-specific to account for added/subtracted bucket-based CPU percentages
+        self.orchestration_proc_workload = dict()
+
         # Variables determining the frequency of updating the latter, above.
         self.last_CPU_update_time = dict()
         self.CPU_update_period = update_per
@@ -1963,6 +2102,9 @@ class NetworkModel(object):
                     self.update_CPU_perc_cumulative[node] = dict()
                     self.orchestration_CPU_perc[node] = dict()
                     self.next_update_CPU_cumulative[node] = dict()
+                    self.update_proc_bucket[node] = Counter()
+                    self.update_proc_workload[node] = Counter()
+                    self.orchestration_proc_workload[node] = Counter()
                     self.missed_hashes[node] = dict()
                     self.queued_hashes[node] = dict()
                     self.max_queue_delay[node] = 0
@@ -2592,9 +2734,9 @@ class NetworkController(object):
                     break
                 elif self.model.node_CPU_perc_cumulative[node][core] < 1:
                     self.model.update_CPU_perc_cumulative[node][bucket] += self.model.CPU_update_period - self.model.node_CPU_perc_cumulative[node][core]
-                    self.model.next_update_CPU_cumulative[node][bucket] += serviceTime + self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core] - (self.model.last_CPU_update_time[node] + self.model.CPU_update_period)
-                    self.model.node_CPU_perc_cumulative[node][core] += self.model.last_CPU_update_time[node] + self.model.CPU_update_period - (self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core])
-                    self.model.next_node_CPU_cumulative[node][core] += serviceTime + self.model.last_CPU_update_time[node] + self.model.node_CPU_perc_cumulative[node][core] - (self.model.last_CPU_update_time[node] + self.model.CPU_update_period)
+                    self.model.next_update_CPU_cumulative[node][bucket] += serviceTime + self.model.node_CPU_perc_cumulative[node][core] - self.model.CPU_update_period
+                    self.model.node_CPU_perc_cumulative[node][core] += self.model.CPU_update_period - self.model.node_CPU_perc_cumulative[node][core]
+                    self.model.next_node_CPU_cumulative[node][core] += serviceTime + self.model.node_CPU_perc_cumulative[node][core] - self.model.CPU_update_period
                     break
 
             # TODO: I need to do something with flow IDs, to track the tasks that are/were already executed and not count them more than once for each update.
@@ -2604,25 +2746,39 @@ class NetworkController(object):
 
 
         elif not serviceTime and change_update and high_repo:
+            # FIXME: THIS NEEDS A THOROUGH REVISION, TOGETHER WITH THE RESET/RESTORE PARTS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #  (note that the workload one needs different types of "restoring", depending on the type of call)
+            # FIXME: IMPORTANT! WHILE ORCHESTRATION-SPECIFIC WORKLOAD IS UPDATED,
+            #  THERE HAS TO BE A SECOND ROUND OF CHECKS, FOR PLACEMENT!
+            #  1. HISTORICALLY HIGH WORKLOAD RANKING, for order of consideration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #  2. ORCHESTRATION-SPECIFIC HIGH WORKLOAD RANKING, for placement!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #  THIS IS ALSO AVAILABLE FOR CPU
             if bucket not in self.model.orchestration_CPU_perc[node]:
                 self.model.update_CPU_perc[node][bucket] = 0
             self.model.orchestration_CPU_perc[node][bucket] += self.model.update_CPU_perc[high_repo][bucket]
             self.model.orchestration_CPU_perc[high_repo][bucket] = 0
+            if bucket not in self.model.orchestration_proc_workload[node]:
+                self.model.update_proc_workload[node][bucket] = 0
+            self.model.orchestration_proc_workload[node][bucket] += self.model.update_proc_workload[high_repo][bucket]
+            self.model.orchestration_proc_workload[high_repo][bucket] = 0
             return
 
-        if not change_update and curTime >= self.model.last_CPU_update_time[node] + self.model.CPU_update_period:
+        if curTime >= self.model.last_CPU_update_time[node] + self.model.CPU_update_period:
             # for core in range(self.model.comp_size[node]):
             #     if curTime - self.model.last_CPU_update_time[node] <= self.model.node_CPU_perc_cumulative[node][core]:
             #         self.model.next_node_CPU_cumulative[node][core] = self.model.node_CPU_perc_cumulative[node][core] - (curTime - self.model.last_CPU_update_time[node])
             #         self.model.node_CPU_perc_cumulative[node][core] = curTime - self.model.last_CPU_update_time[node]
             self.update_CPU(curTime, node)
             self.reset_update_CPU_perc(node)
+            self.reset_update_proc_workload(node)
             self.update_CPU_avg_perc(curTime, node)
             self.reset_node_CPU_perc(node)
             self.model.last_CPU_update_time[node] = curTime
             self.calculate_node_req_speed()
             self.calculate_end_node_req_speed()
             self.calculate_bucket_req_speed()
+
+
 
     def update_CPU_avg_perc(self, update_time, node):
         node_CPU_cumulative = 0
@@ -2652,6 +2808,11 @@ class NetworkController(object):
                 self.model.update_CPU_perc[node][bucket] = self.model.update_CPU_perc_cumulative[node][bucket]/\
                                                 (self.model.comp_size[node]* (update_time - self.model.last_CPU_update_time[node]))
 
+    def update_proc_workload(self, update_time, node):
+        if update_time - self.model.last_CPU_update_time[node] > 0:
+            for bucket in self.model.update_proc_bucket[node]:
+                self.model.update_proc_workload[node][bucket] = self.model.update_proc_bucket[node][bucket]
+
     def reset_update_CPU_perc(self, node):
         for h in self.model.update_CPU_perc_cumulative[node]:
             if self.model.next_update_CPU_cumulative[node][h] > 0:
@@ -2659,6 +2820,10 @@ class NetworkController(object):
                 self.model.next_update_CPU_cumulative[node][h] = 0
             else:
                 self.model.update_CPU_perc_cumulative[node][h] = 0
+
+    def reset_update_proc_workload(self, node):
+        for h in self.model.update_proc_bucket[node]:
+            self.model.update_proc_bucket[node][h] = 0
 
 
     def restore_orch_CPU_perc(self, nodes=None):
@@ -2671,6 +2836,16 @@ class NetworkController(object):
         for node in nodes:
             for h in self.model.update_CPU_perc_cumulative[node]:
                 self.model.orchestration_CPU_perc[node][h] = self.model.update_CPU_perc[node][h]
+
+
+    def restore_orch_proc_workload(self):
+
+        for n in self.model.update_proc_bucket:
+            for h in self.model.update_proc_bucket[n]:
+                self.model.orchestration_proc_workload[n][h] = 0
+        # for node in nodes:
+        #     for h in self.model.update_proc_bucket[node]:
+        #         self.model.orchestration_proc_workload[node][h] = self.model.update_proc_bucket[node][h]
 
     def update_CPU_usage(self, node, h, node_CPU, hash_CPU, CPUtime):
         self.model.node_CPU_usage[node] = node_CPU/CPUtime
@@ -2704,6 +2879,9 @@ class NetworkController(object):
 
     def add_request_to_bucket_temp(self, bucket):
         self.model.requested_buckets_temp.update(bucket)
+
+    def add_request_to_proc_bucket_temp(self, node, bucket):
+        self.model.update_proc_bucket[node].update(bucket)
 
     def calculate_bucket_req_speed(self):
         for b in self.model.requested_buckets_temp:

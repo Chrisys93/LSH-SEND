@@ -968,7 +968,7 @@ class NetworkView(object):
         for n in self.model.orchestration_proc_workload:
             if type(n) is str:
                 continue
-            if len(exclude) > 0  or len(self.model.all_node_h_spaces[n]) == 0:
+            if (len(exclude) > 0 and all(h in exclude for h in self.model.all_node_h_spaces[n])) or len(self.model.all_node_h_spaces[n]) == 0:
                 continue
             if n in self.model.orchestration_proc_workload and len(self.model.orchestration_proc_workload[n]) > 0:
                 for h in self.model.orchestration_proc_workload[n]:
@@ -2746,7 +2746,7 @@ class NetworkController(object):
 
 
 
-        elif not serviceTime and change_update and high_repo:
+        elif change_update and high_repo is not None:
             # FIXME: THIS NEEDS A THOROUGH REVISION, TOGETHER WITH THE RESET/RESTORE PARTS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             #  (note that the workload one needs different types of "restoring", depending on the type of call)
             # FIXME: IMPORTANT! WHILE ORCHESTRATION-SPECIFIC WORKLOAD IS UPDATED,

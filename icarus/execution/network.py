@@ -2769,14 +2769,13 @@ class NetworkController(object):
             #         self.model.next_node_CPU_cumulative[node][core] = self.model.node_CPU_perc_cumulative[node][core] - (curTime - self.model.last_CPU_update_time[node])
             #         self.model.node_CPU_perc_cumulative[node][core] = curTime - self.model.last_CPU_update_time[node]
             self.update_CPU(curTime, node)
-            self.reset_update_CPU_perc(node)
-            self.reset_update_proc_workload(node)
             self.update_CPU_avg_perc(curTime, node)
-            self.reset_node_CPU_perc(node)
-            self.model.last_CPU_update_time[node] = curTime
             self.calculate_node_req_speed()
             self.calculate_end_node_req_speed()
             self.calculate_bucket_req_speed()
+            self.reset_update_CPU_perc(node)
+            self.reset_node_CPU_perc(node)
+            self.model.last_CPU_update_time[node] = curTime
 
 
 
@@ -2808,8 +2807,8 @@ class NetworkController(object):
                 self.model.update_CPU_perc[node][bucket] = self.model.update_CPU_perc_cumulative[node][bucket]/\
                                                 (self.model.comp_size[node]* (update_time - self.model.last_CPU_update_time[node]))
 
-    def update_proc_workload(self, update_time, node):
-        if update_time - self.model.last_CPU_update_time[node] > 0:
+    def update_proc_workload(self):
+        for node in self.model.update_proc_bucket:
             for bucket in self.model.update_proc_bucket[node]:
                 self.model.update_proc_workload[node][bucket] = self.model.update_proc_bucket[node][bucket]
 
@@ -2838,11 +2837,15 @@ class NetworkController(object):
                 self.model.orchestration_CPU_perc[node][h] = self.model.update_CPU_perc[node][h]
 
 
-    def restore_orch_proc_workload(self):
+    def restore_orch_proc_workload(self, nodes):
 
+        if nodes is None:
+            for n in self.model.update_proc_workload:
+                self.reset_update_proc_workload(n)
         for n in self.model.update_proc_bucket:
             for h in self.model.update_proc_bucket[n]:
-                self.model.orchestration_proc_workload[n][h] = 0
+                self.model.update_proc_workload[n][h] = 0
+                self.model.update_proc_bucket[n][h] = 0
         # for node in nodes:
         #     for h in self.model.update_proc_bucket[node]:
         #         self.model.orchestration_proc_workload[node][h] = self.model.update_proc_bucket[node][h]

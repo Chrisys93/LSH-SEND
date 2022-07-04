@@ -881,9 +881,10 @@ class HashRepoReuseStorApp(Strategy):
         if self.orchestration == "CPU-Workload":
             if self.epoch_count >= 5*self.epoch_ticks and type(node) is int:
                 self.view.model.orch_calls += 1
+                self.controller.update_proc_workload()
                 self.controller.restore_orch_proc_workload()
                 self.epoch_bucket_CPU_workload_update(curTime, len(self.view.model.h_space_sources))
-                # self.controller.restore_orch_proc_workload(updated_nodes)
+                self.controller.restore_orch_proc_workload(updated_nodes)
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
         #     self.trigger_node_proc_update(curTime, 20)

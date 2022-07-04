@@ -544,7 +544,7 @@ class HashRepoReuseStorApp(Strategy):
 
         # exclude_l = []
         exclude_h = []
-        # updated_nodes = []
+        updated_nodes = []
         for i in range(max_count):
             # FIXME: Maybe include a bucket exclusion list for both high and low, to not take buckets twice instead!!!!!
             # Find highest and lowest processing buckets and nodes
@@ -558,8 +558,8 @@ class HashRepoReuseStorApp(Strategy):
             high_repo = high_proc[0]
             h = high_proc[1]
             exclude_h.append(h)
-            # if high_repo not in updated_nodes:
-            #     updated_nodes.append(high_repo)
+            if high_repo not in updated_nodes:
+                updated_nodes.append(high_repo)
             new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
             h_l_path_delay = self.view.path_delay(high_repo, low_repo)
             rtt_delay_h = 2 * h_l_path_delay
@@ -608,7 +608,7 @@ class HashRepoReuseStorApp(Strategy):
             self.last_CPU_time = curTime
             # self.node_CPU_usage[n] = 0
             # self.hash_CPU_usage[n][h_spaces[0]] = 0
-        # return updated_nodes
+        return updated_nodes, exclude_h
 
 
 
@@ -883,8 +883,8 @@ class HashRepoReuseStorApp(Strategy):
                 self.view.model.orch_calls += 1
                 self.controller.update_proc_workload()
                 self.controller.restore_orch_proc_workload()
-                self.epoch_bucket_CPU_workload_update(curTime, len(self.view.model.h_space_sources))
-                self.controller.restore_orch_proc_workload(updated_nodes)
+                updated_nodes, hashes = self.epoch_bucket_CPU_workload_update(curTime, len(self.view.model.h_space_sources))
+                self.controller.restore_orch_proc_workload(updated_nodes, hashes)
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
         #     self.trigger_node_proc_update(curTime, 20)

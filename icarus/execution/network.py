@@ -905,7 +905,7 @@ class NetworkView(object):
                 continue
             if (len(exclude) > 0 and all(h in exclude for h in self.model.all_node_h_spaces[n])) or len(self.model.all_node_h_spaces[n]) == 0:
                 continue
-            if n in self.model.busy_proc and len(self.model.busy_proc[n]) > 0:
+            if n in self.model.update_proc_workload and len(self.model.busy_proc[n]) > 0:
                 for h in self.model.update_proc_workload[n]:
                     if h in exclude:
                         continue
@@ -968,9 +968,9 @@ class NetworkView(object):
         for n in self.model.orchestration_proc_workload:
             if type(n) is str:
                 continue
-            if (len(exclude) > 0 and all(h in exclude for h in self.model.all_node_h_spaces[n])) or len(self.model.all_node_h_spaces[n]) == 0:
+            if len(exclude) > 0  or len(self.model.all_node_h_spaces[n]) == 0:
                 continue
-            if n in self.model.busy_proc and len(self.model.busy_proc[n]) > 0:
+            if n in self.model.orchestration_proc_workload and len(self.model.orchestration_proc_workload[n]) > 0:
                 for h in self.model.orchestration_proc_workload[n]:
                     if h in exclude:
                         continue
@@ -2754,11 +2754,11 @@ class NetworkController(object):
             #  2. ORCHESTRATION-SPECIFIC HIGH WORKLOAD RANKING, for placement!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             #  THIS IS ALSO AVAILABLE FOR CPU
             if bucket not in self.model.orchestration_CPU_perc[node]:
-                self.model.update_CPU_perc[node][bucket] = 0
+                self.model.orchestration_CPU_perc[node][bucket] = 0
             self.model.orchestration_CPU_perc[node][bucket] += self.model.update_CPU_perc[high_repo][bucket]
             self.model.orchestration_CPU_perc[high_repo][bucket] = 0
             if bucket not in self.model.orchestration_proc_workload[node]:
-                self.model.update_proc_workload[node][bucket] = 0
+                self.model.orchestration_proc_workload[node][bucket] = 0
             self.model.orchestration_proc_workload[node][bucket] += self.model.update_proc_workload[high_repo][bucket]
             self.model.orchestration_proc_workload[high_repo][bucket] = 0
             return
@@ -2820,9 +2820,9 @@ class NetworkController(object):
             else:
                 self.model.update_CPU_perc_cumulative[node][h] = 0
 
-    def reset_update_proc_workload(self, node):
-        for h in self.model.update_proc_bucket[node]:
-            self.model.update_proc_bucket[node][h] = 0
+    def reset_orchestration_proc_workload(self, node):
+        for h in self.model.update_proc_workload[node]:
+            self.model.orchestration_proc_workload[node][h] = 0
 
 
     def restore_orch_CPU_perc(self, nodes=None):
@@ -2837,15 +2837,15 @@ class NetworkController(object):
                 self.model.orchestration_CPU_perc[node][h] = self.model.update_CPU_perc[node][h]
 
 
-    def restore_orch_proc_workload(self, nodes=None):
+    def restore_orch_proc_workload(self, nodes=None, hashes=None):
 
         if nodes is None:
             for n in self.model.update_proc_workload:
-                self.reset_update_proc_workload(n)
-        for n in self.model.update_proc_bucket:
-            for h in self.model.update_proc_bucket[n]:
-                self.model.update_proc_workload[n][h] = 0
-                self.model.update_proc_bucket[n][h] = 0
+                self.reset_orchestration_proc_workload(n)
+        else:
+            for n in nodes:
+                for h in hashes:
+                    self.model.update_proc_bucket[n][h] = 0
         # for node in nodes:
         #     for h in self.model.update_proc_bucket[node]:
         #         self.model.orchestration_proc_workload[node][h] = self.model.update_proc_bucket[node][h]

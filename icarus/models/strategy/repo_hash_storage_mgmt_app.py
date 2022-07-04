@@ -486,7 +486,7 @@ class HashRepoReuseStorApp(Strategy):
             rtt_delay_h = 2 * h_l_path_delay
             # l_h_path_delay = self.view.path_delay(low_repo, node)
             # rtt_delay_l = 2 * l_h_path_delay
-            self.controller.update_CPU_perc(low_repo, curTime, None, h, None, True, high_repo)
+            self.controller.update_CPU_perc(low_repo, curTime, None, h, None, True, False, high_repo)
             self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
             if new_content_h is not None:
                 if 'shelf_life' in new_content_h:
@@ -566,7 +566,7 @@ class HashRepoReuseStorApp(Strategy):
             rtt_delay_h = 2 * h_l_path_delay
             # l_h_path_delay = self.view.path_delay(low_repo, node)
             # rtt_delay_l = 2 * l_h_path_delay
-            self.controller.update_CPU_perc(low_repo, curTime, None, h, None, True, high_repo)
+            self.controller.update_CPU_perc(low_repo, curTime, None, h, None, False, True, high_repo)
             self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
             if new_content_h is not None:
                 if 'shelf_life' in new_content_h:
@@ -645,7 +645,7 @@ class HashRepoReuseStorApp(Strategy):
             rtt_delay_h = 2 * h_l_path_delay
             # l_h_path_delay = self.view.path_delay(low_repo, node)
             # rtt_delay_l = 2 * l_h_path_delay
-            self.controller.update_CPU_perc(low_repo, curTime, None, h, None, True, high_repo)
+            self.controller.update_CPU_perc(low_repo, curTime, None, h, None, True, False, high_repo)
             self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
             if new_content_h is not None:
                 if 'shelf_life' in new_content_h:
@@ -716,7 +716,7 @@ class HashRepoReuseStorApp(Strategy):
             rtt_delay_h = 2 * h_l_path_delay
             # l_h_path_delay = self.view.path_delay(low_repo, node)
             # rtt_delay_l = 2 * l_h_path_delay
-            self.controller.update_CPU_perc(low_repo, curTime, None, h, None, True, high_repo)
+            self.controller.update_CPU_perc(low_repo, curTime, None, h, None, True, False, high_repo)
             self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
             if new_content_h is not None:
                 if 'shelf_life' in new_content_h:

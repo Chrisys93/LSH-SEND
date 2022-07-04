@@ -2720,7 +2720,7 @@ class NetworkController(object):
 
     # TODO: CHECK THE BELOW LOGIC AGAIN! Let's eliminate the CPU_update_period! (mostly)
 
-    def update_CPU_perc(self, node, curTime, serviceTime, bucket, core=None, change_update=False, high_repo=None):
+    def update_CPU_perc(self, node, curTime, serviceTime, bucket, core=None, change_update=False, change_update_workload=False, high_repo=None):
         if type(node) is not str and serviceTime is not None and not change_update and core is not None:
 
             if bucket not in self.model.update_CPU_perc_cumulative[node]:
@@ -2740,24 +2740,21 @@ class NetworkController(object):
                     self.model.next_node_CPU_cumulative[node][core] += serviceTime + self.model.node_CPU_perc_cumulative[node][core] - self.model.CPU_update_period
                     break
 
-            # TODO: I need to do something with flow IDs, to track the tasks that are/were already executed and not count them more than once for each update.
-            # FIXME: THE BEST WAY TO DO THIS IS TO JUST ADD A PER-BUCKET (INSTEAD OF A PER-CORE) TALLY AND DO IT AS IN THE PER-CORE CASE, BUT ONLY PER-BUCKET!
-            #  (the above, cumulative metric, is right, and a similar thing as in update_CPU_avg_perc should be done with buckets instead of cores!)
-
-
+        # FIXME: THIS NEEDS A THOROUGH REVISION, TOGETHER WITH THE RESET/RESTORE PARTS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #  (note that the workload one needs different types of "restoring", depending on the type of call)
+        # FIXME: IMPORTANT! WHILE ORCHESTRATION-SPECIFIC WORKLOAD IS UPDATED,
+        #  THERE HAS TO BE A SECOND ROUND OF CHECKS, FOR PLACEMENT!
+        #  1. HISTORICALLY HIGH WORKLOAD RANKING, for order of consideration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #  2. ORCHESTRATION-SPECIFIC HIGH WORKLOAD RANKING, for placement!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #  THIS IS ALSO AVAILABLE FOR CPU
 
         elif change_update and high_repo is not None:
-            # FIXME: THIS NEEDS A THOROUGH REVISION, TOGETHER WITH THE RESET/RESTORE PARTS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            #  (note that the workload one needs different types of "restoring", depending on the type of call)
-            # FIXME: IMPORTANT! WHILE ORCHESTRATION-SPECIFIC WORKLOAD IS UPDATED,
-            #  THERE HAS TO BE A SECOND ROUND OF CHECKS, FOR PLACEMENT!
-            #  1. HISTORICALLY HIGH WORKLOAD RANKING, for order of consideration !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            #  2. ORCHESTRATION-SPECIFIC HIGH WORKLOAD RANKING, for placement!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            #  THIS IS ALSO AVAILABLE FOR CPU
             if bucket not in self.model.orchestration_CPU_perc[node]:
                 self.model.orchestration_CPU_perc[node][bucket] = 0
             self.model.orchestration_CPU_perc[node][bucket] += self.model.update_CPU_perc[high_repo][bucket]
             self.model.orchestration_CPU_perc[high_repo][bucket] = 0
+            return
+        elif change_update_workload and high_repo is not None:
             if bucket not in self.model.orchestration_proc_workload[node]:
                 self.model.orchestration_proc_workload[node][bucket] = 0
             self.model.orchestration_proc_workload[node][bucket] += self.model.update_proc_workload[high_repo][bucket]

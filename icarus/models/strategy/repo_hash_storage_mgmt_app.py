@@ -552,13 +552,13 @@ class HashRepoReuseStorApp(Strategy):
                 continue
             else:
                 high_proc = self.view.most_update_proc_ingress(exclude_h)
-                low_proc = self.view.least_orch_proc_ingress(exclude_l)
-            low_repo = low_proc[0]
-            l = low_proc[1]
+                low_repo = self.view.least_orch_proc_ingress()
+            # low_repo = low_proc[0]
+            # l = low_proc[1]
             high_repo = high_proc[0]
             h = high_proc[1]
             exclude_h.append(h)
-            exclude_l.append(l)
+            # exclude_l.append(l)
             if high_repo not in updated_nodes:
                 updated_nodes.append(high_repo)
             new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
@@ -567,7 +567,7 @@ class HashRepoReuseStorApp(Strategy):
             # l_h_path_delay = self.view.path_delay(low_repo, node)
             # rtt_delay_l = 2 * l_h_path_delay
             self.controller.update_CPU_perc(low_repo, curTime, None, h, None, False, True, high_repo)
-            self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
+            self.controller.move_h_space_proc_high_low(high_repo, low_repo, h)
             if new_content_h is not None:
                 if 'shelf_life' in new_content_h:
                     self.view.storage_nodes()[high_repo].deleteMessage(new_content_h['content'])

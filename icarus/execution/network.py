@@ -929,30 +929,22 @@ class NetworkView(object):
             The list of nodes with the highest procesing power usage
         """
 
-        max_hash = None
-        max_proc = 0
+        max_node_proc = 0
         max_node = None
         for n in self.model.orchestration_proc_workload:
             if type(n) is str:
                 continue
-            if (len(exclude) > 0 and all(h in exclude for h in self.model.all_node_h_spaces[n])) or len(self.model.all_node_h_spaces[n]) == 0:
-                continue
-            if self.model.orchestration_proc_workload[n]:
-                for h in self.model.orchestration_proc_workload[n]:
-                    if h in exclude:
-                        continue
-                    if h in self.model.orchestration_proc_workload[n]:
-                        proc = self.model.orchestration_proc_workload[n][h]
-                    else:
-                        proc = 0
-                    if proc >= max_proc:
-                        max_node = n
-                        max_proc = proc
-                        max_hash = h
+            total_update = 0
+            for h in self.model.orchestration_proc_workload[n]:
+                total_update += self.model.orchestration_proc_workload[n][h]
+            node_proc = total_update
+            if node_proc >= max_node_proc:
+                max_node_proc = node_proc
+                max_node = n
 
-        return max_node, max_hash
+        return max_node
 
-    def least_orch_proc_ingress(self, exclude):
+    def least_orch_proc_ingress(self):
         """
         Parameters
         ----------
@@ -962,28 +954,20 @@ class NetworkView(object):
             The list of nodes with the lowest processing power usage
         """
 
-        min_hash = None
-        min_proc = float('inf')
+        min_node_proc = float('inf')
         min_node = None
         for n in self.model.orchestration_proc_workload:
             if type(n) is str:
                 continue
-            if (len(exclude) > 0 and all(h in exclude for h in self.model.all_node_h_spaces[n])) or len(self.model.all_node_h_spaces[n]) == 0:
-                continue
-            if n in self.model.orchestration_proc_workload and len(self.model.orchestration_proc_workload[n]) > 0:
-                for h in self.model.orchestration_proc_workload[n]:
-                    if h in exclude:
-                        continue
-                    if h in self.model.orchestration_proc_workload[n]:
-                        proc = self.model.orchestration_proc_workload[n][h]
-                    else:
-                        proc = 0
-                    if proc <= min_proc and h:
-                        min_proc = proc
-                        min_hash = h
-                        min_node = n
+            total_update = 0
+            for h in self.model.orchestration_proc_workload[n]:
+                total_update += self.model.orchestration_proc_workload[n][h]
+            node_proc = total_update
+            if node_proc <= min_node_proc:
+                min_node_proc = node_proc
+                min_node = n
 
-        return min_node, min_hash
+        return min_node
 
     def most_CPU_usage(self, exclude):
         """

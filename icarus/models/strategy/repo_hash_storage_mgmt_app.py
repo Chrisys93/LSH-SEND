@@ -880,7 +880,7 @@ class HashRepoReuseStorApp(Strategy):
                 self.controller.restore_orch_CPU_perc(updated_nodes)
 
         if self.orchestration == "CPU-Workload":
-            if self.epoch_count >= 5*self.epoch_ticks and type(node) is int:
+            if self.epoch_count >= self.epoch_ticks and type(node) is int:
                 self.view.model.orch_calls += 1
                 self.controller.update_proc_workload()
                 self.controller.restore_orch_proc_workload()

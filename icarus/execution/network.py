@@ -2837,7 +2837,7 @@ class NetworkController(object):
                 self.model.orchestration_CPU_perc[node][h] = self.model.update_CPU_perc[node][h]
 
 
-    def restore_orch_proc_workload(self, nodes):
+    def restore_orch_proc_workload(self, nodes=None):
 
         if nodes is None:
             for n in self.model.update_proc_workload:

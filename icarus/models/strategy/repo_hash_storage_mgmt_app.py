@@ -552,7 +552,7 @@ class HashRepoReuseStorApp(Strategy):
                 continue
             else:
                 high_proc = self.view.most_update_proc_ingress(exclude_h)
-                low_proc = self.view.least_orch_proc_ingress(None)
+                low_proc = self.view.least_orch_proc_ingress([])
             low_repo = low_proc[0]
             l = low_proc[1]
             high_repo = high_proc[0]

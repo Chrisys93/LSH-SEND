@@ -981,6 +981,7 @@ class NetworkView(object):
                     if proc <= min_proc and h:
                         min_proc = proc
                         min_hash = h
+                        min_node = n
 
         return min_node, min_hash
 

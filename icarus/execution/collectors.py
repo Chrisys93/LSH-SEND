@@ -1645,7 +1645,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             end_bucket_count = None
             for bucket in self.requested_buckets:
                 for n in self.view.model.update_proc_workload:
-                    if bucket in self.view.model.update_proc_workload[n]:
+                    if bucket in self.view.model.update_proc_workload[n] and self.view.model.update_proc_workload[n][bucket]:
                         end_bucket_count = self.view.model.update_proc_workload[n][bucket]
                 if end_bucket_count is None:
                     end_bucket_req_speed.write(str(0) + ', ')

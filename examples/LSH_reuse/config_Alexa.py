@@ -253,13 +253,13 @@ for rate in NETWORK_REQUEST_RATE:
         if index < 2:
             EPOCH = EPOCH_TICKS[1]
         else:
-            EPOCH = 50*rate + 50
+            EPOCH = 10*rate + 50
         experiment = copy.deepcopy(default)
         if index >= 2:
             experiment['strategy']['orchestration'] = ORCHESTRATIONS[index - 2]
         if experiment['strategy']['orchestration'] == "Queue-based":
             experiment['strategy']['trigger_threshold'] = TRIGGER_THRESH
-            EPOCH = 50*rate
+            EPOCH = 10*rate
         else:
             experiment['strategy']['trigger_threshold'] = 0.7
         experiment['sched_policy']['proc_time'] = PROC_TIMES

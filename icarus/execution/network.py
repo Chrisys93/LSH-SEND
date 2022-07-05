@@ -2735,6 +2735,8 @@ class NetworkController(object):
         elif change_update and high_repo is not None:
             if bucket not in self.model.orchestration_CPU_perc[node]:
                 self.model.orchestration_CPU_perc[node][bucket] = 0
+            if bucket not in self.model.update_CPU_perc[high_repo]:
+                self.model.update_CPU_perc[high_repo][bucket] = 0
             self.model.orchestration_CPU_perc[node][bucket] += self.model.update_CPU_perc[high_repo][bucket]
             self.model.orchestration_CPU_perc[high_repo][bucket] = 0
             return
@@ -2783,11 +2785,20 @@ class NetworkController(object):
 
 
 
-    def update_CPU(self, update_time, node):
+    def update_CPU(self, update_time, node=None):
+
+        if node is None:
+            for node in self.model.update_CPU_perc_cumulative:
+                for bucket in self.model.update_CPU_perc_cumulative[node]:
+                    self.model.update_CPU_perc[node][bucket] = self.model.update_CPU_perc_cumulative[node][bucket]/\
+                                                    (self.model.comp_size[node]* (update_time - self.model.last_CPU_update_time[node]))
+            return
+
         if update_time - self.model.last_CPU_update_time[node] > 0:
             for bucket in self.model.update_CPU_perc_cumulative[node]:
                 self.model.update_CPU_perc[node][bucket] = self.model.update_CPU_perc_cumulative[node][bucket]/\
                                                 (self.model.comp_size[node]* (update_time - self.model.last_CPU_update_time[node]))
+
 
     def update_proc_workload(self):
         for node in self.model.update_proc_bucket:

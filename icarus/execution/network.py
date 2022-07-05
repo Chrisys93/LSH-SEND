@@ -1975,10 +1975,10 @@ class NetworkModel(object):
         self.next_update_CPU_cumulative = dict()
 
         # Per-bucket CPU percentages
-        self.update_proc_bucket = dict()
-
-        # Per-bucket CPU percentages
         self.update_proc_workload = dict()
+
+        # # Per-bucket CPU percentages
+        # self.update_proc_workload = dict()
 
         # Update-specific to account for added/subtracted bucket-based CPU percentages
         self.orchestration_proc_workload = dict()
@@ -2087,8 +2087,8 @@ class NetworkModel(object):
                     self.update_CPU_perc_cumulative[node] = dict()
                     self.orchestration_CPU_perc[node] = dict()
                     self.next_update_CPU_cumulative[node] = dict()
-                    self.update_proc_bucket[node] = Counter()
                     self.update_proc_workload[node] = Counter()
+                    # self.update_proc_workload[node] = Counter()
                     self.orchestration_proc_workload[node] = Counter()
                     self.missed_hashes[node] = dict()
                     self.queued_hashes[node] = dict()
@@ -2800,10 +2800,10 @@ class NetworkController(object):
                                                 (self.model.comp_size[node]* (update_time - self.model.last_CPU_update_time[node]))
 
 
-    def update_proc_workload(self):
-        for node in self.model.update_proc_bucket:
-            for bucket in self.model.update_proc_bucket[node]:
-                self.model.update_proc_workload[node][bucket] = self.model.update_proc_bucket[node][bucket]
+    # def update_proc_workload(self):
+    #     for node in self.model.update_proc_workload:
+    #         for bucket in self.model.update_proc_workload[node]:
+    #             self.model.update_proc_workload[node][bucket] = self.model.update_proc_workload[node][bucket]
 
     def reset_update_CPU_perc(self, node):
         for h in self.model.update_CPU_perc_cumulative[node]:
@@ -2838,10 +2838,10 @@ class NetworkController(object):
         else:
             for n in nodes:
                 for h in hashes:
-                    self.model.update_proc_bucket[n][h] = 0
+                    self.model.update_proc_workload[n][h] = 0
         # for node in nodes:
-        #     for h in self.model.update_proc_bucket[node]:
-        #         self.model.orchestration_proc_workload[node][h] = self.model.update_proc_bucket[node][h]
+        #     for h in self.model.update_proc_workload[node]:
+        #         self.model.orchestration_proc_workload[node][h] = self.model.update_proc_workload[node][h]
 
     def update_CPU_usage(self, node, h, node_CPU, hash_CPU, CPUtime):
         self.model.node_CPU_usage[node] = node_CPU/CPUtime
@@ -2877,7 +2877,7 @@ class NetworkController(object):
         self.model.requested_buckets_temp.update(bucket)
 
     def add_request_to_proc_bucket_temp(self, node, bucket):
-        self.model.update_proc_bucket[node].update(bucket)
+        self.model.update_proc_workload[node].update(bucket)
 
     def calculate_bucket_req_speed(self):
         for b in self.model.requested_buckets_temp:

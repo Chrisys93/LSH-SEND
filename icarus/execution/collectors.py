@@ -1642,12 +1642,15 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                 reused_reqs_per_end_node.write(str(req_per_edr) + ', ')
             reused_reqs_per_end_node.write('\n')
 
+            end_bucket_count = None
             for bucket in self.requested_buckets:
                 for n in self.view.model.update_proc_workload:
-                    if bucket not in self.view.model.update_proc_workload[n]:
-                        end_bucket_req_speed.write(str(0) + ', ')
-                    else:
-                        end_bucket_req_speed.write(str(self.view.model.update_proc_workload[n][bucket]) + ', ')
+                    if bucket in self.view.model.update_proc_workload[n]:
+                        end_bucket_count = self.view.model.update_proc_workload[n][bucket]
+                if end_bucket_count is None:
+                    end_bucket_req_speed.write(str(0) + ', ')
+                else:
+                    end_bucket_req_speed.write(str(end_bucket_count) + ', ')
             end_bucket_req_speed.write('\n')
 
             if first_hash_repo:

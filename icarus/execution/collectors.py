@@ -1654,15 +1654,13 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                     end_bucket_req_speed.write(str(end_bucket_count) + ', ')
             end_bucket_req_speed.write('\n')
 
-            orch_bucket_count = None
-            for bucket in self.requested_buckets:
-                for n in self.view.model.orchestration_proc_workload:
-                    if bucket in self.view.model.orchestration_proc_workload[n] and self.view.model.orchestration_proc_workload[n][bucket]:
-                        orch_bucket_count = self.view.model.orchestration_proc_workload[n][bucket]
-                if orch_bucket_count is None:
-                    orch_bucket_req_speed.write(str(0) + ', ')
-                else:
-                    orch_bucket_req_speed.write(str(orch_bucket_count) + ', ')
+            orch_bucket_count = dict()
+            for n in self.view.model.orchestration_proc_workload:
+                for bucket in self.view.model.orchestration_proc_workload[n]:
+                    if n not in orch_bucket_count:
+                        orch_bucket_count[n] = 0
+                    orch_bucket_count[n] += self.view.model.orchestration_proc_workload[n][bucket]
+                orch_bucket_req_speed.write(str(orch_bucket_count[n]) + ', ')
             orch_bucket_req_speed.write('\n')
 
             if first_hash_repo:

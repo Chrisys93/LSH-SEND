@@ -1656,9 +1656,8 @@ class RepoStatsOutputLatencyCollector(DataCollector):
 
             orch_bucket_count = dict()
             for n in self.view.model.orchestration_proc_workload:
+                orch_bucket_count[n] = 0
                 for bucket in self.view.model.orchestration_proc_workload[n]:
-                    if n not in orch_bucket_count:
-                        orch_bucket_count[n] = 0
                     orch_bucket_count[n] += self.view.model.orchestration_proc_workload[n][bucket]
                 orch_bucket_req_speed.write(str(orch_bucket_count[n]) + ', ')
             orch_bucket_req_speed.write('\n')

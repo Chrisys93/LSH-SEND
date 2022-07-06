@@ -1499,6 +1499,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             reused_reqs_per_bucket = open("hash_proc_avg_reuse_req_per_bucket" + str(self.rate) + ".txt", 'a')
             reused_reqs_per_end_node = open("hash_proc_avg_reuse_req_per_end_node" + str(self.rate) + ".txt", 'a')
             end_bucket_req_speed = open("hash_proc_end_bucket_req_speed" + str(self.rate) + ".txt", 'a')
+            orch_bucket_req_speed = open("hash_proc_orch_bucket_req_speed" + str(self.rate) + ".txt", 'a')
             node_req_speed = open("hash_proc_node_req_speed" + str(self.rate) + ".txt", 'a')
             end_node_req_speed = open("hash_proc_end_node_req_speed" + str(self.rate) + ".txt", 'a')
             buckets_to_EDR = open("hash_proc_bucket_edr" + str(self.rate) + ".txt", 'a')
@@ -1653,6 +1654,17 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                     end_bucket_req_speed.write(str(end_bucket_count) + ', ')
             end_bucket_req_speed.write('\n')
 
+            orch_bucket_count = None
+            for bucket in self.requested_buckets:
+                for n in self.view.model.orchestration_proc_workload:
+                    if bucket in self.view.model.orchestration_proc_workload[n] and self.view.model.orchestration_proc_workload[n][bucket]:
+                        orch_bucket_count = self.view.model.orchestration_proc_workload[n][bucket]
+                if orch_bucket_count is None:
+                    orch_bucket_req_speed.write(str(0) + ', ')
+                else:
+                    orch_bucket_req_speed.write(str(orch_bucket_count) + ', ')
+            orch_bucket_req_speed.write('\n')
+
             if first_hash_repo:
                 number_of_buckets.write(str(len(self.view.model.h_space_sources)))
 
@@ -1730,6 +1742,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
         requests_per_node.close()
         requests_per_end_node.close()
         end_bucket_req_speed.close()
+        orch_bucket_req_speed.close()
         node_req_speed.close()
         end_node_req_speed.close()
         simil_misses.close()

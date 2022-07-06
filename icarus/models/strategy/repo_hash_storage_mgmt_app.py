@@ -473,13 +473,13 @@ class HashRepoReuseStorApp(Strategy):
                 high_proc = self.view.most_CPU_usage(exclude_h)
                 low_proc = self.view.least_CPU_usage(exclude_l)
             low_repo = low_proc[0]
-            l = low_proc[1]
-            exclude_l.append(l)
+            # l = low_proc[1]
+            # exclude_l.append(l)
             high_repo = high_proc[0]
             h = high_proc[1]
             exclude_h.append(h)
-            if high_repo not in updated_nodes:
-                updated_nodes.append(high_repo)
+            # if high_repo not in updated_nodes:
+            #     updated_nodes.append(high_repo)
             # new_content_l = self.controller.get_processed_message(low_repo, [l], [], True)
             new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
             h_l_path_delay = self.view.path_delay(high_repo, low_repo)
@@ -487,7 +487,7 @@ class HashRepoReuseStorApp(Strategy):
             # l_h_path_delay = self.view.path_delay(low_repo, node)
             # rtt_delay_l = 2 * l_h_path_delay
             self.controller.update_CPU_perc(low_repo, curTime, None, h, None, True, False, high_repo)
-            self.controller.move_h_space_proc_high_low(high_repo, low_repo, h, l)
+            self.controller.move_h_space_proc_high_low(high_repo, low_repo, h)
             if new_content_h is not None:
                 if 'shelf_life' in new_content_h:
                     self.view.storage_nodes()[high_repo].deleteMessage(new_content_h['content'])
@@ -527,9 +527,16 @@ class HashRepoReuseStorApp(Strategy):
                         self.controller.update_CPU_usage(n, h, self.node_CPU_usage[n],
                                                          self.hash_CPU_usage[n][h], curTime)
             self.last_CPU_time = curTime
+            self.controller.move_h_space_proc_high_low(high_repo, low_repo, h)
+            if new_content_h is not None:
+                if 'shelf_life' in new_content_h:
+                    self.view.storage_nodes()[high_repo].deleteMessage(new_content_h['content'])
+                    self.controller.add_event(curTime + h_l_path_delay, low_repo, new_content_h, new_content_h['labels'],
+                                              new_content_h['h_space'], low_repo,
+                                              None, curTime + new_content_h['shelf_life'], rtt_delay_h, STORE)
             # self.node_CPU_usage[n] = 0
             # self.hash_CPU_usage[n][h_spaces[0]] = 0
-        return updated_nodes
+        # return updated_nodes
 
 
 
@@ -887,7 +894,7 @@ class HashRepoReuseStorApp(Strategy):
                 # self.controller.update_proc_workload()
                 self.controller.restore_orch_proc_workload()
                 updated_nodes, hashes = self.epoch_bucket_CPU_workload_update(curTime, len(self.view.model.h_space_sources))
-                self.controller.restore_orch_proc_workload(updated_nodes, hashes)
+                # self.controller.restore_orch_proc_workload(updated_nodes, hashes)
                 self.epoch_count = 0
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
@@ -900,9 +907,9 @@ class HashRepoReuseStorApp(Strategy):
             if type(self.epoch_count) is int and type(node) is int and self.view.model.avg_CPU_perc[node] > self.trigger_threshold and self.epoch_count >= self.epoch_ticks:
                 self.view.model.orch_calls += 1
                 self.controller.restore_orch_CPU_perc()
-                updated_nodes = self.trigger_node_CPU_update(curTime, 50)
+                self.trigger_node_CPU_update(curTime, 50)
                 self.epoch_count = 0
-                self.controller.restore_orch_CPU_perc(updated_nodes)
+                # self.controller.restore_orch_CPU_perc(updated_nodes)
 
         if self.orchestration == "Queue-based":
             if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > self.trigger_threshold and self.epoch_count >= self.epoch_ticks:

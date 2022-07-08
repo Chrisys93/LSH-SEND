@@ -562,21 +562,26 @@ class HashRepoReuseStorApp(Strategy):
                 low_repo = self.view.least_orch_proc_ingress()
             # low_repo = low_proc[0]
             # l = low_proc[1]
-            high_repo = high_proc[0]
-            h = high_proc[1]
-            exclude_h.append(h)
-            # exclude_l.append(l)
+            h = high_proc#[1]
+            new_content_h = None
+            for n in self.view.model.repoStorage:
+                if self.controller.get_processed_message(n, [h], [], True):
+                    new_content_h = self.controller.get_processed_message(n, [h], [], True)
+                if h in self.view.model.all_node_h_spaces[n]:
+                    high_repo = n
             if high_repo not in updated_nodes:
                 updated_nodes.append(high_repo)
-            new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
-            h_l_path_delay = self.view.path_delay(high_repo, low_repo)
-            rtt_delay_h = 2 * h_l_path_delay
+            exclude_h.append(h)
+            # exclude_l.append(l)
+            # new_content_h = self.controller.get_processed_message(high_repo, [h], [], True)
             # l_h_path_delay = self.view.path_delay(low_repo, node)
             # rtt_delay_l = 2 * l_h_path_delay
             self.controller.update_CPU_perc(low_repo, curTime, None, h, None, False, True, high_repo)
             self.controller.move_h_space_proc_high_low(high_repo, low_repo, h)
             if new_content_h is not None:
                 if 'shelf_life' in new_content_h:
+                    h_l_path_delay = self.view.path_delay(high_repo, low_repo)
+                    rtt_delay_h = 2 * h_l_path_delay
                     self.view.storage_nodes()[high_repo].deleteMessage(new_content_h['content'])
                     self.controller.add_event(curTime + h_l_path_delay, low_repo, new_content_h, new_content_h['labels'],
                                               new_content_h['h_space'], low_repo,
@@ -997,7 +1002,7 @@ class HashRepoReuseStorApp(Strategy):
                 # TODO: Add (no-reuse) request destination hit to repo ingress request count
                 self.controller.add_request_to_end_node([node])
                 self.controller.add_request_to_end_node_temp([node])
-                self.controller.add_request_to_proc_bucket_temp(node, [h_spaces[0]])
+                self.controller.add_request_to_proc_bucket_temp([h_spaces[0]])
 
                 path = self.view.shortest_path(node, self.source[h_spaces[0]])
                 if len(path) > 1:
@@ -2498,7 +2503,7 @@ class HashRepoProcStorApp(Strategy):
                 # TODO: Add (no-reuse) request destination hit to repo ingress request count
                 self.controller.add_request_to_end_node([node])
                 self.controller.add_request_to_end_node_temp([node])
-                self.controller.add_request_to_proc_bucket_temp(node,[h_spaces[0]])
+                self.controller.add_request_to_proc_bucket_temp([h_spaces[0]])
 
                 path = self.view.shortest_path(node, self.source[h_spaces[0]])
                 if len(path) > 1:

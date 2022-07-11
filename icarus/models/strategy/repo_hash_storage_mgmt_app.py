@@ -555,8 +555,8 @@ class HashRepoReuseStorApp(Strategy):
         for i in range(max_count):
             # FIXME: Maybe include a bucket exclusion list for both high and low, to not take buckets twice instead!!!!!
             # Find highest and lowest processing buckets and nodes
-            if any(elem is None for elem in self.view.most_update_proc_ingress(exclude_h)):
-                continue
+            if not self.view.most_update_proc_ingress(exclude_h):
+                break
             else:
                 high_proc = self.view.most_update_proc_ingress(exclude_h)
                 low_repo = self.view.least_orch_proc_ingress()

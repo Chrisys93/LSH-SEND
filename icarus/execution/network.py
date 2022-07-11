@@ -937,8 +937,8 @@ class NetworkView(object):
             if type(n) is str:
                 continue
             total_update = 0
-            for h in self.model.orchestration_proc_workload[n]:
-                total_update += self.model.orchestration_proc_workload[n][h]
+            # for h in self.model.orchestration_proc_workload[n]:
+            total_update += self.model.orchestration_proc_workload[n]
             node_proc = total_update
             if node_proc >= max_node_proc:
                 max_node_proc = node_proc
@@ -962,8 +962,8 @@ class NetworkView(object):
             if type(n) is str:
                 continue
             total_update = 0
-            for h in self.model.orchestration_proc_workload[n]:
-                total_update += self.model.orchestration_proc_workload[n][h]
+            # for h in self.model.orchestration_proc_workload[n]:
+            total_update += self.model.orchestration_proc_workload[n]
             node_proc = total_update
             if node_proc <= min_node_proc:
                 min_node_proc = node_proc
@@ -2091,7 +2091,7 @@ class NetworkModel(object):
                     self.next_update_CPU_cumulative[node] = dict()
                     # self.update_proc_workload = Counter()
                     # self.update_proc_workload = Counter()
-                    self.orchestration_proc_workload[node] = Counter()
+                    self.orchestration_proc_workload[node] = 0
                     self.missed_hashes[node] = dict()
                     self.queued_hashes[node] = dict()
                     self.max_queue_delay[node] = 0
@@ -2743,10 +2743,10 @@ class NetworkController(object):
             self.model.orchestration_CPU_perc[high_repo][bucket] = 0
             return
         elif change_update_workload and high_repo is not None:
-            if bucket not in self.model.orchestration_proc_workload[node]:
-                self.model.orchestration_proc_workload[node][bucket] = 0
-            self.model.orchestration_proc_workload[node][bucket] += self.model.update_proc_workload[bucket]
-            self.model.orchestration_proc_workload[high_repo][bucket] = 0
+            # if bucket not in self.model.orchestration_proc_workload[node]:
+            #   self.model.orchestration_proc_workload[node] = 0
+            self.model.orchestration_proc_workload[node] += self.model.update_proc_workload[bucket]
+            # self.model.orchestration_proc_workload[high_repo] = 0
             return
 
         if curTime >= self.model.last_CPU_update_time[node] + self.model.CPU_update_period:
@@ -2816,9 +2816,9 @@ class NetworkController(object):
                 self.model.update_CPU_perc_cumulative[node][h] = 0
 
     def reset_orchestration_proc_workload(self):
-        for h in self.model.update_proc_workload:
-            for node in self.model.orchestration_proc_workload:
-                self.model.orchestration_proc_workload[node][h] = 0
+        # for h in self.model.update_proc_workload:
+        for node in self.model.orchestration_proc_workload:
+            self.model.orchestration_proc_workload[node] = 0
 
 
     def restore_orch_CPU_perc(self, nodes=None):

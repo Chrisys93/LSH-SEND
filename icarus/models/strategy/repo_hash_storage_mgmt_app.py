@@ -899,7 +899,7 @@ class HashRepoReuseStorApp(Strategy):
                 # self.controller.update_proc_workload()
                 self.controller.restore_orch_proc_workload()
                 updated_nodes, hashes = self.epoch_bucket_CPU_workload_update(curTime, len(self.view.model.h_space_sources))
-                # self.controller.restore_orch_proc_workload(updated_nodes, hashes)
+                self.controller.restore_orch_proc_workload(hashes)
                 self.epoch_count = 0
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:

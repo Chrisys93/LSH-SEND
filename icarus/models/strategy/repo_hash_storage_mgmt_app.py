@@ -898,7 +898,7 @@ class HashRepoReuseStorApp(Strategy):
                 self.view.model.orch_calls += 1
                 # self.controller.update_proc_workload()
                 self.controller.restore_orch_proc_workload()
-                updated_nodes, hashes = self.epoch_bucket_CPU_workload_update(curTime, len(self.view.model.h_space_sources))
+                updated_nodes, hashes = self.epoch_bucket_CPU_workload_update(curTime, len(self.view.model.update_proc_workload))
                 self.controller.restore_orch_proc_workload(hashes)
                 self.epoch_count = 0
 

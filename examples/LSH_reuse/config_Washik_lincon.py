@@ -43,7 +43,7 @@ N_REPLICATIONS = 1
 # The implementation of data collectors are located in ./icaurs/execution/collectors.py
 DATA_COLLECTORS = ['REPO_STATS_OUT_H_LATENCY']
 RESULTS_PATH = ['/Repo/no_reuse/no_orchestration', '/Repo/reuse/no_orchestration', '/Queue-based/reuse/orchestration',
-                '/CPU-usage/reuse/orchestration', '/CPU-Reuse/reuse/orchestration']
+                '/CPU-usage/reuse/orchestration', '/CPU-Workload/reuse/orchestration', '/CPU-Reuse/reuse/orchestration']
 
 # Range of alpha values of the Zipf distribution using to generate content requests
 # alpha values must be positive. The greater the value the more skewed is the
@@ -88,7 +88,7 @@ N_WARMUP_REQUESTS = 0 #30000
 #N_MEASURED_REQUESTS = 1000 #60*30000 #100000
 
 SECS = 60 #do not change
-MINS = 5 #5.5
+MINS = 2 #5.5
 N_MEASURED_REQUESTS = NETWORK_REQUEST_RATE*SECS*MINS
 
 # List of all implemented topologies
@@ -108,8 +108,8 @@ WORKLOAD = 'STATIONARY_DATASET_HASH_LABEL_REQS'
 
 # List of caching and routing strategies
 # The code is located in ./icarus/models/strategy.py
-STRATEGIES = ['HASH_PROC_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP']
-ORCHESTRATIONS = ['Queue-based', 'CPU-usage', 'CPU-Reuse']
+STRATEGIES = ['HASH_PROC_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP']
+ORCHESTRATIONS = ['Queue-based', 'CPU-usage', 'CPU-Workload', 'CPU-Reuse']
 EPOCH_TICKS = [500, float('inf')]
 HIT_RATE = 0.15
 #STRATEGIES = ['COORDINATED']  # service-based routing
@@ -125,6 +125,7 @@ CACHE_POLICY = 'LRU'
 REPO_POLICY = 'REPO_STORAGE'
 PROC_TIMES = (0.012, 0.04)
 TRIGGER_THRESH= 0.08
+ORCH_BUCKETS = 50
 
 # Task scheduling policy used by the cloudlets.
 # Supported policies are: 'EDF' (Earliest Deadline First), 'FIFO'
@@ -251,13 +252,13 @@ for rate in NETWORK_REQUEST_RATE:
         if index < 2:
             EPOCH = EPOCH_TICKS[1]
         else:
-            EPOCH = rate + 50
+            EPOCH = 30*rate + 50
         experiment = copy.deepcopy(default)
         if index >= 2:
             experiment['strategy']['orchestration'] = ORCHESTRATIONS[index - 2]
         if experiment['strategy']['orchestration'] == "Queue-based":
             experiment['strategy']['trigger_threshold'] = TRIGGER_THRESH
-            EPOCH = rate
+            EPOCH = 30*rate
         else:
             experiment['strategy']['trigger_threshold'] = 0.7
         experiment['sched_policy']['proc_time'] = PROC_TIMES
@@ -268,6 +269,7 @@ for rate in NETWORK_REQUEST_RATE:
         experiment['workload']['n_measured'] = rate*MINS*SECS
         experiment['computation_placement']['service_budget'] = SERVICE_BUDGET
         experiment['strategy']['epoch_ticks'] = EPOCH
+        experiment['strategy']['orch_buckets'] = ORCH_BUCKETS
         experiment['strategy']['name'] = strategy
         experiment['warmup_strategy']['name'] = strategy
         experiment['desc'] = "strategy: %s" \

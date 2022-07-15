@@ -1976,8 +1976,11 @@ class NetworkModel(object):
         self.next_node_CPU_cumulative = dict()
         self.next_update_CPU_cumulative = dict()
 
-        # Per-bucket CPU percentages
+        # Per-bucket request numbers
         self.update_proc_workload = Counter()
+
+        # Per-bucket request numbers
+        self.update_proc_workload_edr = dict()
 
         # # Per-bucket CPU percentages
         # self.update_proc_workload = dict()
@@ -2089,7 +2092,7 @@ class NetworkModel(object):
                     self.update_CPU_perc_cumulative[node] = dict()
                     self.orchestration_CPU_perc[node] = dict()
                     self.next_update_CPU_cumulative[node] = dict()
-                    # self.update_proc_workload = Counter()
+                    self.update_proc_workload_edr[node] = Counter()
                     # self.update_proc_workload = Counter()
                     self.orchestration_proc_workload[node] = 0
                     self.missed_hashes[node] = dict()
@@ -2841,7 +2844,7 @@ class NetworkController(object):
         else:
             # for n in nodes:
             for h in hashes:
-                self.model.update_proc_workload[h] = 0
+                self.model.update_proc_workload[h] = 1
         # for node in nodes:
         #     for h in self.model.update_proc_workload:
         #         self.model.orchestration_proc_workload[node][h] = self.model.update_proc_workload[h]
@@ -2881,6 +2884,9 @@ class NetworkController(object):
 
     def add_request_to_proc_bucket_temp(self, bucket):
         self.model.update_proc_workload.update(bucket)
+
+    def add_request_to_proc_edr(self,h_space, node):
+        self.model.update_proc_workload_edr[node].update(h_space)
 
     def calculate_bucket_req_speed(self):
         for b in self.model.requested_buckets_temp:

@@ -1499,6 +1499,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
             reused_reqs_per_bucket = open("hash_proc_avg_reuse_req_per_bucket" + str(self.rate) + ".txt", 'a')
             reused_reqs_per_end_node = open("hash_proc_avg_reuse_req_per_end_node" + str(self.rate) + ".txt", 'a')
             end_bucket_req_speed = open("hash_proc_end_bucket_req_speed" + str(self.rate) + ".txt", 'a')
+            end_edr_req_speed = open("hash_proc_end_edr_req_speed" + str(self.rate) + ".txt", 'a')
             orch_bucket_req_speed = open("hash_proc_orch_bucket_req_speed" + str(self.rate) + ".txt", 'a')
             node_req_speed = open("hash_proc_node_req_speed" + str(self.rate) + ".txt", 'a')
             end_node_req_speed = open("hash_proc_end_node_req_speed" + str(self.rate) + ".txt", 'a')
@@ -1654,6 +1655,13 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                     end_bucket_req_speed.write(str(end_bucket_count) + ', ')
             end_bucket_req_speed.write('\n')
 
+            for node in self.view.model.update_proc_workload_edr:
+                end_edr_count = 0
+                for bucket in self.view.model.update_proc_workload_edr[node]:
+                    end_edr_count += self.view.model.update_proc_workload_edr[node][bucket]
+                end_edr_req_speed.write(str(end_edr_count) + ', ')
+            end_edr_req_speed.write('\n')
+
             orch_bucket_count = dict()
             for n in self.view.model.orchestration_proc_workload:
                 orch_bucket_count[n] = 0
@@ -1739,6 +1747,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
         requests_per_node.close()
         requests_per_end_node.close()
         end_bucket_req_speed.close()
+        end_edr_req_speed.close()
         orch_bucket_req_speed.close()
         node_req_speed.close()
         end_node_req_speed.close()

@@ -56,7 +56,7 @@ class HashRepoReuseStorApp(Strategy):
 
     def __init__(self, view, controller, replacement_interval=10, debug=False, n_replacements=1, hit_rate=1,
                  depl_rate=10000000, cloud_lim=20000000, max_stor=9900000000, min_stor=10000000, epoch_ticks=float('inf'),
-                 trigger_threshold=0.7, orchestration=None, **kwargs):
+                 trigger_threshold=0.7, orch_buckets=50, orchestration=None, **kwargs):
         super(HashRepoReuseStorApp, self).__init__(view, controller)
 
         self.view.model.strategy = 'HASH_PROC_REPO_APP'
@@ -163,6 +163,8 @@ class HashRepoReuseStorApp(Strategy):
         self.hash_CPU_usage = dict()
 
         self.no_dead_miss_hash = dict()
+
+        self.orch_buckets = orch_buckets
 
         for n in self.view.model.all_node_h_spaces.keys():
             if type(n) is int:
@@ -888,8 +890,8 @@ class HashRepoReuseStorApp(Strategy):
                 self.view.model.orch_calls += 1
                 self.controller.update_CPU(curTime)
                 self.controller.restore_orch_CPU_perc()
-                updated_nodes = self.trigger_node_proc_reuse_update(curTime, 5)
-                updated_nodes += self.trigger_node_reuse_proc_update(curTime, 5)
+                updated_nodes = self.trigger_node_proc_reuse_update(curTime, int(self.orch_buckets/2))
+                updated_nodes += self.trigger_node_reuse_proc_update(curTime, int(self.orch_buckets/2))
                 self.controller.restore_orch_CPU_perc(updated_nodes)
                 self.epoch_count = 0
 
@@ -912,14 +914,14 @@ class HashRepoReuseStorApp(Strategy):
             if type(self.epoch_count) is int and type(node) is int and self.view.model.avg_CPU_perc[node] > self.trigger_threshold and self.epoch_count >= self.epoch_ticks:
                 self.view.model.orch_calls += 1
                 self.controller.restore_orch_CPU_perc()
-                self.trigger_node_CPU_update(curTime, 50)
+                self.trigger_node_CPU_update(curTime, self.orch_buckets)
                 self.epoch_count = 0
                 # self.controller.restore_orch_CPU_perc(updated_nodes)
 
         if self.orchestration == "Queue-based":
             if type(self.epoch_ticks) is int and type(node) is int and self.view.model.max_queue_delay[node] > self.trigger_threshold and self.epoch_count >= self.epoch_ticks:
                 self.view.model.orch_calls += 1
-                self.trigger_node_delay_update(curTime, 20)
+                self.trigger_node_delay_update(curTime, self.orch_buckets)
                 self.epoch_count = 0
 
         # if self.epoch_count >= self.epoch_ticks and type(node) is int:
@@ -1003,6 +1005,7 @@ class HashRepoReuseStorApp(Strategy):
                 self.controller.add_request_to_end_node([node])
                 self.controller.add_request_to_end_node_temp([node])
                 self.controller.add_request_to_proc_bucket_temp([h_spaces[0]])
+                self.controller.add_request_to_proc_edr([h_spaces[0]], node)
 
                 path = self.view.shortest_path(node, self.source[h_spaces[0]])
                 if len(path) > 1:

@@ -88,7 +88,7 @@ N_WARMUP_REQUESTS = 0 #30000
 #N_MEASURED_REQUESTS = 1000 #60*30000 #100000
 
 SECS = 60 #do not change
-MINS = 5 #5.5
+MINS = 3 #5.5
 N_MEASURED_REQUESTS = NETWORK_REQUEST_RATE*SECS*MINS
 
 # List of all implemented topologies
@@ -253,13 +253,13 @@ for rate in NETWORK_REQUEST_RATE:
         if index < 2:
             EPOCH = EPOCH_TICKS[1]
         else:
-            EPOCH = rate + 50
+            EPOCH = 30*rate + 50
         experiment = copy.deepcopy(default)
         if index >= 2:
             experiment['strategy']['orchestration'] = ORCHESTRATIONS[index - 2]
         if experiment['strategy']['orchestration'] == "Queue-based":
             experiment['strategy']['trigger_threshold'] = TRIGGER_THRESH
-            EPOCH = rate
+            EPOCH = 30*rate
         else:
             experiment['strategy']['trigger_threshold'] = 0.7
         experiment['sched_policy']['proc_time'] = PROC_TIMES

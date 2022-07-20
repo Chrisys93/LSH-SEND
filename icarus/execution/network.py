@@ -878,10 +878,7 @@ class NetworkView(object):
         for h in self.model.update_proc_workload:
             if h in exclude:
                 continue
-            if h in self.model.update_proc_workload:
-                proc = self.model.update_proc_workload[h]
-            else:
-                proc = 0
+            proc = self.model.update_proc_workload[h] + 1
             if proc >= max_proc:
                 # max_node = n
                 max_proc = proc
@@ -2748,7 +2745,7 @@ class NetworkController(object):
         elif change_update_workload and high_repo is not None:
             # if bucket not in self.model.orchestration_proc_workload[node]:
             #   self.model.orchestration_proc_workload[node] = 0
-            self.model.orchestration_proc_workload[node] += self.model.update_proc_workload[bucket]
+            self.model.orchestration_proc_workload[node] += self.model.update_proc_workload[bucket] + 1
             # self.model.orchestration_proc_workload[high_repo] = 0
             return
 
@@ -2844,7 +2841,7 @@ class NetworkController(object):
         else:
             # for n in nodes:
             for h in hashes:
-                self.model.update_proc_workload[h] = 1
+                self.model.update_proc_workload[h] = 0
         # for node in nodes:
         #     for h in self.model.update_proc_workload:
         #         self.model.orchestration_proc_workload[node][h] = self.model.update_proc_workload[h]

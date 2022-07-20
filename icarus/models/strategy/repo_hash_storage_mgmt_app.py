@@ -2507,6 +2507,7 @@ class HashRepoProcStorApp(Strategy):
                 self.controller.add_request_to_end_node([node])
                 self.controller.add_request_to_end_node_temp([node])
                 self.controller.add_request_to_proc_bucket_temp([h_spaces[0]])
+                self.controller.add_request_to_proc_edr([h_spaces[0]], node)
 
                 path = self.view.shortest_path(node, self.source[h_spaces[0]])
                 if len(path) > 1:

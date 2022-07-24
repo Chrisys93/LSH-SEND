@@ -550,6 +550,16 @@ class HashRepoReuseStorApp(Strategy):
             Maximum amount of moves between higher and lower CPU-usage nodes
         """
 
+        if self.orchestration == "CPU-Workload-split":
+            # TODO: The main bucket identification for splitting and the splitting itself should be done in this part.
+            total_bucket_reqs = 0
+            for bucket in self.view.model.requested_buckets:
+                total_bucket_reqs += self.view.model.requested_buckets[bucket]
+            for bucket in self.view.model.requested_buckets:
+                if self.view.model.requested_buckets[bucket] > total_bucket_reqs/len(self.view.model.requested_buckets):
+                    # TODO: split_the_bucket, delete old bucket and do reallocation
+                    self.controller.split_bucket(bucket, total_bucket_reqs/len(self.view.model.repoStorage))
+
 
         exclude_l = []
         exclude_h = []
@@ -595,6 +605,8 @@ class HashRepoReuseStorApp(Strategy):
             #                                   new_content_l['h_space'], node,
             #                                   None, curTime + new_content_l['shelf_life'], rtt_delay_l, STORE)
             #         self.controller.move_h_space_proc_low_high(node, low_repo, h_space, l)
+
+
 
         self.epoch_count = 0
         self.controller.simil_miss_update(self.epoch_miss_count, self.epoch_ticks)
@@ -860,12 +872,10 @@ class HashRepoReuseStorApp(Strategy):
     *  tags
     * The other tags should be deleted AS THE MESSAGES ARE PROCESSED / COMPRESSED / DELETEDnot
     *
-    TODO: Need to check for the number of epoch ticks for each iteration and hash space updates (calling the new epoch
-        update method, for calculating WHERE to put the redistributed hash spaces), and increase ticks (the method still
-        needs to be defined).
         """
 
         if status == REQUEST:
+            # TODO: I should ensure here that all the requests of the split buckets are re-associated to one of their split buckets
             if type(node) is not int and 'rec' in node:
                 self.epoch_count += 1
                 for h in h_spaces:
@@ -896,6 +906,15 @@ class HashRepoReuseStorApp(Strategy):
                 self.epoch_count = 0
 
         if self.orchestration == "CPU-Workload":
+            if self.epoch_count >= self.epoch_ticks and type(node) is int:
+                self.view.model.orch_calls += 1
+                # self.controller.update_proc_workload()
+                self.controller.restore_orch_proc_workload()
+                updated_nodes, hashes = self.epoch_bucket_CPU_workload_update(curTime, len(self.view.model.update_proc_workload))
+                self.controller.restore_orch_proc_workload(hashes)
+                self.epoch_count = 0
+
+        if self.orchestration == "CPU-Workload-split":
             if self.epoch_count >= self.epoch_ticks and type(node) is int:
                 self.view.model.orch_calls += 1
                 # self.controller.update_proc_workload()

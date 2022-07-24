@@ -2597,8 +2597,8 @@ class NetworkController(object):
         low_proc:
         h:
         """
-
-        del self.model.all_node_h_spaces[high_proc][h_h]
+        if h_h in self.model.all_node_h_spaces[high_proc]:
+            del self.model.all_node_h_spaces[high_proc][h_h]
         if h_h in self.model.h_space_sources:
             del self.model.h_space_sources[h_h]
             for n in self.model.all_node_h_spaces:
@@ -2875,6 +2875,24 @@ class NetworkController(object):
 
     def add_request_to_bucket(self, bucket):
         self.model.requested_buckets.update(bucket)
+
+    def requested_buckets_reset(self):
+        for bucket in self.model.requested_buckets:
+            self.model.requested_buckets[bucket] = 0
+
+    def split_bucket(self, bucket, repos_mean):
+        # finding out the lowest denominator
+        den = 1
+        div = self.model.requested_buckets[bucket]
+        while div > repos_mean:
+            den += 1
+            div = self.model.requested_buckets[bucket]/den
+        # splitting the bucket and assigning the current requests equally
+        for i in range(den-1):
+            self.model.requested_buckets[bucket + "_" + i] = self.model.requested_buckets[bucket]/den
+            self.model.update_proc_workload[bucket + "_" + i] = self.model.update_proc_workload[bucket]/den
+        self.model.requested_buckets[bucket] = self.model.requested_buckets[bucket]/den
+        self.model.update_proc_workload[bucket] = self.model.update_proc_workload[bucket]/den
 
     def add_request_to_bucket_temp(self, bucket):
         self.model.requested_buckets_temp.update(bucket)

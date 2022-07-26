@@ -1985,6 +1985,9 @@ class NetworkModel(object):
         # Update-specific to account for added/subtracted bucket-based CPU percentages
         self.orchestration_proc_workload = dict()
 
+        # Buckets split for workload splitting
+        self.split_buckets = dict()
+
         # Variables determining the frequency of updating the latter, above.
         self.last_CPU_update_time = dict()
         self.CPU_update_period = update_per
@@ -2570,6 +2573,9 @@ class NetworkController(object):
         if self.collector is not None and self.session['feedback']:
             self.collector.content_request_labels(v, self.collector.request_labels)
 
+    def add_split_bucket(self, bucket, split_num):
+        self.model.split_buckets[bucket] = split_num
+
     def forward_content_hop(self, u, v, main_path=True):
         """Forward a content over link  u -> v.
         Parameters
@@ -2888,11 +2894,17 @@ class NetworkController(object):
             den += 1
             div = self.model.requested_buckets[bucket]/den
         # splitting the bucket and assigning the current requests equally
-        for i in range(den-1):
-            self.model.requested_buckets[bucket + "_" + i] = self.model.requested_buckets[bucket]/den
-            self.model.update_proc_workload[bucket + "_" + i] = self.model.update_proc_workload[bucket]/den
         self.model.requested_buckets[bucket] = self.model.requested_buckets[bucket]/den
         self.model.update_proc_workload[bucket] = self.model.update_proc_workload[bucket]/den
+        self.add_split_bucket(bucket, den)
+
+    def apply_bucket_split(self, bucket):
+        for i in range(self.model.split_buckets[bucket]-1):
+            self.model.requested_buckets[bucket + "_" + str(i)] = self.model.requested_buckets[bucket]/self.model.split_buckets[bucket]
+            self.model.update_proc_workload[bucket + "_" + str(i)] = self.model.update_proc_workload[bucket]/self.model.split_buckets[bucket]
+            self.model.hash_reuse[bucket + "_" + str(i)] = self.model.hash_reuse[bucket]
+    def split_bucket_reset(self):
+        self.model.split_buckets = dict()
 
     def add_request_to_bucket_temp(self, bucket):
         self.model.requested_buckets_temp.update(bucket)

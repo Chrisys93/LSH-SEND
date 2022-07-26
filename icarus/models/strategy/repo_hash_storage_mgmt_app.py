@@ -553,13 +553,18 @@ class HashRepoReuseStorApp(Strategy):
         if self.orchestration == "CPU-Workload-split":
             # TODO: The main bucket identification for splitting and the splitting itself should be done in this part.
             total_bucket_reqs = 0
+            self.controller.split_bucket_reset()
             for bucket in self.view.model.requested_buckets:
                 total_bucket_reqs += self.view.model.requested_buckets[bucket]
             for bucket in self.view.model.requested_buckets:
                 if self.view.model.requested_buckets[bucket] > total_bucket_reqs/len(self.view.model.requested_buckets):
                     # TODO: split_the_bucket, delete old bucket and do reallocation
                     self.controller.split_bucket(bucket, total_bucket_reqs/len(self.view.model.repoStorage))
-
+            for bucket in self.view.model.split_buckets:
+                self.controller.apply_bucket_split(bucket)
+                for i in range(self.view.model.split_buckets[bucket]-1):
+                    self.hash_in_count[bucket + "_" + str(i)] = 0
+                    self.hash_hit_count[bucket + "_" + str(i)] = 0
 
         exclude_l = []
         exclude_h = []
@@ -877,6 +882,13 @@ class HashRepoReuseStorApp(Strategy):
         if status == REQUEST:
             # TODO: I should ensure here that all the requests of the split buckets are re-associated to one of their split buckets
             if type(node) is not int and 'rec' in node:
+                if self.orchestration == "CPU-Workload-split":
+                    if h_spaces[0] in self.view.model.split_buckets:
+                        random.seed(4353)
+                        h_num = random.randint(0, self.view.model.split_buckets[h_spaces[0]])
+                        if h_num != self.view.model.split_buckets[h_spaces[0]] - 1:
+                            h_spaces[0] = h_spaces[0] + "_" + str(h_num)
+
                 self.epoch_count += 1
                 for h in h_spaces:
                     self.controller.add_request_to_bucket([h])

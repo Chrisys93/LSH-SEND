@@ -340,7 +340,6 @@ class NetworkView(object):
         """
         hops = 100
         if bin_based:
-            res = None
             for n in self.h_space_sources(h_spaces):
                 # content = self.model.repoStorage[n].hasMessage(k['content'], k['labels'])
                 if len(h_spaces) > 1:

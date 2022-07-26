@@ -565,6 +565,7 @@ class HashRepoReuseStorApp(Strategy):
                 for i in range(self.view.model.split_buckets[bucket]-1):
                     self.hash_in_count[bucket + "_" + str(i)] = 0
                     self.hash_hit_count[bucket + "_" + str(i)] = 0
+                max_count += self.view.model.split_buckets[bucket]-1
 
         exclude_l = []
         exclude_h = []

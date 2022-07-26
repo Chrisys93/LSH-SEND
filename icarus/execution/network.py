@@ -2903,6 +2903,7 @@ class NetworkController(object):
             self.model.requested_buckets[bucket + "_" + str(i)] = self.model.requested_buckets[bucket]/self.model.split_buckets[bucket]
             self.model.update_proc_workload[bucket + "_" + str(i)] = self.model.update_proc_workload[bucket]/self.model.split_buckets[bucket]
             self.model.hash_reuse[bucket + "_" + str(i)] = self.model.hash_reuse[bucket]
+            self.model.h_space_sources[bucket + "_" + str(i)] = Counter()
     def split_bucket_reset(self):
         self.model.split_buckets = dict()
 

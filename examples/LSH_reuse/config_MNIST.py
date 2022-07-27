@@ -127,7 +127,7 @@ CACHE_POLICY = 'LRU'
 # Cache policy implmentations are located in ./icarus/models/repo.py
 REPO_POLICY = 'REPO_STORAGE'
 PROC_TIMES = (0.06, 0.12)
-TRIGGER_THRESH= 0.24
+TRIGGER_THRESH= 0.16
 
 # Task scheduling policy used by the cloudlets.
 # Supported policies are: 'EDF' (Earliest Deadline First), 'FIFO'
@@ -261,7 +261,7 @@ for rate in NETWORK_REQUEST_RATE:
             experiment['strategy']['orchestration'] = ORCHESTRATIONS[index - 2]
         if experiment['strategy']['orchestration'] == "Queue-based":
             experiment['strategy']['trigger_threshold'] = TRIGGER_THRESH
-            EPOCH = 10*rate
+            EPOCH = 10*rate + 50
         else:
             experiment['strategy']['trigger_threshold'] = 0.7
         if experiment['strategy']['orchestration'] == "CPU-Workload":

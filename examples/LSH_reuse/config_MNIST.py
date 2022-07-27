@@ -261,7 +261,7 @@ for rate in NETWORK_REQUEST_RATE:
             experiment['strategy']['orchestration'] = ORCHESTRATIONS[index - 2]
         if experiment['strategy']['orchestration'] == "Queue-based":
             experiment['strategy']['trigger_threshold'] = TRIGGER_THRESH
-            EPOCH = 10*rate + 50
+            EPOCH = 10*rate
         else:
             experiment['strategy']['trigger_threshold'] = 0.7
         if experiment['strategy']['orchestration'] == "CPU-Workload":

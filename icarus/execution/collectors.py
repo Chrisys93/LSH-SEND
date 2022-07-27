@@ -1606,6 +1606,15 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                         self.requested_buckets.append(bucket)
                 self.first_run = False
 
+            if self.view.model.split_buckets:
+                for bucket in self.view.model.split_buckets:
+                    for i in range(self.view.model.split_buckets[bucket]-1):
+                        if bucket not in self.allocated_buckets:
+                            self.allocated_buckets.append(bucket+"_"+str(i))
+                for bucket in self.allocated_buckets:
+                    if bucket not in self.requested_buckets:
+                        self.requested_buckets.append(bucket)
+
             for bucket in self.requested_buckets:
                 if bucket not in self.view.model.requested_buckets:
                     requests_per_bucket.write(str(0) + ', ')

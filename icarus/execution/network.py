@@ -2573,9 +2573,6 @@ class NetworkController(object):
         if self.collector is not None and self.session['feedback']:
             self.collector.content_request_labels(v, self.collector.request_labels)
 
-    def add_split_bucket(self, bucket, split_num):
-        self.model.split_buckets[bucket] = split_num
-
     def forward_content_hop(self, u, v, main_path=True):
         """Forward a content over link  u -> v.
         Parameters
@@ -2904,6 +2901,10 @@ class NetworkController(object):
             self.model.update_proc_workload[bucket + "_" + str(i)] = self.model.update_proc_workload[bucket]/self.model.split_buckets[bucket]
             self.model.hash_reuse[bucket + "_" + str(i)] = self.model.hash_reuse[bucket]
             self.model.h_space_sources[bucket + "_" + str(i)] = Counter()
+
+    def add_split_bucket(self, bucket, split_num):
+        self.model.split_buckets[bucket] = split_num
+
     def split_bucket_reset(self):
         self.model.split_buckets = dict()
 

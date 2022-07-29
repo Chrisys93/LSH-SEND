@@ -127,7 +127,7 @@ CACHE_POLICY = 'LRU'
 # Cache policy implmentations are located in ./icarus/models/repo.py
 REPO_POLICY = 'REPO_STORAGE'
 PROC_TIMES = (0.06, 0.12)
-TRIGGER_THRESH= 0.16
+TRIGGER_THRESH= 0.24
 
 # Task scheduling policy used by the cloudlets.
 # Supported policies are: 'EDF' (Earliest Deadline First), 'FIFO'

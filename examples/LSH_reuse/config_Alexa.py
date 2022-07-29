@@ -265,7 +265,7 @@ for rate in NETWORK_REQUEST_RATE:
             EPOCH = 10*rate
         else:
             experiment['strategy']['trigger_threshold'] = 0.7
-        if experiment['strategy']['orchestration'] == "CPU-Workload":
+        if "CPU-Workload" in experiment['strategy']['orchestration']:
             EPOCH = 50*rate
         experiment['sched_policy']['proc_time'] = PROC_TIMES
         experiment['sched_policy']['update_per'] = 1

@@ -43,7 +43,7 @@ N_REPLICATIONS = 1
 # The implementation of data collectors are located in ./icaurs/execution/collectors.py
 DATA_COLLECTORS = ['REPO_STATS_OUT_H_LATENCY']
 RESULTS_PATH = ['/Repo/no_reuse/no_orchestration', '/Repo/reuse/no_orchestration', '/Queue-based/reuse/orchestration',
-                '/CPU-usage/reuse/orchestration', '/CPU-Workload/reuse/orchestration',
+                '/CPU-usage/reuse/orchestration', '/CPU-Workload-split/reuse/orchestration',
                 '/CPU-Reuse/reuse/orchestration']
 
 # Range of alpha values of the Zipf distribution using to generate content requests
@@ -264,7 +264,7 @@ for rate in NETWORK_REQUEST_RATE:
             EPOCH = 10*rate
         else:
             experiment['strategy']['trigger_threshold'] = 0.7
-        if experiment['strategy']['orchestration'] == "CPU-Workload":
+        if "CPU-Workload" in experiment['strategy']['orchestration']:
             EPOCH = 40*rate
         experiment['sched_policy']['proc_time'] = PROC_TIMES
         experiment['sched_policy']['update_per'] = 1

@@ -2887,17 +2887,20 @@ class NetworkController(object):
         # finding out the lowest denominator
         den = 1
         div = self.model.requested_buckets[bucket]
+        new_req_count = 0
         while div > repos_mean:
             den += 1
-            div = self.model.requested_buckets[bucket]/den
+            div = self.model.requested_buckets[bucket]/(den+1)
         # splitting the bucket and assigning the current requests equally
-        self.model.requested_buckets[bucket] = self.model.requested_buckets[bucket]/den
+        new_req_count += self.model.requested_buckets[bucket]/den
+        self.model.requested_buckets[bucket] = new_req_count
         self.model.update_proc_workload[bucket] = self.model.update_proc_workload[bucket]/den
         self.add_split_bucket(bucket, den)
+        return new_req_count
 
-    def apply_bucket_split(self, bucket):
-        for i in range(self.model.split_buckets[bucket]-1):
-            self.model.requested_buckets[bucket + "_" + str(i)] = self.model.requested_buckets[bucket]/self.model.split_buckets[bucket]
+    def apply_bucket_split(self, bucket, new_req_count):
+        for i in range(self.model.split_buckets[bucket]):
+            self.model.requested_buckets[bucket + "_" + str(i)] = new_req_count
             self.model.update_proc_workload[bucket + "_" + str(i)] = self.model.update_proc_workload[bucket]/self.model.split_buckets[bucket]
             self.model.hash_reuse[bucket + "_" + str(i)] = self.model.hash_reuse[bucket]
             self.model.h_space_sources[bucket + "_" + str(i)] = Counter()

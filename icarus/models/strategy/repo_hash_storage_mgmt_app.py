@@ -378,9 +378,9 @@ class HashRepoReuseStorApp(Strategy):
             self.in_count[n] = 0
             self.hit_count[n] = 0
             self.repo_misses[n] = 0
-        for h in self.view.model.hash_reuse:
-            self.hash_in_count[h] = 0
-            self.hash_hit_count[h] = 0
+        # for h in self.view.model.hash_reuse:
+        #     self.hash_in_count[h] = 0
+        #     self.hash_hit_count[h] = 0
 
         if curTime - self.last_CPU_time >= 1:
             for n in self.hash_CPU_usage:
@@ -450,9 +450,9 @@ class HashRepoReuseStorApp(Strategy):
             self.in_count[n] = 0
             self.hit_count[n] = 0
             self.repo_misses[n] = 0
-        for h in self.view.model.hash_reuse:
-            self.hash_in_count[h] = 0
-            self.hash_hit_count[h] = 0
+        # for h in self.view.model.hash_reuse:
+        #     self.hash_in_count[h] = 0
+        #     self.hash_hit_count[h] = 0
 
     def trigger_node_CPU_update(self, curTime, max_count):
         """
@@ -518,9 +518,9 @@ class HashRepoReuseStorApp(Strategy):
             self.in_count[n] = 0
             self.hit_count[n] = 0
             self.repo_misses[n] = 0
-        for h in self.view.model.hash_reuse:
-            self.hash_in_count[h] = 0
-            self.hash_hit_count[h] = 0
+        # for h in self.view.model.hash_reuse:
+        #     self.hash_in_count[h] = 0
+        #     self.hash_hit_count[h] = 0
 
         if curTime - self.last_CPU_time >= 1:
             for n in self.hash_CPU_usage:
@@ -566,7 +566,7 @@ class HashRepoReuseStorApp(Strategy):
                 for i in range(self.view.model.split_buckets[bucket]):
                     self.hash_in_count[bucket + "_" + str(i)] = 0
                     self.hash_hit_count[bucket + "_" + str(i)] = 0
-                max_count += self.view.model.split_buckets[bucket]-1
+                max_count += self.view.model.split_buckets[bucket]
 
         exclude_l = []
         exclude_h = []
@@ -629,9 +629,9 @@ class HashRepoReuseStorApp(Strategy):
             self.in_count[n] = 0
             self.hit_count[n] = 0
             self.repo_misses[n] = 0
-        for h in self.view.model.hash_reuse:
-            self.hash_in_count[h] = 0
-            self.hash_hit_count[h] = 0
+        # for h in self.view.model.hash_reuse:
+        #     self.hash_in_count[h] = 0
+        #     self.hash_hit_count[h] = 0
 
         if curTime - self.last_CPU_time >= 1:
             for n in self.hash_CPU_usage:
@@ -701,9 +701,9 @@ class HashRepoReuseStorApp(Strategy):
             self.in_count[n] = 0
             self.hit_count[n] = 0
             self.repo_misses[n] = 0
-        for h in self.view.model.hash_reuse:
-            self.hash_in_count[h] = 0
-            self.hash_hit_count[h] = 0
+        # for h in self.view.model.hash_reuse:
+        #     self.hash_in_count[h] = 0
+        #     self.hash_hit_count[h] = 0
 
         if curTime - self.last_CPU_time >= 1:
             for n in self.hash_CPU_usage:
@@ -773,9 +773,9 @@ class HashRepoReuseStorApp(Strategy):
             self.in_count[n] = 0
             self.hit_count[n] = 0
             self.repo_misses[n] = 0
-        for h in self.view.model.hash_reuse:
-            self.hash_in_count[h] = 0
-            self.hash_hit_count[h] = 0
+        # for h in self.view.model.hash_reuse:
+        #     self.hash_in_count[h] = 0
+        #     self.hash_hit_count[h] = 0
 
         if curTime - self.last_CPU_time >= 1:
             for n in self.hash_CPU_usage:
@@ -853,9 +853,9 @@ class HashRepoReuseStorApp(Strategy):
             self.in_count[n] = 0
             self.hit_count[n] = 0
             self.repo_misses[n] = 0
-        for h in self.view.model.hash_reuse:
-            self.hash_in_count[h] = 0
-            self.hash_hit_count[h] = 0
+        # for h in self.view.model.hash_reuse:
+        #     self.hash_in_count[h] = 0
+        #     self.hash_hit_count[h] = 0
 
 
     @inheritdoc(Strategy)

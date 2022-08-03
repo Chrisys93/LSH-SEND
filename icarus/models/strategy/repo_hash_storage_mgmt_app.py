@@ -563,7 +563,7 @@ class HashRepoReuseStorApp(Strategy):
                     new_req_count[bucket] = self.controller.split_bucket(bucket, total_bucket_reqs/len(self.view.model.orchestration_proc_workload))
             for bucket in self.view.model.split_buckets:
                 self.controller.apply_bucket_split(bucket, new_req_count[bucket])
-                for i in range(self.view.model.split_buckets[bucket]-1):
+                for i in range(self.view.model.split_buckets[bucket]):
                     self.hash_in_count[bucket + "_" + str(i)] = 0
                     self.hash_hit_count[bucket + "_" + str(i)] = 0
                 max_count += self.view.model.split_buckets[bucket]-1
@@ -886,9 +886,9 @@ class HashRepoReuseStorApp(Strategy):
             if type(node) is not int and 'rec' in node:
                 if self.orchestration == "CPU-Workload-split":
                     if h_spaces[0] in self.view.model.split_buckets:
-                        random.seed(4353)
+                        # random.seed(4353)
                         h_num = random.randint(0, self.view.model.split_buckets[h_spaces[0]])
-                        if h_num != self.view.model.split_buckets[h_spaces[0]] - 1:
+                        if h_num != self.view.model.split_buckets[h_spaces[0]]:
                             h_spaces[0] = h_spaces[0] + "_" + str(h_num)
 
                 self.epoch_count += 1

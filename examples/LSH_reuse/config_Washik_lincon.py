@@ -111,7 +111,7 @@ WORKLOAD = 'STATIONARY_DATASET_HASH_LABEL_REQS'
 # The code is located in ./icarus/models/strategy.py
 STRATEGIES = ['HASH_PROC_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP',
               'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP']
-ORCHESTRATIONS = ['Queue-based', 'CPU-usage', 'CPU-Workload-split',
+ORCHESTRATIONS = ['Queue-based', 'CPU-usage', 'CPU-Workload',
                   'CPU-Reuse']
 EPOCH_TICKS = [500, float('inf')]
 HIT_RATE = 0.15

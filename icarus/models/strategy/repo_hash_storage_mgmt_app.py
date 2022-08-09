@@ -550,7 +550,7 @@ class HashRepoReuseStorApp(Strategy):
             Maximum amount of moves between higher and lower CPU-usage nodes
         """
 
-        if self.orchestration == "CPU-Workload-split":
+        if 'split' in self.orchestration:
             # TODO: The main bucket identification for splitting and the splitting itself should be done in this part.
             total_bucket_reqs = 0
             self.controller.split_bucket_reset()

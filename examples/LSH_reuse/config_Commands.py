@@ -43,7 +43,7 @@ N_REPLICATIONS = 1
 # The implementation of data collectors are located in ./icaurs/execution/collectors.py
 DATA_COLLECTORS = ['REPO_STATS_OUT_H_LATENCY']
 RESULTS_PATH = ['/Repo/no_reuse/no_orchestration', '/Repo/reuse/no_orchestration', '/Queue-based/reuse/orchestration',
-                '/CPU-usage/reuse/orchestration', '/CPU-Workload-split/reuse/orchestration',
+                '/CPU-usage/reuse/orchestration', '/CPU-Workload/reuse/orchestration',
                 '/CPU-Reuse/reuse/orchestration']
 
 # Range of alpha values of the Zipf distribution using to generate content requests
@@ -111,7 +111,7 @@ WORKLOAD = 'STATIONARY_DATASET_HASH_LABEL_REQS'
 # The code is located in ./icarus/models/strategy.py
 STRATEGIES = ['HASH_PROC_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP',
               'HASH_REUSE_REPO_APP', 'HASH_REUSE_REPO_APP']
-ORCHESTRATIONS = ['Queue-based', 'CPU-usage', 'CPU-Workload-split',
+ORCHESTRATIONS = ['Queue-based', 'CPU-usage', 'CPU-Workload',
                   'CPU-Reuse']
 EPOCH_TICKS = [500, float('inf')]
 HIT_RATE = 0.15

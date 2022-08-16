@@ -556,9 +556,9 @@ class HashRepoReuseStorApp(Strategy):
             self.controller.split_bucket_reset()
             new_req_count = dict()
             for bucket in self.view.model.requested_buckets:
-                total_bucket_reqs += self.view.model.requested_buckets[bucket]
+                total_bucket_reqs += self.view.model.update_proc_workload[bucket]
             for bucket in self.view.model.requested_buckets:
-                if self.view.model.requested_buckets[bucket] > total_bucket_reqs/len(self.view.model.orchestration_proc_workload):
+                if self.view.model.update_proc_workload[bucket] > total_bucket_reqs/len(self.view.model.orchestration_proc_workload):
                     # TODO: split_the_bucket, delete old bucket and do reallocation
                     new_req_count[bucket] = self.controller.split_bucket(bucket, total_bucket_reqs/len(self.view.model.orchestration_proc_workload))
             for bucket in self.view.model.split_buckets:
@@ -567,6 +567,10 @@ class HashRepoReuseStorApp(Strategy):
                     self.hash_in_count[bucket + "_" + str(i)] = 0
                     self.hash_hit_count[bucket + "_" + str(i)] = 0
                 max_count += self.view.model.split_buckets[bucket]
+
+        # self.controller.requested_buckets_reset()
+
+        self.controller.restore_orch_proc_workload()
 
         exclude_l = []
         exclude_h = []
@@ -913,7 +917,6 @@ class HashRepoReuseStorApp(Strategy):
             if self.epoch_count >= self.epoch_ticks and type(node) is int and self.view.model.avg_CPU_perc[node] > self.trigger_threshold:
                 self.view.model.orch_calls += 1
                 self.controller.update_CPU(curTime)
-                self.controller.restore_orch_CPU_perc()
                 updated_nodes = self.trigger_node_proc_reuse_update(curTime, int(self.orch_buckets/2))
                 updated_nodes += self.trigger_node_reuse_proc_update(curTime, int(self.orch_buckets/2))
                 self.controller.restore_orch_CPU_perc(updated_nodes)
@@ -932,7 +935,6 @@ class HashRepoReuseStorApp(Strategy):
             if self.epoch_count >= self.epoch_ticks and type(node) is int:
                 self.view.model.orch_calls += 1
                 # self.controller.update_proc_workload()
-                self.controller.restore_orch_proc_workload()
                 updated_nodes, hashes = self.epoch_bucket_CPU_workload_update(curTime, len(self.view.model.update_proc_workload))
                 self.controller.restore_orch_proc_workload(hashes)
                 self.epoch_count = 0

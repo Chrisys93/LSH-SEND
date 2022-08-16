@@ -2904,6 +2904,9 @@ class NetworkController(object):
             self.model.update_proc_workload[bucket + "_" + str(i)] = new_req_count
             self.model.hash_reuse[bucket + "_" + str(i)] = self.model.hash_reuse[bucket]
             self.model.h_space_sources[bucket + "_" + str(i)] = Counter()
+            for n in self.model.all_node_h_spaces:
+                if bucket in self.model.all_node_h_spaces[n]:
+                    self.model.all_node_h_spaces[n].update([bucket + "_" + str(i)])
 
 
     def add_split_bucket(self, bucket, split_num):

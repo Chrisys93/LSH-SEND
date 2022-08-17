@@ -164,6 +164,8 @@ class HashRepoReuseStorApp(Strategy):
 
         self.no_dead_miss_hash = dict()
 
+        self.new_req_count = dict()
+
         self.orch_buckets = orch_buckets
 
         for n in self.view.model.all_node_h_spaces.keys():
@@ -554,15 +556,14 @@ class HashRepoReuseStorApp(Strategy):
             # TODO: The main bucket identification for splitting and the splitting itself should be done in this part.
             total_bucket_reqs = 0
             # self.controller.split_bucket_reset()
-            new_req_count = dict()
             for bucket in self.view.model.requested_buckets:
                 total_bucket_reqs += self.view.model.update_proc_workload[bucket]
             for bucket in self.view.model.requested_buckets:
                 if self.view.model.update_proc_workload[bucket] > total_bucket_reqs/len(self.view.model.orchestration_proc_workload):
                     # TODO: split_the_bucket, delete old bucket and do reallocation
-                    new_req_count[bucket] = self.controller.split_bucket(bucket, total_bucket_reqs/len(self.view.model.orchestration_proc_workload))
+                    self.new_req_count[bucket] = self.controller.split_bucket(bucket, total_bucket_reqs/len(self.view.model.orchestration_proc_workload))
             for bucket in self.view.model.split_buckets:
-                self.controller.apply_bucket_split(bucket, new_req_count[bucket])
+                self.controller.apply_bucket_split(bucket, self.new_req_count[bucket])
                 for i in range(self.view.model.split_buckets[bucket]):
                     self.hash_in_count[bucket + "_" + str(i)] = 0
                     self.hash_hit_count[bucket + "_" + str(i)] = 0

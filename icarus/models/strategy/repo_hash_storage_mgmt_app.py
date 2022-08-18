@@ -556,9 +556,9 @@ class HashRepoReuseStorApp(Strategy):
             # TODO: The main bucket identification for splitting and the splitting itself should be done in this part.
             total_bucket_reqs = 0
             # self.controller.split_bucket_reset()
-            for bucket in self.view.model.requested_buckets:
+            for bucket in self.view.model.update_proc_workload:
                 total_bucket_reqs += self.view.model.update_proc_workload[bucket]
-            for bucket in self.view.model.requested_buckets:
+            for bucket in self.view.model.update_proc_workload:
                 if self.view.model.update_proc_workload[bucket] > total_bucket_reqs/len(self.view.model.orchestration_proc_workload):
                     # TODO: split_the_bucket, delete old bucket and do reallocation
                     self.new_req_count[bucket] = self.controller.split_bucket(bucket, total_bucket_reqs/len(self.view.model.orchestration_proc_workload))

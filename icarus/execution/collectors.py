@@ -1678,8 +1678,7 @@ class RepoStatsOutputLatencyCollector(DataCollector):
                 orch_bucket_req_speed.write(str(orch_bucket_count[n]) + ', ')
             orch_bucket_req_speed.write('\n')
 
-            if first_hash_repo:
-                number_of_buckets.write(str(len(self.view.model.h_space_sources)))
+            number_of_buckets.write(str(len(self.view.model.h_space_sources)))
 
             for edr in range(len(self.view.model.source_node)):
                 if str("rec_"+str(edr)) in self.view.model.node_req_speed:

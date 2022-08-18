@@ -2892,7 +2892,7 @@ class NetworkController(object):
             div = self.model.update_proc_workload[bucket]/(den)
         # splitting the bucket and assigning the current requests equally
         new_req_count = self.model.update_proc_workload[bucket]/den
-        self.model.requested_buckets[bucket] = new_req_count
+        # self.model.requested_buckets[bucket] = new_req_count
         self.model.update_proc_workload[bucket] = new_req_count
         if den > 1:
             self.add_split_bucket(bucket, den)
@@ -2900,7 +2900,7 @@ class NetworkController(object):
 
     def apply_bucket_split(self, bucket, new_req_count):
         for i in range(self.model.split_buckets[bucket]):
-            self.model.requested_buckets[bucket + "_" + str(i)] = new_req_count
+            self.model.requested_buckets[bucket + "_" + str(i)] = 0
             self.model.update_proc_workload[bucket + "_" + str(i)] = new_req_count
             self.model.hash_reuse[bucket + "_" + str(i)] = self.model.hash_reuse[bucket]
             self.model.h_space_sources[bucket + "_" + str(i)] = Counter()
